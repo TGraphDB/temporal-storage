@@ -2,15 +2,23 @@ package org.act.temporalProperty.impl.index;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.index.rtree.IndexEntry;
+import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.util.Slice;
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 /*
 * edit by yf
 * edit from 2018-03-13
@@ -225,7 +233,7 @@ public class SourceCompare {
     }
 
 
-    private Table<IndexEntry, String, String> queryFromSource(Long entityId, List<IndexEntry> sourceEntities) {
+    private Table<IndexEntry, String, String> queryFromSource( Long entityId, List<IndexEntry> sourceEntities ) {
         String fileName = null;
         String sourceString = null;
         Table<IndexEntry, String, String> table = HashBasedTable.create();
