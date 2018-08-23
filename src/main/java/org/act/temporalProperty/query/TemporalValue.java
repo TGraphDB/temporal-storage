@@ -47,11 +47,17 @@ public class TemporalValue<V>
 
     public V get( TimePointL time )
     {
-        Value val = map.get( time );
-        if ( val == null || val.isUnknown )
-        { return null; }
-        else
-        { return val.value; }
+        Entry<TimePointL,Value> entry = map.floorEntry( time );
+        if(entry!=null)
+        {
+            Value val = entry.getValue();
+            if ( val == null || val.isUnknown ) { return null; }
+            else {
+                return val.value;
+            }
+        }else{
+            return null;
+        }
     }
 
     private Value valUnknown()

@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.meta.ValueContentType;
 
+import java.nio.charset.Charset;
+
 public class TemporalPropertyValueConvertor
 {
     public static final String TemporalPropertyMarker = "TGRAPH_TEMPORAL_PROPERTY";
@@ -44,7 +46,7 @@ public class TemporalPropertyValueConvertor
             o.writeLong( (Long) value );
             return o.slice();
         case STRING_NAME:
-            o.writeBytes( (String) value );
+            o.writeBytes( ((String) value).getBytes() );
             return o.slice();
         case BYTE_NAME:
         case CHAR_NAME:
@@ -107,7 +109,7 @@ public class TemporalPropertyValueConvertor
         case LONG:
             return in.readLong();
         case STRING:
-            return value.toString();
+            return in.toString( Charset.defaultCharset() );
         default:
             throw new UnsupportedOperationException("Unsupported value type");
         }
