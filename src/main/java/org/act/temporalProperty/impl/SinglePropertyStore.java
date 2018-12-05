@@ -209,7 +209,7 @@ public class SinglePropertyStore
                 if( timeInterval.span( stMaxTime, unMaxTime + 1 )){ // timeInterval.start < stMaxTime <= unMaxTime+1 <= timeInterval.end
                     insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
                     insertUnstableBuffer( timeInterval.changeStart( stMaxTime + 1 ).changeEnd( unMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( stMaxTime + 1 ), val );
+                    toMerge.addInterval( timeInterval.changeStart( unMaxTime + 1 ), val );
                 }else if( timeInterval.lessThan( stMaxTime + 1 )){
                     insertStableBuffer(timeInterval, val );
                 }else if(timeInterval.greaterOrEq( unMaxTime + 1 )){
