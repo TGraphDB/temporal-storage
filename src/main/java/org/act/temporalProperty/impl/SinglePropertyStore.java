@@ -198,7 +198,7 @@ public class SinglePropertyStore
                 if(timeInterval.lessThan( unMaxTime + 1 ) ) {
                     insertUnstableBuffer(timeInterval, val);
                 }else if(timeInterval.greaterOrEq( unMaxTime + 1 )){
-                    toMerge.addInterval(entry.getKey(), val);
+                    toMerge.addInterval(timeInterval, val);
                 }else{
                     insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
                     toMerge.addInterval( timeInterval.changeStart( unMaxTime + 1 ), val );
@@ -206,7 +206,7 @@ public class SinglePropertyStore
             }else if( unExist && stExist){
                 int stMaxTime = propertyMeta.stMaxTime();
                 int unMaxTime = propertyMeta.unMaxTime();
-                if( timeInterval.span( stMaxTime, unMaxTime + 1 )){
+                if( timeInterval.span( stMaxTime, unMaxTime + 1 )){ // timeInterval.start < stMaxTime <= unMaxTime+1 <= timeInterval.end
                     insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
                     insertUnstableBuffer( timeInterval.changeStart( stMaxTime + 1 ).changeEnd( unMaxTime ), val );
                     toMerge.addInterval( timeInterval.changeStart( stMaxTime + 1 ), val );
@@ -214,13 +214,13 @@ public class SinglePropertyStore
                     insertStableBuffer(timeInterval, val );
                 }else if(timeInterval.greaterOrEq( unMaxTime + 1 )){
                     toMerge.addInterval( timeInterval, val );
-                }else if(timeInterval.span( stMaxTime + 1 )){
+                }else if(timeInterval.span( stMaxTime + 1 )){ // timeInterval.start < stMaxTime+1 <= timeInterval.end
                     insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
                     insertUnstableBuffer( timeInterval.changeStart( stMaxTime + 1 ), val );
                 }else if(timeInterval.span( unMaxTime + 1 )){
                     insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
                     toMerge.addInterval( timeInterval.changeStart( unMaxTime + 1 ), val );
-                }else if(timeInterval.between( stMaxTime + 1, unMaxTime )){
+                }else if(timeInterval.between( stMaxTime + 1, unMaxTime )){ // stMaxTime+1 <= timeInterval.start <= timeInterval.end <= unMaxTime
                     insertUnstableBuffer( timeInterval, val );
                 }else{
                     throw new TPSNHException( "no such scenery!" );
