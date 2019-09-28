@@ -4,6 +4,7 @@ import org.act.temporalProperty.helper.AbstractSearchableIterator;
 
 /**
  * Created by song on 2018-05-09.
+ * 把UNKNOWN的entry转换为Invalid的entry
  */
 public class UnknownToInvalidIterator extends AbstractSearchableIterator
 {
