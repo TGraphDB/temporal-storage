@@ -106,7 +106,7 @@ public class TableLatestValueIterator implements SearchableIterator
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         throw new UnsupportedOperationException();
     }
@@ -155,7 +155,7 @@ public class TableLatestValueIterator implements SearchableIterator
         }
 
         @Override
-        public void seek(InternalKey targetKey) {
+        public boolean seekFloor(InternalKey targetKey) {
             throw new UnsupportedOperationException();
         }
 

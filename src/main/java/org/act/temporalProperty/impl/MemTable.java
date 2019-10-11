@@ -331,9 +331,8 @@ public class MemTable
         }
 
         @Override
-        public void seek( InternalKey targetKey )
+        public boolean seekFloor(InternalKey targetKey )
         {
-            super.resetState();
             iterator = Iterators.peekingIterator( table.entrySet().iterator() );
             while ( iterator.hasNext() )
             {
@@ -342,10 +341,11 @@ public class MemTable
                 {
                     TemporalValue<Value> entityMap = entry.getValue();
                     entryIter = entityMap.pointEntries( new TimePointL( targetKey.getStartTime() ) );
-                    return;
+                    return false;
                 }
             }
             seekHasNext = false;
+            return super.seekFloor(targetKey);
         }
 
         @Override

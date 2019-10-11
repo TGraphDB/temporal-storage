@@ -45,7 +45,7 @@ public class InvalidEntityFilterIterator extends PairViewFilterByNextIterator<In
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         throw new UnsupportedOperationException();
     }
 

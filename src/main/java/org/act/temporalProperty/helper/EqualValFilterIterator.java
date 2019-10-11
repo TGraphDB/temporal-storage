@@ -38,7 +38,7 @@ public class EqualValFilterIterator extends CompareLastReturnedIterator<Internal
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         throw new UnsupportedOperationException();
     }
 

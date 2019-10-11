@@ -133,19 +133,15 @@ public class SinglePropertyStore
             if (null != buffer) {
                 iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
             }
-            iterator.seek(searchKey);
-            Entry<InternalKey, Slice> entry;
-            try {
-                entry = iterator.next();
-            } catch (NoSuchElementException e) {
-                continue;
-            }
-            InternalKey resultKey = entry.getKey();
-            if (    resultKey.getId().equals(searchKey.getId()) &&
-                    resultKey.getValueType().isValue() &&
-                    resultKey.getStartTime() <= searchKey.getStartTime()) {
-                return entry.getValue();
-            } // else continue
+            if(iterator.seekFloor(searchKey)){
+                Entry<InternalKey, Slice> entry = iterator.next();
+                InternalKey resultKey = entry.getKey();
+                if (    resultKey.getId().equals(searchKey.getId()) && // same entity id && same property id.
+//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
+                        resultKey.getStartTime() <= searchKey.getStartTime()) {
+                    return entry.getValue();
+                } // else continue search others
+            } // else (searchKey smaller than iterator.firstKey) continue
         }
         // search unstable complete but not found. now search latest stable file
         FileMetaData meta = propertyMeta.latestStableMeta();
@@ -162,19 +158,17 @@ public class SinglePropertyStore
         if (null != buffer) {
             iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
         }
-        iterator.seek(searchKey);
-        Entry<InternalKey, Slice> entry;
-        try {
-            entry = iterator.next();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-        InternalKey resultKey = entry.getKey();
-        if (    resultKey.getId().equals(searchKey.getId()) &&
-                resultKey.getStartTime()<=searchKey.getStartTime() &&
-                resultKey.getValueType().isValue()) {
-            return entry.getValue();
-        }else{
+        if(iterator.seekFloor(searchKey)){
+            Entry<InternalKey, Slice> entry = iterator.next();
+            InternalKey resultKey = entry.getKey();
+            if (    resultKey.getId().equals(searchKey.getId()) &&
+//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
+                    resultKey.getStartTime()<=searchKey.getStartTime()) {
+                return entry.getValue();
+            }else{
+                return null;
+            }
+        } else {
             return null;
         }
     }

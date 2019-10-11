@@ -4,7 +4,6 @@ import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
-import org.act.temporalProperty.table.TwoLevelMergeIterator;
 
 import java.util.*;
 
@@ -72,13 +71,16 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         super.resetState();
         heap = new PriorityQueue<>(cp);
+        boolean flag = false;
+        // if any one of the iterators seekFloor is true, then we can confirm there is one entry less or eq to targetKey.
         for(SearchableIterator i: iterators){
-            i.seek( targetKey );
+            if(i.seekFloor( targetKey )) flag = true;
             heap.add(i);
         }
+        return flag;
     }
 
     @Override

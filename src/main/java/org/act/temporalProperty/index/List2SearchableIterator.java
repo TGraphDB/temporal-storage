@@ -43,7 +43,7 @@ public class List2SearchableIterator extends AbstractIterator<InternalEntry> imp
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         throw new UnsupportedOperationException( new TGraphNotImplementedException() );
     }

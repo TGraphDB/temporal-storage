@@ -3,7 +3,6 @@ package org.act.temporalProperty.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.TemporalPropertyStore;
-import org.act.temporalProperty.exception.TPSException;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.exception.ValueUnknownException;
 import org.act.temporalProperty.helper.StoreInitial;
@@ -168,7 +167,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             mergedIterator = new UnknownToInvalidIterator( mergedIterator );
 
             InternalKey searchKey = new InternalKey( idSlice, start );
-            mergedIterator.seek( searchKey );
+            mergedIterator.seekFloor( searchKey );
             boolean firstLoop = true;
             while ( mergedIterator.hasNext() )
             {

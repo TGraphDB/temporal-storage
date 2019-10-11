@@ -89,11 +89,11 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
-        super.resetState();
-        this.latest.seek( targetKey );
-        this.old.seek( targetKey );
+        this.latest.seekFloor( targetKey );
+        this.old.seekFloor( targetKey );
+        return super.seekFloor(targetKey);
     }
 
     @Override

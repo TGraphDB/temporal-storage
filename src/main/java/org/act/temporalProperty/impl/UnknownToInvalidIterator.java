@@ -41,10 +41,10 @@ public class UnknownToInvalidIterator extends AbstractSearchableIterator
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         super.resetState();
-        in.seek( targetKey );
+        return in.seekFloor( targetKey );
     }
 
     @Override

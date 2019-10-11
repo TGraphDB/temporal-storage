@@ -23,17 +23,21 @@ public class EPEntryIterator extends AbstractSearchableIterator {
     @Override
     public void seekToFirst() {
         InternalKey earliestKey = new InternalKey(id, 0);
-        iter.seek(earliestKey);
+        iter.seekFloor(earliestKey);
         super.resetState();
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         if(targetKey.getId().equals( id ))
         {
-            super.resetState();
-            iter.seek( targetKey );
+            this.resetState();
+            if(iter.seekFloor( targetKey ) && this.hasNext()){
+                return (this.peek().getKey().compareTo(targetKey) <= 0);
+            }else{
+                return false;
+            }
         }else{
             throw new TPSRuntimeException( "id not match!" );
         }

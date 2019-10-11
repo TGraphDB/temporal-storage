@@ -29,14 +29,14 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
 
     @Override
     public void seekToFirst() {
-        super.resetState();
+        this.resetState();
         in.seekToFirst();
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
-        super.resetState();
+    public boolean seekFloor(InternalKey targetKey) {
         in.seek(targetKey.encode());
+        return super.seekFloor(targetKey);
     }
 
     @Override

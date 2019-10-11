@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * This iterator's result only contains given properties.
+ *
  * Created by song on 2018-01-25.
  */
 public class PropertyFilterIterator extends AbstractSearchableIterator
@@ -44,10 +46,10 @@ public class PropertyFilterIterator extends AbstractSearchableIterator
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
-        super.resetState();
-        in.seek( targetKey );
+        in.seekFloor( targetKey );
+        return super.seekFloor(targetKey);
     }
 
     @Override
