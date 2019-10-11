@@ -43,4 +43,11 @@ public class EPMergeIterator extends TwoLevelMergeIterator
         else
         { return endOfData(); }
     }
+
+    @Override
+    public String toString() {
+        return "EPMergeIterator{" +
+                "id=" + id +
+                '}';
+    }
 }

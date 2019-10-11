@@ -53,4 +53,12 @@ public class EPEntryIterator extends AbstractSearchableIterator {
         }
         return endOfData();
     }
+
+    @Override
+    public String toString() {
+        return "EPEntryIterator{" +
+                "iter=" + iter +
+                ", id=" + id +
+                '}';
+    }
 }

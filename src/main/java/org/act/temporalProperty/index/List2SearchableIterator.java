@@ -47,4 +47,12 @@ public class List2SearchableIterator extends AbstractIterator<InternalEntry> imp
     {
         throw new UnsupportedOperationException( new TGraphNotImplementedException() );
     }
+
+    @Override
+    public String toString() {
+        return "List2SearchableIterator{" +
+                "in=" + in +
+                ", i=" + i +
+                '}';
+    }
 }

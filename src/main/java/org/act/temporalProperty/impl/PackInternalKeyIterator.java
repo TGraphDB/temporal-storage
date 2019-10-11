@@ -38,4 +38,11 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
         super.resetState();
         in.seek(targetKey.encode());
     }
+
+    @Override
+    public String toString() {
+        return "PackInternalKeyIterator{" +
+                "in=" + in +
+                '}';
+    }
 }

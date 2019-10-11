@@ -200,4 +200,11 @@ public abstract class AbstractSearchableIterator extends UnmodifiableIterator<In
     {
         state = State.NOT_READY;
     }
+
+    @Override
+    public String toString() {
+        return "AbstractSearchableIterator{" +
+                "state=" + state +
+                '}';
+    }
 }

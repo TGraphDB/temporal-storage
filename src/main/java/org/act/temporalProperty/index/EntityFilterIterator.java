@@ -43,4 +43,12 @@ public class EntityFilterIterator extends AbstractSearchableIterator {
         super.resetState();
         in.seek(targetKey);
     }
+
+    @Override
+    public String toString() {
+        return "EntityFilterIterator{" +
+                "entityIdSet=" + entityIdSet +
+                ", in=" + in +
+                '}';
+    }
 }

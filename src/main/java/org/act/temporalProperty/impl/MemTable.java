@@ -347,6 +347,11 @@ public class MemTable
             }
             seekHasNext = false;
         }
+
+        @Override
+        public String toString() {
+            return "MemTableIterator{}";
+        }
     }
 
     private class IntervalIterator extends AbstractIterator<Entry<TimeIntervalKey,Slice>> implements PeekingIterator<Entry<TimeIntervalKey,Slice>>

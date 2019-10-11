@@ -46,4 +46,11 @@ public class UnknownToInvalidIterator extends AbstractSearchableIterator
         super.resetState();
         in.seek( targetKey );
     }
+
+    @Override
+    public String toString() {
+        return "UnknownToInvalidIterator{" +
+                "in=" + in +
+                '}';
+    }
 }

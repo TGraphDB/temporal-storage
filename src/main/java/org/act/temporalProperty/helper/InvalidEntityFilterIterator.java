@@ -48,4 +48,11 @@ public class InvalidEntityFilterIterator extends PairViewFilterByNextIterator<In
     public void seek(InternalKey targetKey) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String toString() {
+        return "InvalidEntityFilterIterator{" +
+                "lastTwoIDEqual=" + lastTwoIDEqual +
+                '}';
+    }
 }

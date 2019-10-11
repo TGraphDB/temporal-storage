@@ -345,7 +345,12 @@ public class MergeProcess extends Thread
                 InternalKey key = entry.getKey();
                 if( key.getStartTime() < minTime ) minTime = key.getStartTime();
                 if( key.getStartTime() > maxTime ) maxTime = key.getStartTime();
-                builder.add( entry.getKey().encode(), entry.getValue() );
+                try {
+                    builder.add(entry.getKey().encode(), entry.getValue());
+                }catch(AssertionError e){
+                    System.err.println(buildIterator);
+                    throw e;
+                }
                 indexUpdater.update( entry );
                 entryCount++;
             }

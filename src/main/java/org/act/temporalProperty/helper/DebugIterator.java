@@ -111,6 +111,16 @@ public class DebugIterator extends AbstractSearchableIterator
         in.seek(targetKey);
     }
 
+    @Override
+    public String toString() {
+        return "DebugIterator{" +
+                "in=" + in +
+                ", preKey=" + preKey +
+                ", min=" + min +
+                ", max=" + max +
+                '}';
+    }
+
     public static class ForInterval extends AbstractIterator<Entry<TimeIntervalKey,Slice>> implements IntervalIterator
     {
         private TimeIntervalKey preKey;

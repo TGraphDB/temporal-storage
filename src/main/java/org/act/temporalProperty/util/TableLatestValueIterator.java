@@ -111,6 +111,15 @@ public class TableLatestValueIterator implements SearchableIterator
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String toString() {
+        return "TableLatestValueIterator{" +
+                "iterator=" + iterator +
+                ", next=" + next +
+                ", next_next=" + next_next +
+                '}';
+    }
+
     /**
      * By Sjh 2018
      */
@@ -148,6 +157,14 @@ public class TableLatestValueIterator implements SearchableIterator
         @Override
         public void seek(InternalKey targetKey) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString() {
+            return "ChangeTimeIterator{" +
+                    "input=" + input +
+                    ", startTime=" + startTime +
+                    '}';
         }
     }
 

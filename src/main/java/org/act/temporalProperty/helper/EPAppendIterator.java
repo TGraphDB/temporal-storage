@@ -47,4 +47,10 @@ public class EPAppendIterator extends SameLevelMergeIterator {
         if(!target.getId().equals(id)) throw new IllegalArgumentException("target should has same entity id and same property id");
     }
 
+    @Override
+    public String toString() {
+        return "EPAppendIterator{" +
+                "id=" + id +
+                '}';
+    }
 }

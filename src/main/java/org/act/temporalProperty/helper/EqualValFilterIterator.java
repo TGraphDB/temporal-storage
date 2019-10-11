@@ -41,4 +41,9 @@ public class EqualValFilterIterator extends CompareLastReturnedIterator<Internal
     public void seek(InternalKey targetKey) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String toString() {
+        return "EqualValFilterIterator{}";
+    }
 }

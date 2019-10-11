@@ -96,6 +96,14 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
         this.old.seek( targetKey );
     }
 
+    @Override
+    public String toString() {
+        return "TwoLevelMergeIterator{" +
+                "latest=" + latest +
+                ", old=" + old +
+                '}';
+    }
+
     public static TwoLevelMergeIterator merge(SearchableIterator latest, SearchableIterator old){
         return new TwoLevelMergeIterator(latest, old);
     }

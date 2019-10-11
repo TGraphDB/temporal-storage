@@ -49,4 +49,12 @@ public class PropertyFilterIterator extends AbstractSearchableIterator
         super.resetState();
         in.seek( targetKey );
     }
+
+    @Override
+    public String toString() {
+        return "PropertyFilterIterator{" +
+                "idSet=" + idSet +
+                ", in=" + in +
+                '}';
+    }
 }

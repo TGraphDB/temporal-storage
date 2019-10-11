@@ -80,4 +80,12 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
             heap.add(i);
         }
     }
+
+    @Override
+    public String toString() {
+        return "SameLevelMergeIterator{" +
+                "heap=" + heap +
+                ", iterators=" + iterators +
+                '}';
+    }
 }
