@@ -53,6 +53,7 @@ public class InvalidEntityFilterIterator extends PairViewFilterByNextIterator<In
     public String toString() {
         return "InvalidEntityFilterIterator{" +
                 "lastTwoIDEqual=" + lastTwoIDEqual +
+                "in=" + super.toString() +
                 '}';
     }
 }
