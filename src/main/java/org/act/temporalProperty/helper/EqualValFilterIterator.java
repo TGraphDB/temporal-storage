@@ -44,6 +44,6 @@ public class EqualValFilterIterator extends CompareLastReturnedIterator<Internal
 
     @Override
     public String toString() {
-        return "EqualValFilterIterator{}";
+        return "EqualValFilterIterator{in="+super.toString()+"}";
     }
 }

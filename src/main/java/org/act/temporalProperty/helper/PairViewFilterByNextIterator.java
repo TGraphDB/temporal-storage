@@ -52,4 +52,12 @@ public abstract class PairViewFilterByNextIterator<T> extends AbstractIterator<T
 
     protected abstract boolean shouldReturnFirst(T cur, T next);
 
+    @Override
+    public String toString() {
+        return "PairViewFilterByNextIterator{" +
+                "in=" + in +
+                ", first=" + first +
+                ", second=" + second +
+                '}';
+    }
 }

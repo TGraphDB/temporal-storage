@@ -32,4 +32,11 @@ public abstract class CompareLastReturnedIterator<T> extends AbstractIterator<T>
 
     protected abstract boolean shouldReturnSecond(T lastReturned, T cur);
 
+    @Override
+    public String toString() {
+        return "CompareLastReturnedIterator{" +
+                "in=" + in +
+                ", lastReturned=" + lastReturned +
+                '}';
+    }
 }
