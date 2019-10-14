@@ -1,9 +1,15 @@
 package org.act.temporalProperty.impl;
 
+import com.google.common.collect.PeekingIterator;
+import org.act.temporalProperty.exception.ValueUnknownException;
+import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.util.Slices;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Map;
 
 public class MemTableTest
 { 
@@ -37,6 +43,45 @@ public class MemTableTest
 //        }
 //    }
 //
+    @Test
+    public void intervalIterVsPointIter() {
+        MemTable table = new MemTable();
+        for(int t=10; t<100; t+=5){
+            for(long entityId=0; entityId<10; entityId++) {
+                if(entityId==0) {
+                    set(table, entityId, 2, 1, 2, 3);
+                    set(table, entityId, 2, 3, 3, 4);
+                    set(table, entityId, 2, 4, 5, 5);
+//                    set(store, entityId, 2, 6, 7);
+                    set(table, entityId, 2, 8, 9, 6);
+                }
+                set(table, entityId, 2, t, t+4, t);
+            }
+        }
+
+        for (MemTable.MemTableIterator it = table.iterator(); it.hasNext();) {
+            InternalEntry entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+            try {
+                table.get(entry.getKey());
+            } catch (ValueUnknownException e) {
+                e.printStackTrace();
+            }
+        }
+        for (PeekingIterator<Map.Entry<TimeIntervalKey, Slice>> it = table.intervalEntryIterator(); it.hasNext();) {
+            Map.Entry<TimeIntervalKey, Slice> entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+        }
+
+    }
+
+    private void set(MemTable table, long entityId, int propId, int timeStart, int timeEnd, int value) {
+        Slice valSlice = Slices.allocate(8);
+        valSlice.output().writeInt(value);
+        table.addInterval(new TimeIntervalKey(new InternalKey(propId, entityId, timeStart, ValueType.INT), timeEnd), valSlice);
+    }
+
+
 //    //TODO update test to adopt the change: remove DELETION mark.
 //    @Test
 //    public void testChangeKey()

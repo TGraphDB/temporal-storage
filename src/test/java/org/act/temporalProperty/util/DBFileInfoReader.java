@@ -1,15 +1,18 @@
 package org.act.temporalProperty.util;
 
+import com.google.common.collect.PeekingIterator;
+import org.act.temporalProperty.helper.StoreInitial;
+import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
+import org.act.temporalProperty.impl.MemTable;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.rtree.*;
 import org.act.temporalProperty.meta.SystemMeta;
 import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.SystemMetaFile;
-import org.act.temporalProperty.table.FileChannelTable;
-import org.act.temporalProperty.table.Table;
-import org.act.temporalProperty.table.TableComparator;
-import org.act.temporalProperty.table.TableIterator;
+import org.act.temporalProperty.query.TimeInterval;
+import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.table.*;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
@@ -33,7 +36,7 @@ public class DBFileInfoReader
         if(SystemUtils.IS_OS_WINDOWS){
             return "temporal.property.test";
         }else{
-            return "/tmp/temporal.property.test";
+            return "/tmp/test-db1";
         }
     }
 
@@ -71,7 +74,23 @@ public class DBFileInfoReader
     }
 
     @Test
-    public void dbtmpFileInfo() throws IOException {
+    public void dbTmpFileInfo() throws IOException {
+        StoreInitial store = new StoreInitial(new File(this.dbDir()));
+        MemTable table = store.getMemTable();
+        int i=0;
+        for (MemTable.MemTableIterator it = table.iterator(); it.hasNext() && i<10; i++) {
+            InternalEntry entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+        }
+        i=0;
+        for (PeekingIterator<Map.Entry<TimeIntervalKey, Slice>> it = table.intervalEntryIterator(); it.hasNext() && i<10; i++) {
+            Map.Entry<TimeIntervalKey, Slice> entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+        }
+    }
+
+    @Test
+    public void dbUnstableFileInfo() throws IOException {
         String fileName = "000000.dbtmp";
         File metaFile = new File( this.dbDir() + "/" + fileName );
         if(!metaFile.exists()){
@@ -81,7 +100,7 @@ public class DBFileInfoReader
         System.out.println("################## "+fileName+" #################");
         FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + fileName ) );
         FileChannel channel = inputStream.getChannel();
-        Table table = new FileChannelTable( fileName, channel, TableComparator.instance(), false );
+        Table table = new MMapTable( fileName, channel, TableComparator.instance(), false );
         TableIterator iterator = table.iterator();
         if( !iterator.hasNext() )
         {
@@ -98,6 +117,7 @@ public class DBFileInfoReader
             Slice key = entry.getKey();
             Slice value = entry.getValue();
             InternalKey internalKey = new InternalKey( key );
+            System.out.println(internalKey+" "+value);
             int time = internalKey.getStartTime();
             if( time < minTime )
             {

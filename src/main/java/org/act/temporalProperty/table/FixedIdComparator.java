@@ -5,7 +5,7 @@ import org.act.temporalProperty.util.Slice;
 import com.google.common.base.Preconditions;
 
 /**
- * 对能够唯一标识动态属性Id的Slice进行比较的工具类
+ * 对时态属性Id（Entity Id + Property Id）的Slice进行比较的工具类
  */
 public class FixedIdComparator implements UserComparator
 {
