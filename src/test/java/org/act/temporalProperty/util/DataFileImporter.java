@@ -1,6 +1,6 @@
 package org.act.temporalProperty.util;
 
-import org.act.temporalProperty.config.DataDownloader;
+//import org.act.temporalProperty.config.DataDownloader;
 import org.act.temporalProperty.config.TestConfiguration;
 import org.act.temporalProperty.impl.index.multival.BuildAndQueryTest;
 import org.apache.commons.lang3.SystemUtils;
@@ -19,16 +19,17 @@ public class DataFileImporter {
     private File dataDir;
 
     public DataFileImporter(int fileCount) throws IOException {
-        this.dataPath = TestConfiguration.get().testDataDir();
-        this.dbDir = TestConfiguration.get().dbDir();
-        this.dataFileList = new ArrayList<>();
-        this.dataDir = new File(dataPath);
-        importDataFiles(dataDir);
-        if(dataFileList.isEmpty()){
-            DataDownloader down = new DataDownloader();
-            dataFileList = down.download(fileCount);
-        }
-        dataFileList.sort(Comparator.comparing(File::getName));
+        throw new UnsupportedOperationException("data downloader need refactor");
+//        this.dataPath = TestConfiguration.get().testDataDir();
+//        this.dbDir = TestConfiguration.get().dbDir();
+//        this.dataFileList = new ArrayList<>();
+//        this.dataDir = new File(dataPath);
+//        importDataFiles(dataDir);
+//        if(dataFileList.isEmpty()){
+////            DataDownloader down = new DataDownloader();
+////            dataFileList = down.download(fileCount);
+//        }
+//        dataFileList.sort(Comparator.comparing(File::getName));
     }
 
     private void importDataFiles(File dataDir) {
