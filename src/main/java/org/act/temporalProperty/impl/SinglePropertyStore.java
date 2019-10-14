@@ -137,7 +137,7 @@ public class SinglePropertyStore
                 Entry<InternalKey, Slice> entry = iterator.next();
                 InternalKey resultKey = entry.getKey();
                 if (    resultKey.getId().equals(searchKey.getId()) && // same entity id && same property id.
-//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
+//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.-- But it is irrelevant, the result is same.
                         resultKey.getStartTime() <= searchKey.getStartTime()) {
                     return entry.getValue();
                 } // else continue search others
@@ -162,7 +162,7 @@ public class SinglePropertyStore
             Entry<InternalKey, Slice> entry = iterator.next();
             InternalKey resultKey = entry.getKey();
             if (    resultKey.getId().equals(searchKey.getId()) &&
-//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
+                    resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
                     resultKey.getStartTime()<=searchKey.getStartTime()) {
                 return entry.getValue();
             }else{
