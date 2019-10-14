@@ -13,6 +13,8 @@ import java.util.TreeMap;
 
 /**
  * Created by song on 2018-05-09.
+ * 用于表示一个时态值：（时间区间，值）元组构成的序列，时间区间不相交
+ * 实现时用的是（时间点，值）组成的TreeMap，注意其中时间点不含有TimePoint.NOW，但可以有TimePoint.Init
  */
 public class TemporalValue<V>
 {
@@ -29,11 +31,14 @@ public class TemporalValue<V>
 
     public void put( TimeInterval interval, V value )
     {
-        Value end = map.get( interval.end().next() );
-        map.subMap( interval.start(), true, interval.end(), false ).clear();
-        map.put( interval.start(), val( value ) );
-        if ( !interval.end().isNow() )
+        if ( interval.end().isNow() )
         {
+            map.tailMap( interval.start(), true ).clear();
+            map.put( interval.start(), val( value ) );
+        }else{
+            Value end = map.get( interval.end().next() );
+            map.subMap( interval.start(), true, interval.end(), true ).clear();
+            map.put( interval.start(), val( value ) );
             if ( end == null )
             {
                 map.put( interval.end().next(), valUnknown() );
@@ -207,8 +212,8 @@ public class TemporalValue<V>
                     Entry<TimePointL,Value> start = iterator.next();
                     if ( iterator.hasNext() )
                     {
-                        Entry<TimePointL,Value> end = iterator.peek();
-                        return new TimeIntervalValueEntry( new TimeInterval( start.getKey(), end.getKey() ), start.getValue().value );
+                        Entry<TimePointL,Value> endNext = iterator.peek();
+                        return new TimeIntervalValueEntry( new TimeInterval( start.getKey(), endNext.getKey().pre() ), start.getValue().value );
                     }
                     else
                     {

@@ -6,17 +6,32 @@ package org.act.temporalProperty.query;
  */
 public class TimePointL implements TPoint<TimePointL>
 {
-    private static final long INIT = -1;
+    private static final long INIT = -2;
     private static final long NOW = Long.MAX_VALUE;
-    public static final TimePointL Now = new TimePointL( NOW );
-    public static final TimePointL Init = new TimePointL( -1 );
+    public static final TimePointL Now = new TimePointL(){
+        @Override public long val() { return NOW; }
+        @Override public boolean isNow() { return true; }
+        @Override public boolean isInit(){ return false; }
+        @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.NOW"); }
+        @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.NOW"); }
+    };
+    public static final TimePointL Init = new TimePointL(){
+        @Override public long val() { return INIT; }
+        @Override public boolean isNow() { return false; }
+        @Override public boolean isInit(){ return true; }
+        @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.INIT"); }
+        @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.INIT"); }
+    };
 
     private long time;
 
     public TimePointL( long time )
     {
         this.time = time;
+        assert (time>=0 && time!=NOW && time!=NOW-1): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW-2));
     }
+
+    private TimePointL(){}
 
     @Override
     public TimePointL pre()
@@ -33,16 +48,14 @@ public class TimePointL implements TPoint<TimePointL>
     @Override
     public boolean isNow()
     {
-        return time == NOW;
+        return false;
     }
 
     @Override
     public boolean isInit()
     {
-        return time == INIT;
+        return false;
     }
-
-
 
     public long val()
     {
@@ -52,12 +65,12 @@ public class TimePointL implements TPoint<TimePointL>
     @Override
     public int compareTo( TimePointL o )
     {
-        return Long.compare( time, o.time );
+        return Long.compare( val(), o.time );
     }
 
     @Override
     public String toString()
     {
-        return isNow()?"NOW":String.valueOf( time );
+        return isNow() ? "NOW" : (isInit()?"INIT":String.valueOf( val() ));
     }
 }

@@ -9,8 +9,8 @@ import java.util.Objects;
  */
 public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
 {
-    private TIME_POINT from;
-    private TIME_POINT to;
+    private TIME_POINT from; // inclusive
+    private TIME_POINT to;  // inclusive
 
     public TInterval( TIME_POINT startTime, TIME_POINT endTime )
     {
