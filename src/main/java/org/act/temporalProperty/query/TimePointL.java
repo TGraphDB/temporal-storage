@@ -14,6 +14,7 @@ public class TimePointL implements TPoint<TimePointL>
         @Override public boolean isInit(){ return false; }
         @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.NOW"); }
         @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.NOW"); }
+        @Override public String toString() { return "NOW"; }
     };
     public static final TimePointL Init = new TimePointL(){
         @Override public long val() { return INIT; }
@@ -21,6 +22,7 @@ public class TimePointL implements TPoint<TimePointL>
         @Override public boolean isInit(){ return true; }
         @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.INIT"); }
         @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.INIT"); }
+        @Override public String toString() { return "INIT"; }
     };
 
     private long time;
@@ -65,12 +67,12 @@ public class TimePointL implements TPoint<TimePointL>
     @Override
     public int compareTo( TimePointL o )
     {
-        return Long.compare( val(), o.time );
+        return Long.compare( val(), o.val() );
     }
 
     @Override
     public String toString()
     {
-        return isNow() ? "NOW" : (isInit()?"INIT":String.valueOf( val() ));
+        return String.valueOf( val() );
     }
 }

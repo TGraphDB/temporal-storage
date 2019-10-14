@@ -14,7 +14,7 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
 
     public TInterval( TIME_POINT startTime, TIME_POINT endTime )
     {
-        Preconditions.checkArgument( startTime.compareTo( endTime ) <= 0 );
+        Preconditions.checkArgument( startTime.compareTo( endTime ) <= 0, "got ["+startTime+", "+ endTime+"]" );
         this.from = startTime;
         this.to = endTime;
     }
