@@ -27,11 +27,11 @@ public class TimeIntervalKey extends TimeInterval
         valueType = start.getValueType();
     }
 
-    public TimeIntervalKey(EntityPropertyId id, long newStart, long end )
+    public TimeIntervalKey(EntityPropertyId id, long newStart, long end, ValueType valueType)
     {
         super( newStart, end );
         this.id = id;
-        valueType = id.getValueType();
+        this.valueType = valueType;
     }
 
     public EntityPropertyId getId()
@@ -76,12 +76,12 @@ public class TimeIntervalKey extends TimeInterval
 
     public TimeIntervalKey changeEnd( long newEnd )
     {
-        return new TimeIntervalKey( this.id, from(), newEnd );
+        return new TimeIntervalKey( this.id, from(), newEnd, valueType);
     }
 
     public TimeIntervalKey changeStart( long newStart )
     {
-        return new TimeIntervalKey( this.id, newStart, to() );
+        return new TimeIntervalKey( this.id, newStart, to(), valueType );
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.act.temporalProperty.table.MergeProcess;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.vo.EntityPropertyId;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -567,7 +568,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             while ( iterator.hasNext() )
             {
                 Map.Entry<TimeIntervalKey,Slice> entry = iterator.next();
-                writer.addRecord(MemTable.encode(entry.getKey(), entry.getValue()), false);
+                writer.addRecord(TimeIntervalValueEntry.encode(entry.getKey(), entry.getValue()), false);
             }
             writer.close();
         }

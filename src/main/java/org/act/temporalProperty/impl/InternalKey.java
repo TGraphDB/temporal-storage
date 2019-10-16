@@ -1,6 +1,7 @@
 
 package org.act.temporalProperty.impl;
 
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.*;
 
 import com.google.common.base.Preconditions;
@@ -29,7 +30,7 @@ public class InternalKey implements Comparable<InternalKey>
     /**
      * 一个动态属性某个值的起始时间
      */
-    private final int startTime;
+    private final TimePointL startTime;
     /**
      * 值类型：invalid or value or unknown
      */
@@ -41,11 +42,11 @@ public class InternalKey implements Comparable<InternalKey>
      * @param startTime
      * @param valueType
      */
-    public InternalKey(EntityPropertyId Id, int startTime, ValueType valueType)
+    public InternalKey(EntityPropertyId Id, TimePointL startTime, ValueType valueType)
     {
         Preconditions.checkNotNull(Id);
         Preconditions.checkNotNull(valueType);
-        Preconditions.checkArgument(startTime >= 0, "sequenceNumber is negative");
+        Preconditions.checkNotNull(startTime);
 
         this.propertyId = Id.getPropertyId();
         this.entityId = Id.getEntityId();
@@ -53,9 +54,9 @@ public class InternalKey implements Comparable<InternalKey>
         this.valueType = valueType;
     }
 
-    public InternalKey(int propertyId, long entityId, int startTime, ValueType valueType)
+    public InternalKey(int propertyId, long entityId, TimePointL startTime, ValueType valueType)
     {
-        Preconditions.checkArgument(startTime >= 0, "sequenceNumber is negative");
+        Preconditions.checkNotNull(startTime);
         Preconditions.checkNotNull(valueType);
 
         this.propertyId = propertyId;
@@ -68,7 +69,7 @@ public class InternalKey implements Comparable<InternalKey>
      * @param Id
      * @param startTime
      */
-    public InternalKey(EntityPropertyId Id, int startTime)
+    public InternalKey(EntityPropertyId Id, TimePointL startTime)
     {
         this(Id, startTime, ValueType.VALUE);
     }
@@ -84,7 +85,7 @@ public class InternalKey implements Comparable<InternalKey>
         this.propertyId = data.getInt(8);
         this.entityId = data.getLong(0);
         long packedSequenceAndType = data.getLong( data.length() - SIZE_OF_LONG );
-        this.startTime = SequenceNumber.unpackTime(packedSequenceAndType);
+        this.startTime = new TimePointL(SequenceNumber.unpackTime(packedSequenceAndType));
         this.valueType = SequenceNumber.unpackValueType(packedSequenceAndType);
     }
 
@@ -110,7 +111,7 @@ public class InternalKey implements Comparable<InternalKey>
     /**
      * @return 返回此key对应值的起始有效时间
      */
-    public int getStartTime()
+    public TimePointL getStartTime()
     {
         return startTime;
     }
@@ -165,7 +166,7 @@ public class InternalKey implements Comparable<InternalKey>
         if( 0 != result ) {
             return result;
         }else {
-            return Long.compare(this.getStartTime(), o.getStartTime());
+            return this.getStartTime().compareTo(o.getStartTime());
         }
     }
 
@@ -173,7 +174,7 @@ public class InternalKey implements Comparable<InternalKey>
     {
         DynamicSliceOutput out = new DynamicSliceOutput(SIZE_OF_INT + 2*SIZE_OF_LONG);
         getId().encode(out);
-        out.writeLong(SequenceNumber.packTimeAndValueType( startTime, valueType ) );
+        out.writeLong(SequenceNumber.packTimeAndValueType( startTime.valInt(), valueType ) );
         return out.slice();
     }
 
@@ -183,7 +184,7 @@ public class InternalKey implements Comparable<InternalKey>
         long tmp = in.readLong();
         int time = SequenceNumber.unpackTime(tmp);
         ValueType valueType = SequenceNumber.unpackValueType(tmp);
-        return new InternalKey(id.getPropertyId(), id.getEntityId(), time, valueType);
+        return new InternalKey(id.getPropertyId(), id.getEntityId(), new TimePointL(time), valueType);
     }
 
     public static InternalKey decode(Slice in)

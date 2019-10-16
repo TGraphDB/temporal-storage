@@ -2,12 +2,10 @@ package org.act.temporalProperty.helper;
 
 import org.act.temporalProperty.exception.TPSMetaLoadFailedException;
 import org.act.temporalProperty.exception.TPSRuntimeException;
-import org.act.temporalProperty.impl.FileBuffer;
 import org.act.temporalProperty.impl.Filename;
 import org.act.temporalProperty.impl.LogReader;
 import org.act.temporalProperty.impl.MemTable;
-import org.act.temporalProperty.index.IndexStore;
-import org.act.temporalProperty.meta.PropertyMetaData;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.act.temporalProperty.meta.SystemMeta;
 import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.SystemMetaFile;
@@ -19,7 +17,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -105,7 +102,7 @@ public class StoreInitial {
                     Slice rawEntry;
                     while((rawEntry = reader.readRecord())!=null)
                     {
-                        MemTable.TimeIntervalValueEntry entry = MemTable.decode( rawEntry.input() );
+                        TimeIntervalValueEntry entry = TimeIntervalValueEntry.decode( rawEntry.input() );
                         memTable.addInterval( entry.getKey(), entry.getValue() );
                     }
                     channel.close();

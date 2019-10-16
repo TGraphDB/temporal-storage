@@ -64,6 +64,11 @@ public class TimePointL implements TPoint<TimePointL>
         return time;
     }
 
+    public int valInt()
+    {
+        return Math.toIntExact(time);
+    }
+
     @Override
     public int compareTo( TimePointL o )
     {

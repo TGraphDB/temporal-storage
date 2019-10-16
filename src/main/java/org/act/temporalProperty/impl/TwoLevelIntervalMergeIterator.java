@@ -3,7 +3,7 @@ package org.act.temporalProperty.impl;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSNHException;
-import org.act.temporalProperty.impl.MemTable.TimeIntervalValueEntry;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.vo.EntityPropertyId;

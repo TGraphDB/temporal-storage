@@ -1,7 +1,5 @@
 package org.act.temporalProperty.query;
 
-import com.google.common.base.Preconditions;
-
 import java.util.Objects;
 
 /**
@@ -14,9 +12,9 @@ public class TimeInterval extends TInterval<TimePointL>
         super( new TimePointL( startTime ), new TimePointL( endTime ) );
     }
 
-    public TimeInterval( long startTime )
+    public TimeInterval( TimePointL startTime )
     {
-        super( new TimePointL( startTime ), TimePointL.Now );
+        super( startTime , TimePointL.Now );
     }
 
     public TimeInterval( TimePointL startTime, TimePointL endTime )
@@ -31,7 +29,7 @@ public class TimeInterval extends TInterval<TimePointL>
 
     public int fromInt()
     {
-        return Math.toIntExact( start().val() );
+        return start().valInt();
     }
 
     public long to()
@@ -41,19 +39,19 @@ public class TimeInterval extends TInterval<TimePointL>
 
     public int toInt()
     {
-        return Math.toIntExact( end().val() );
+        return end().valInt();
     }
 
     @Override
-    public TInterval<TimePointL> changeEnd( TimePointL newEnd )
+    public TimeInterval changeEnd( TimePointL newEnd )
     {
-        return new TimeInterval( from(), newEnd.val() );
+        return new TimeInterval( start(), newEnd );
     }
 
     @Override
-    public TInterval<TimePointL> changeStart( TimePointL newStart )
+    public TimeInterval changeStart( TimePointL newStart )
     {
-        return new TimeInterval( newStart.val(), to() );
+        return new TimeInterval( newStart, end() );
     }
 
     @Override
@@ -68,13 +66,13 @@ public class TimeInterval extends TInterval<TimePointL>
             return false;
         }
         TimeInterval that = (TimeInterval) o;
-        return from() == that.from();
+        return Objects.equals(start(), that.start()) && Objects.equals(end(), that.end());
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode( from() );
+        return Objects.hash( start(), end() );
     }
 
     @Override

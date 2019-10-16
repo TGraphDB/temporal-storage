@@ -1,14 +1,17 @@
 package org.act.temporalProperty.query;
 
+import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.apache.commons.lang3.tuple.Triple;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -134,14 +137,15 @@ public class TemporalValue<V>
     public PeekingIterator<Triple<TimePointL,Boolean,V>> pointEntries( TimePointL startTime )
     {
         Entry<TimePointL,Value> floor = map.floorEntry( startTime );
-        if ( floor != null && floor.getKey().compareTo( startTime ) < 0 && !floor.getValue().isUnknown )
+        if ( floor != null )
         {
-            return new AddFirstPointIterator( startTime, map.tailMap( startTime, true ).entrySet().iterator() );
-        }
-        else
-        {
-            return Iterators.peekingIterator( Iterators.transform( map.tailMap( startTime, true ).entrySet().iterator(),
-                                                                   input -> Triple.of( input.getKey(), input.getValue().isUnknown, input.getValue().value ) ) );
+            return Iterators.peekingIterator( Iterators.transform( map.tailMap( floor.getKey(), true ).entrySet().iterator(),
+                    item -> Triple.of(Objects.requireNonNull(item).getKey(), item.getValue().isUnknown, item.getValue().value)) );
+        } else {
+            return Iterators.peekingIterator(new Iterator<Triple<TimePointL, Boolean, V>>() {
+                @Override public boolean hasNext() { return false; }
+                @Override public Triple<TimePointL, Boolean, V> next() { return null; }
+            });
         }
     }
 
@@ -284,41 +288,6 @@ public class TemporalValue<V>
         private boolean isUnknown( Entry<TimePointL,Value> entry )
         {
             return entry.getValue().isUnknown;
-        }
-    }
-
-    private class AddFirstPointIterator extends AbstractIterator<Triple<TimePointL,Boolean,V>> implements PeekingIterator<Triple<TimePointL,Boolean,V>>
-    {
-
-        private final TimePointL firstTime;
-        private final Iterator<Entry<TimePointL,Value>> in;
-        private Value firstValue;
-
-        public AddFirstPointIterator( TimePointL startTime, Iterator<Entry<TimePointL,Value>> iterator )
-        {
-            this.in = iterator;
-            this.firstTime = startTime;
-            this.firstValue = map.floorEntry( startTime ).getValue();
-        }
-
-        @Override
-        protected Triple<TimePointL,Boolean,V> computeNext()
-        {
-            if ( firstValue != null )
-            {
-                Triple<TimePointL,Boolean,V> tmp = Triple.of( firstTime, firstValue.isUnknown, firstValue.value );
-                firstValue = null;
-                return tmp;
-            }
-            else if ( in.hasNext() )
-            {
-                Entry<TimePointL,Value> entry = in.next();
-                return Triple.of( entry.getKey(), entry.getValue().isUnknown, entry.getValue().value );
-            }
-            else
-            {
-                return endOfData();
-            }
         }
     }
 }
