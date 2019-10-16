@@ -6,19 +6,21 @@ import org.act.temporalProperty.util.Slice;
 
 import com.google.common.primitives.Longs;
 
+import java.util.Comparator;
+
 public class TableComparator implements UserComparator
 {
-    
-    private UserComparator userComparator;
 
-    private TableComparator( UserComparator c )
+    private Comparator<Slice> userComparator;
+
+    private TableComparator( Comparator<Slice> c )
     {
         this.userComparator = c;
     }
     
     public static synchronized TableComparator instance()
     {
-        return new TableComparator( new FixedIdComparator() );
+        return new TableComparator(Comparator.comparing(InternalKey::new));
     }
 
     public static synchronized TableComparator forAggrIndex()
@@ -29,14 +31,7 @@ public class TableComparator implements UserComparator
     @Override
     public int compare( Slice o1, Slice o2 )
     {
-        InternalKey key1 = new InternalKey( o1 );
-        InternalKey key2 = new InternalKey( o2 );
-        Slice id1 = key1.getId();
-        Slice id2 = key2.getId();
-        int result = this.userComparator.compare( id1, id2 );
-        if( 0 != result )
-            return result;
-        return Longs.compare(key1.getStartTime(), key2.getStartTime());
+        return userComparator.compare(o1, o2);
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.MemTable.TimeIntervalValueEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Map.Entry;
@@ -31,8 +32,8 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
             Entry<TimeIntervalKey,Slice> newEntry = latest.peek();
             TimeIntervalKey oldKey = getNextOldKey( oldEntry );
             TimeIntervalKey newKey = newEntry.getKey();
-            InternalKey oldInternalKey = oldKey.getKey();
-            InternalKey newInternalKey = newKey.getKey();
+            InternalKey oldInternalKey = oldKey.getId();
+            InternalKey newInternalKey = newKey.getId();
 
             int r = oldInternalKey.compareTo( newInternalKey );
             if ( oldInternalKey.getId().equals( newInternalKey.getId() ) )
@@ -127,14 +128,14 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
         }
     }
 
-    private void pollOldUntil( Slice id, long end )
+    private void pollOldUntil(EntityPropertyId id, long end )
     {
         while ( old.hasNext() )
         {
             Entry<TimeIntervalKey,Slice> oldEntry = old.peek();
             TimeIntervalKey oldKey = oldEntry.getKey();
-            InternalKey oldInternalKey = oldKey.getKey();
-            if ( !oldInternalKey.getId().equals( id ) )
+            EntityPropertyId oldInternalKey = oldKey.getId();
+            if ( !oldInternalKey.equals( id ) )
             {
                 changedNextOldKey = null;
                 return;

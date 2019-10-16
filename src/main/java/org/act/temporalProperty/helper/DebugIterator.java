@@ -140,7 +140,7 @@ public class DebugIterator extends AbstractSearchableIterator
                     return in.next();
                 }else{
                     TimeIntervalKey curT = in.peek().getKey();
-                    if(curT.getKey().compareTo( preKey.getKey() )>=0){
+                    if(curT.getStartKey().compareTo( preKey.getStartKey() )>=0){
                         throw new TPSNHException("key not inc! "+ preKey +" "+ curT);
                     }else{
                         preKey = curT;

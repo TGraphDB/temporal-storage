@@ -25,6 +25,7 @@ import org.act.temporalProperty.table.TwoLevelMergeIterator;
 import org.act.temporalProperty.table.MergeProcess;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -99,8 +100,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public Slice getPointValue( long entityId, int proId, int time )
     {
-        Slice idSlice = toSlice( proId, entityId );
-        InternalKey searchKey = new InternalKey( idSlice, time );
+        InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
         this.meta.lock.lockShared();
         try
         {
@@ -118,12 +118,12 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                     }
                     catch ( ValueUnknownException e1 )
                     {
-                        return meta.getStore( proId ).getPointValue( idSlice, time );
+                        return meta.getStore( proId ).getPointValue( searchKey );
                     }
                 }
                 else
                 {
-                    return meta.getStore( proId ).getPointValue( idSlice, time );
+                    return meta.getStore( proId ).getPointValue( searchKey );
                 }
             }
         }
@@ -150,23 +150,23 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             PropertyMetaData pMeta = meta.getProperties().get( proId );
             callback.setValueType( pMeta.getType() );
 
-            Slice idSlice = toSlice( proId, entityId );
-            SearchableIterator memIter = new EPEntryIterator( idSlice, memTable.iterator() );
+            EntityPropertyId id = new EntityPropertyId(entityId, proId);
+            SearchableIterator memIter = new EPEntryIterator( id, memTable.iterator() );
             if ( this.stableMemTable != null )
             {
-                memIter = new EPMergeIterator( idSlice, stableMemTable.iterator(), memIter );
+                memIter = new EPMergeIterator( id, stableMemTable.iterator(), memIter );
             }
-            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( idSlice, start, end );
-            SearchableIterator mergedIterator = new EPMergeIterator( idSlice, diskIter, memIter );
+            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( id, start, end );
+            SearchableIterator mergedIterator = new EPMergeIterator( id, diskIter, memIter );
 
             if(cache!=null)
             {
-                mergedIterator = new EPMergeIterator( idSlice, mergedIterator, cache.iterator() );
+                mergedIterator = new EPMergeIterator( id, mergedIterator, cache.iterator() );
             }
 
             mergedIterator = new UnknownToInvalidIterator( mergedIterator );
 
-            InternalKey searchKey = new InternalKey( idSlice, start );
+            InternalKey searchKey = new InternalKey( id, start );
             mergedIterator.seekFloor( searchKey );
             boolean firstLoop = true;
             while ( mergedIterator.hasNext() )
@@ -264,9 +264,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public boolean setProperty( TimeIntervalKey key, Slice value )
     {
-        if ( !meta.getProperties().containsKey( key.getKey().getPropertyId() ) )
+        if ( !meta.getProperties().containsKey( key.getId().getPropertyId() ) )
         {
-            createProperty( key.getKey().getPropertyId(), key.getKey().getValueType().toValueContentType() );
+            createProperty( key.getId().getPropertyId(), key.getId().getValueType().toValueContentType() );
 //            throw new TPSNHException( "no such property id: " + key.getKey().getPropertyId() + ". should create first!" );
         }
 
@@ -535,14 +535,6 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-    private static Slice toSlice( int proId, long id )
-    {
-        Slice result = new Slice( 12 );
-        result.setLong( 0, id );
-        result.setInt( 8, proId );
-        return result;
-    }
-
     /**
      * 在系统关闭时，将MemTable中的数据写入磁盘
      *
@@ -632,7 +624,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
 
     public boolean cacheOverlap( int proId, long entityId, int startTime, int endTime, MemTable cache )
     {
-        Slice id = toSlice( proId, entityId );
+        EntityPropertyId id = new EntityPropertyId( entityId, proId );
         if ( cache!=null && cache.overlap( id, startTime, endTime ) )
         {
             return true;

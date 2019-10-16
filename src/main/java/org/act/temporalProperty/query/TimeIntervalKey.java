@@ -3,48 +3,54 @@ package org.act.temporalProperty.query;
 import com.google.common.base.Objects;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-05-05.
  */
 public class TimeIntervalKey extends TimeInterval
 {
-    private InternalKey key;
-    //later the start and end may not sync with initial value.
+    private final EntityPropertyId id;
+    private final ValueType valueType;
 
     public TimeIntervalKey( InternalKey start, long end )
     {
         super( start.getStartTime(), end );
-        this.key = start;
+        this.id = start.getId();
+        valueType = start.getValueType();
     }
 
     public TimeIntervalKey( InternalKey start )
     {
         super( start.getStartTime() );
-        this.key = start;
+        this.id = start.getId();
+        valueType = start.getValueType();
     }
 
-    public TimeIntervalKey( InternalKey key, long newStart, long end )
+    public TimeIntervalKey(EntityPropertyId id, long newStart, long end )
     {
         super( newStart, end );
-        this.key = key;
+        this.id = id;
+        valueType = id.getValueType();
+    }
+
+    public EntityPropertyId getId()
+    {
+        return id;
+    }
+
+    public ValueType getValueType() {
+        return valueType;
     }
 
     public InternalKey getStartKey()
     {
-        if ( from() == key.getStartTime() )
-        {
-            return key;
-        }
-        else
-        {
-            return new InternalKey( key.getId(), Math.toIntExact( from() ), key.getValueType() );
-        }
+        return new InternalKey( id, Math.toIntExact( from() ), valueType );
     }
 
-    public InternalKey getKey()
+    public InternalKey getEndKey()
     {
-        return key;
+        return new InternalKey( id, Math.toIntExact( to() + 1 ), ValueType.UNKNOWN );
     }
 
     @Override
@@ -70,24 +76,19 @@ public class TimeIntervalKey extends TimeInterval
 
     public TimeIntervalKey changeEnd( long newEnd )
     {
-        return new TimeIntervalKey( this.key, from(), newEnd );
+        return new TimeIntervalKey( this.id, from(), newEnd );
     }
 
     public TimeIntervalKey changeStart( long newStart )
     {
-        return new TimeIntervalKey( this.key, newStart, to() );
-    }
-
-    public InternalKey getEndKey()
-    {
-        return new InternalKey( key.getId(), Math.toIntExact( to() + 1 ), ValueType.UNKNOWN );
+        return new TimeIntervalKey( this.id, newStart, to() );
     }
 
     @Override
     public String toString()
     {
-        return "TimeIntervalKey{start=" + from() + ", end=" + to() + ", pro=" + key.getPropertyId() + ", eid=" + key.getEntityId() + ", type=" +
-                key.getValueType() + '}';
+        return "TimeIntervalKey{start=" + from() + ", end=" + to() + ", pro=" + id.getPropertyId() + ", eid=" + id.getEntityId() + ", type=" +
+                valueType + '}';
     }
 
     public boolean lessThan( int time )

@@ -5,6 +5,7 @@ import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.table.TwoLevelMergeIterator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-01-24.
@@ -12,9 +13,9 @@ import org.act.temporalProperty.util.Slice;
  */
 public class EPMergeIterator extends TwoLevelMergeIterator
 {
-    private final Slice id;
+    private final EntityPropertyId id;
 
-    public EPMergeIterator(Slice idSlice, SearchableIterator old, SearchableIterator latest) {
+    public EPMergeIterator(EntityPropertyId idSlice, SearchableIterator old, SearchableIterator latest) {
         super( isEP( latest ) ? latest : new EPEntryIterator( idSlice, latest ), isEP( old ) ? old : new EPEntryIterator( idSlice, old ) );
         this.id = idSlice;
     }

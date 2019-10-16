@@ -1,7 +1,7 @@
 package org.act.temporalProperty.helper;
 
 import org.act.temporalProperty.impl.*;
-import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-01-24.
@@ -13,10 +13,10 @@ import org.act.temporalProperty.util.Slice;
  */
 public class EPAppendIterator extends SameLevelMergeIterator {
     // each sub iterator's time should be inc (e.g. 0 is the earliest time)
-    private Slice id;
+    private EntityPropertyId id;
 
-    public EPAppendIterator(Slice idSlice) {
-        this.id = idSlice;
+    public EPAppendIterator(EntityPropertyId id) {
+        this.id = id;
     }
 
     public void append(SearchableIterator iterator) {

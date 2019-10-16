@@ -55,8 +55,8 @@ public class UnSortTableTest
                 Entry<TimeIntervalKey,Slice> entry = iterator.next();
                 Assert.assertEquals( entry.getKey().from(), (long) i );
                 Assert.assertEquals( entry.getKey().to(), (long) i + 3 );
-                Assert.assertEquals( entry.getKey().getKey().getPropertyId(), (long) i );
-                Assert.assertEquals( entry.getKey().getKey().getEntityId(), (long) i );
+                Assert.assertEquals( entry.getKey().getId().getPropertyId(), (long) i );
+                Assert.assertEquals( entry.getKey().getId().getEntityId(), (long) i );
                 Assert.assertEquals( entry.getValue().getInt( 0 ), i );
             }
         }

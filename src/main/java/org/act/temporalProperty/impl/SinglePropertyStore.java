@@ -15,6 +15,7 @@ import org.act.temporalProperty.table.TableBuilder;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.FileUtils;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +77,9 @@ public class SinglePropertyStore
     /**
      * 进行时间点查询，参考{@link TemporalPropertyStore}中的说明
      */
-    public Slice getPointValue(Slice idSlice, int time )
+    public Slice getPointValue(InternalKey searchKey)
     {
-        InternalKey searchKey = new InternalKey(idSlice, time);
+        int time = searchKey.getStartTime();
         boolean hasStable = propertyMeta.hasStable();
         if(propertyMeta.hasUnstable() && ((hasStable && time>propertyMeta.stMaxTime()) || (!hasStable && time>=0))){
             Slice result = this.unPointValue( searchKey );
@@ -95,14 +96,14 @@ public class SinglePropertyStore
         }
     }
 
-    EPAppendIterator getRangeValueIter(Slice idSlice, int startTime, int endTime)
+    EPAppendIterator getRangeValueIter(EntityPropertyId id, int startTime, int endTime)
     {
         List<FileMetaData> stList = propertyMeta.overlappedStable(startTime, endTime);
         List<FileMetaData> unList = propertyMeta.unFloorTime(endTime);
         stList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
         unList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
 
-        EPAppendIterator iterator = new EPAppendIterator(idSlice);
+        EPAppendIterator iterator = new EPAppendIterator(id);
         for(FileMetaData meta : stList){
             SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );

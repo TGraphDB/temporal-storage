@@ -1,18 +1,20 @@
 
 package org.act.temporalProperty.impl;
 
-import org.act.temporalProperty.table.FixedIdComparator;
-import org.act.temporalProperty.util.Slice;
-import org.act.temporalProperty.util.SliceOutput;
-import org.act.temporalProperty.util.Slices;
+import org.act.temporalProperty.util.*;
 
 import com.google.common.base.Preconditions;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
+import java.util.Objects;
+
+import static org.act.temporalProperty.util.SizeOf.SIZE_OF_INT;
 import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
 
 /**
  * InternalKey是将一个动态属性的点/边id，属性id，某个时间以及相关控制位编码为一个键值对中的键的机制。在设计文档中，我们将一个动态属性的数据分为多个record，而InternalKey就
  * 是一个record的key
+ * 点/边id和属性id可联合确定一个时态值
  */
 public class InternalKey implements Comparable<InternalKey>
 {
@@ -24,10 +26,6 @@ public class InternalKey implements Comparable<InternalKey>
      * 点/边id
      */
     private final long entityId;
-	/**
-	 * 点/边id，和属性id的编码，用于确定一个动态属性
-	 */
-    private final Slice Id;
     /**
      * 一个动态属性某个值的起始时间
      */
@@ -43,15 +41,14 @@ public class InternalKey implements Comparable<InternalKey>
      * @param startTime
      * @param valueType
      */
-    public InternalKey(Slice Id, int startTime, ValueType valueType)
+    public InternalKey(EntityPropertyId Id, int startTime, ValueType valueType)
     {
-        Preconditions.checkNotNull(Id, "userKey is null");
+        Preconditions.checkNotNull(Id);
+        Preconditions.checkNotNull(valueType);
         Preconditions.checkArgument(startTime >= 0, "sequenceNumber is negative");
-        Preconditions.checkNotNull(valueType, "valueType is null");
 
-        this.Id = Id;
-        this.propertyId = Id.getInt(8);
-        this.entityId = Id.getLong(0);
+        this.propertyId = Id.getPropertyId();
+        this.entityId = Id.getEntityId();
         this.startTime = startTime;
         this.valueType = valueType;
     }
@@ -59,11 +56,8 @@ public class InternalKey implements Comparable<InternalKey>
     public InternalKey(int propertyId, long entityId, int startTime, ValueType valueType)
     {
         Preconditions.checkArgument(startTime >= 0, "sequenceNumber is negative");
-        Preconditions.checkNotNull(valueType, "valueType is null");
+        Preconditions.checkNotNull(valueType);
 
-        this.Id = new Slice(12);
-        Id.setLong( 0, entityId );
-        Id.setInt(8, propertyId);
         this.propertyId = propertyId;
         this.entityId = entityId;
         this.startTime = startTime;
@@ -74,7 +68,7 @@ public class InternalKey implements Comparable<InternalKey>
      * @param Id
      * @param startTime
      */
-    public InternalKey(Slice Id, int startTime)
+    public InternalKey(EntityPropertyId Id, int startTime)
     {
         this(Id, startTime, ValueType.VALUE);
     }
@@ -85,9 +79,8 @@ public class InternalKey implements Comparable<InternalKey>
      */
     public InternalKey(Slice data)
     {
-        Preconditions.checkNotNull(data, "data is null");
+        Preconditions.checkNotNull(data);
         Preconditions.checkArgument(data.length() >= SIZE_OF_LONG, "data must be at least %s bytes", SIZE_OF_LONG);
-        this.Id = getId( data );
         this.propertyId = data.getInt(8);
         this.entityId = data.getLong(0);
         long packedSequenceAndType = data.getLong( data.length() - SIZE_OF_LONG );
@@ -95,22 +88,13 @@ public class InternalKey implements Comparable<InternalKey>
         this.valueType = SequenceNumber.unpackValueType(packedSequenceAndType);
     }
 
-//    /**
-//     * 新建一个InternalKey，将相关byte数组传入，可用于解码相关信息。如起始时间，record类型，id等
-//     * @param data
-//     */
-//    public InternalKey(byte[] data)
-//    {
-//        this(Slices.wrappedBuffer(data));
-//    }
-
     /**
      * 返回唯一确定某个动态属性的标识，其中其点/边id保存在返回值的前8位，属性id保存在返回值的后4位。
      * @return 唯一确定某个动态属性的标识
      */
-    public Slice getId()
+    public EntityPropertyId getId()
     {
-        return Id;
+        return new EntityPropertyId(entityId, propertyId);
     }
 
     public int getPropertyId()
@@ -140,18 +124,6 @@ public class InternalKey implements Comparable<InternalKey>
     }
 
 
-    /**
-     * 用于将相关信息编码为一个Slice
-     * @return 编码后的Slice
-     */
-    public Slice encode()
-    {
-        Slice slice = Slices.allocate(Id.length() + SIZE_OF_LONG );
-        SliceOutput sliceOutput = slice.output();
-        sliceOutput.writeBytes(Id);
-        sliceOutput.writeLong(SequenceNumber.packTimeAndValueType( startTime, valueType ) );
-        return slice;
-    }
 
     @Override
     public boolean equals(Object o)
@@ -162,37 +134,16 @@ public class InternalKey implements Comparable<InternalKey>
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         InternalKey that = (InternalKey) o;
-
-        if (startTime != that.startTime) {
-            return false;
-        }
-        if (Id != null ? !Id.equals(that.Id) : that.Id != null) {
-            return false;
-        }
-        if (valueType != that.valueType) {
-            return false;
-        }
-
-        return true;
+        return  entityId == that.entityId &&
+                propertyId == that.propertyId &&
+                startTime == that.startTime &&
+                valueType == that.valueType;
     }
 
-    private int hash;
-
     @Override
-    public int hashCode()
-    {
-        if (hash == 0) {
-            int result = Id != null ? Id.hashCode() : 0;
-            result = 31 * result + (int) (startTime ^ (startTime >>> 32));
-            result = 31 * result + (valueType != null ? valueType.hashCode() : 0);
-            if (result == 0) {
-                result = 1;
-            }
-            hash = result;
-        }
-        return hash;
+    public int hashCode() {
+        return Objects.hash(propertyId, entityId, startTime, valueType);
     }
 
     @Override
@@ -200,22 +151,17 @@ public class InternalKey implements Comparable<InternalKey>
     {
         StringBuilder sb = new StringBuilder();
         sb.append("InternalKey");
-        sb.append("{eid=").append(getId().getLong( 0 ));
-        sb.append( " proId=" ).append( getId().getInt( 8 ) );
+        sb.append("{eid=").append(getEntityId());
+        sb.append( " proId=" ).append( getPropertyId() );
         sb.append(", time=").append(getStartTime());
         sb.append(", valueType=").append(getValueType());
         sb.append('}');
         return sb.toString();
     }
 
-    private static Slice getId(Slice data)
-    {
-        return data.slice(0, 12);
-    }
-
     @Override
     public int compareTo(InternalKey o) {
-        int result = FixedIdComparator.compareId( this.getId(), o.getId() );
+        int result = this.getId().compareTo(o.getId());
         if( 0 != result ) {
             return result;
         }else {
@@ -223,8 +169,26 @@ public class InternalKey implements Comparable<InternalKey>
         }
     }
 
-    public static int idSliceProId( Slice idSlice )
+    public Slice encode()
     {
-        return idSlice.getInt( 8 );
+        DynamicSliceOutput out = new DynamicSliceOutput(SIZE_OF_INT + 2*SIZE_OF_LONG);
+        getId().encode(out);
+        out.writeLong(SequenceNumber.packTimeAndValueType( startTime, valueType ) );
+        return out.slice();
+    }
+
+    public static InternalKey decode(SliceInput in)
+    {
+        EntityPropertyId id = EntityPropertyId.decode(in);
+        long tmp = in.readLong();
+        int time = SequenceNumber.unpackTime(tmp);
+        ValueType valueType = SequenceNumber.unpackValueType(tmp);
+        return new InternalKey(id.getPropertyId(), id.getEntityId(), time, valueType);
+    }
+
+    public static InternalKey decode(Slice in)
+    {
+        Preconditions.checkArgument(in.length() >= SIZE_OF_INT+2*SIZE_OF_LONG, "not a valid InternalKey slice, got len: %d", in.length());
+        return decode(in.input());
     }
 }
