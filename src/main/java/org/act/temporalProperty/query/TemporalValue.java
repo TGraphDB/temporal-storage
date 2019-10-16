@@ -15,6 +15,7 @@ import java.util.TreeMap;
  * Created by song on 2018-05-09.
  * 用于表示一个时态值：（时间区间，值）元组构成的序列，时间区间不相交
  * 实现时用的是（时间点，值）组成的TreeMap，注意其中时间点不含有TimePoint.NOW，但可以有TimePoint.Init
+ * TemporalValue只考虑值是否是Unknown，不考虑Invalid的问题（Invalid也算正常值）。
  */
 public class TemporalValue<V>
 {
