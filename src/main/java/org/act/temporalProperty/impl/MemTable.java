@@ -10,33 +10,29 @@ import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
-import org.act.temporalProperty.table.FixedIdComparator;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.Slices;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Triple;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
 
 /**
- * Modified MemTable, which stores time interval only.
+ * Modified MemTable, which only expose time interval API.
  */
 public class MemTable
 {
 
-    private final TreeMap<Slice,TemporalValue<Value>> table;
+    private final TreeMap<EntityPropertyId,TemporalValue<Value>> table;
 
     private long approximateMemoryUsage = 0;
 
     public MemTable()
     {
-        this.table = new TreeMap<>( new FixedIdComparator() );
+        this.table = new TreeMap<>(EntityPropertyId::compareTo);
     }
 
     public boolean isEmpty()
@@ -52,15 +48,15 @@ public class MemTable
     public void addToNow( InternalKey key, Slice value )
     {
         Preconditions.checkArgument( key.getValueType() != ValueType.UNKNOWN );
-        Slice id = key.getId();
-        add( id, new TimeInterval( key.getStartTime() ), new Value( key, value ) );
+        EntityPropertyId id = key.getId();
+        add( id, new TimeInterval( key.getStartTime() ), new Value( key.getId(), key.getValueType(), value ) );
     }
 
     public void addInterval( InternalKey key, int endTime, Slice value )
     {
         Preconditions.checkNotNull( key );
         Preconditions.checkArgument( key.getStartTime() <= endTime );
-        add( key.getId(), new TimeInterval( key.getStartTime(), endTime ), new Value( key, value ) );
+        add( key.getId(), new TimeInterval( key.getStartTime(), endTime ), new Value( key.getId(), key.getValueType(), value ) );
     }
 
     public void addInterval( TimeIntervalKey key, Slice value )
@@ -69,11 +65,11 @@ public class MemTable
         InternalKey startKey = key.getStartKey();
         Preconditions.checkArgument( startKey.getValueType() != ValueType.UNKNOWN );
         Preconditions.checkArgument( startKey.getStartTime() <= key.to() );
-        Slice id = startKey.getId();
-        add( id, key, new Value( key.getKey(), value ) );
+        EntityPropertyId id = startKey.getId();
+        add( id, key, new Value( key.getId(), key.getValueType(), value ) );
     }
 
-    private void add( Slice id, TimeInterval interval, Value value )
+    private void add(EntityPropertyId id, TimeInterval interval, Value value )
     {
         table.computeIfAbsent( id, ( i ) -> new TemporalValue<>() ).put( interval, value );
         approximateMemoryUsage += (12 + 8 + value.val.length());
@@ -90,7 +86,7 @@ public class MemTable
         Value entry = entityMap.get( new TimePointL( key.getStartTime() ) );
         if ( entry != null )
         {
-            InternalKey ansKey = entry.key;
+            EntityPropertyId ansKey = entry.key;
             if ( ansKey.getValueType() != ValueType.INVALID )
             {
                 return entry.val;
@@ -137,9 +133,9 @@ public class MemTable
     {
         Map<Integer,TemporalValue<Boolean>> result = new HashMap<>();
         StringBuilder sb = new StringBuilder();
-        for ( Entry<Slice,TemporalValue<Value>> entityEntry : table.entrySet() )
+        for ( Entry<EntityPropertyId, TemporalValue<Value>> entityEntry : table.entrySet() )
         {
-            int proId = InternalKey.idSliceProId( entityEntry.getKey() );
+            int proId = entityEntry.getKey().getPropertyId();
             result.putIfAbsent( proId, new TemporalValue<>() );
             TemporalValue<Boolean> tMap = result.get( proId );
             TemporalValue<Value> entityMap = entityEntry.getValue();
@@ -170,7 +166,7 @@ public class MemTable
         return new IntervalIterator();
     }
 
-    public boolean overlap( Slice id, int startTime, int endTime )
+    public boolean overlap( EntityPropertyId id, int startTime, int endTime )
     {
         TemporalValue<Value> entityMap = table.get( id );
         if ( entityMap == null )
@@ -186,24 +182,24 @@ public class MemTable
     public Map<Integer,MemTable> separateByProperty()
     {
         Map<Integer,MemTable> result = new TreeMap<>();
-        for ( Entry<Slice,TemporalValue<Value>> e : table.entrySet() )
+        for ( Entry<EntityPropertyId, TemporalValue<Value>> e : table.entrySet() )
         {
-            int proId = InternalKey.idSliceProId( e.getKey() );
+            int proId = e.getKey().getPropertyId();
             result.computeIfAbsent( proId, i -> new MemTable() ).addEntry( e.getKey(), e.getValue() );
         }
         return result;
     }
 
-    private void addEntry( Slice key, TemporalValue<Value> value )
+    private void addEntry( EntityPropertyId key, TemporalValue<Value> value )
     {
         table.put( key, value );
     }
 
     public boolean overlap( int proId, int startTime, int endTime )
     {
-        for ( Entry<Slice,TemporalValue<Value>> entityEntry : table.entrySet() )
+        for ( Entry<EntityPropertyId,TemporalValue<Value>> entityEntry : table.entrySet() )
         {
-            if ( InternalKey.idSliceProId( entityEntry.getKey() ) == proId )
+            if ( entityEntry.getKey().getPropertyId() == proId )
             {
                 TemporalValue<Value> entityMap = entityEntry.getValue();
                 if ( entityMap.overlap( new TimePointL( startTime ), new TimePointL( endTime ) ) )
@@ -219,9 +215,9 @@ public class MemTable
     {
         TimePointL start = new TimePointL( timeMin );
         TimePointL end = new TimePointL( timeMax );
-        for ( Entry<Slice,TemporalValue<Value>> entityEntry : table.entrySet() )
+        for ( Entry<EntityPropertyId, TemporalValue<Value>> entityEntry : table.entrySet() )
         {
-            if ( proIds.contains( InternalKey.idSliceProId( entityEntry.getKey() ) ) )
+            if ( proIds.contains( entityEntry.getKey().getPropertyId() ) )
             {
                 TemporalValue<Value> entityMap = entityEntry.getValue();
                 Iterator<Entry<TimeInterval,Value>> it = entityMap.intervalEntries( start, end );
@@ -236,43 +232,41 @@ public class MemTable
 
     private class Value
     {
-        InternalKey key;
+        EntityPropertyId key;
+        ValueType valueType;
         Slice val;
 
-        public Value( InternalKey key, Slice val )
+        public Value(EntityPropertyId key, ValueType valueType, Slice val )
         {
             this.key = key;
+            this.valueType = valueType;
             this.val = val;
         }
     }
 
+    /**
+     *
+     */
     public static class MemTableIterator extends AbstractSearchableIterator
     {
-        private final TreeMap<Slice,TemporalValue<Value>> table;
-        private PeekingIterator<Entry<Slice,TemporalValue<Value>>> iterator;
-        private PeekingIterator<Triple<TimePointL,Boolean,Value>> entryIter;
-        private boolean seekHasNext = true;
+        private final TreeMap<EntityPropertyId, TemporalValue<Value>> table;
+        private PeekingIterator<Entry<EntityPropertyId, TemporalValue<Value>>> tPropIter;
+        private PeekingIterator<Triple<TimePointL,Boolean,Value>> tValIter;
         private Triple<TimePointL,Boolean,Value> lastEntry = null;
-        private TemporalValue<Value> tpValue;
 
-        public MemTableIterator( TreeMap<Slice,TemporalValue<Value>> table )
+        public MemTableIterator(TreeMap<EntityPropertyId, TemporalValue<Value>> table )
         {
             this.table = table;
-            this.iterator = Iterators.peekingIterator( table.entrySet().iterator() );
+            this.tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
         }
 
         @Override
         protected InternalEntry computeNext()
         {
-            if ( !seekHasNext )
+            this.tValIter = getValidEntryIterator();
+            if ( tValIter != null )
             {
-                return endOfData();
-            }
-
-            entryIter = getValidEntryIterator();
-            if ( entryIter != null )
-            {
-                return getNextEntry( entryIter );
+                return getNextEntry(tValIter);
             }
             else
             {
@@ -307,44 +301,43 @@ public class MemTable
 
         private PeekingIterator<Triple<TimePointL,Boolean,Value>> getValidEntryIterator()
         {
-            while ( entryIter == null || !entryIter.hasNext() )
+            while ( tValIter == null || !tValIter.hasNext() )
             {
-                if ( iterator.hasNext() )
+                if ( tPropIter.hasNext() )
                 {
-                    tpValue = iterator.next().getValue();
-                    entryIter = tpValue.pointEntries();
+                    TemporalValue<Value> tpValue = tPropIter.next().getValue();
+                    tValIter = tpValue.pointEntries();
                 }
                 else
                 {
                     return null;
                 }
             }
-            return entryIter;
+            return tValIter;
         }
 
         @Override
         public void seekToFirst()
         {
             super.resetState();
-            iterator = Iterators.peekingIterator( table.entrySet().iterator() );
-            entryIter = null;
+            tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
+            tValIter = null;
         }
 
         @Override
         public boolean seekFloor(InternalKey targetKey )
         {
-            iterator = Iterators.peekingIterator( table.entrySet().iterator() );
-            while ( iterator.hasNext() )
+            tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
+            while ( tPropIter.hasNext() )
             {
-                Entry<Slice,TemporalValue<Value>> entry = iterator.next();
+                Entry<EntityPropertyId, TemporalValue<Value>> entry = tPropIter.next();
                 if ( entry.getKey().equals( targetKey.getId() ) )
                 {
                     TemporalValue<Value> entityMap = entry.getValue();
-                    entryIter = entityMap.pointEntries( new TimePointL( targetKey.getStartTime() ) );
+                    tValIter = entityMap.pointEntries( new TimePointL( targetKey.getStartTime() ) );
                     return false;
                 }
             }
-            seekHasNext = false;
             return super.seekFloor(targetKey);
         }
 
@@ -357,7 +350,7 @@ public class MemTable
     private class IntervalIterator extends AbstractIterator<Entry<TimeIntervalKey,Slice>> implements PeekingIterator<Entry<TimeIntervalKey,Slice>>
     {
 
-        private PeekingIterator<Entry<Slice,TemporalValue<Value>>> iterator;
+        private PeekingIterator<Entry<EntityPropertyId, TemporalValue<Value>>> iterator;
         private PeekingIterator<Entry<TimeInterval,Value>> entryIter;
 
         private IntervalIterator()
@@ -381,7 +374,7 @@ public class MemTable
             }
             Entry<TimeInterval,Value> entry = entryIter.next();
             InternalKey origin = entry.getValue().key;
-            TimeIntervalKey intervalKey = new TimeIntervalKey( origin, entry.getKey().from(), entry.getKey().to() );
+            TimeIntervalKey intervalKey = new TimeIntervalKey( origin.getId(), entry.getKey().from(), entry.getKey().to() );
             return new TimeIntervalValueEntry( intervalKey, entry.getValue().val );
         }
     }
