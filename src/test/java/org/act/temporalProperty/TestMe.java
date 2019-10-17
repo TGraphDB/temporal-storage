@@ -1,10 +1,11 @@
 package org.act.temporalProperty;
 
-import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.Slices;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,13 +32,13 @@ public class TestMe {
 
     private void set(TemporalPropertyStore store, long entityId, int propId, int timeStart, int timeEnd) {
         Slice valSlice = Slices.allocate(0);
-        store.setProperty(new TimeIntervalKey(new InternalKey(propId, entityId, timeStart, ValueType.INVALID), timeEnd), valSlice);
+        store.setProperty(new TimeIntervalKey(new EntityPropertyId(entityId, propId), new TimePointL(timeStart), new TimePointL(timeEnd), ValueType.INVALID), valSlice);
     }
 
     private void set(TemporalPropertyStore store, long entityId, int propId, int timeStart, int timeEnd, int value) {
         Slice valSlice = Slices.allocate(8);
         valSlice.output().writeInt(value);
-        store.setProperty(new TimeIntervalKey(new InternalKey(propId, entityId, timeStart, ValueType.INT), timeEnd), valSlice);
+        store.setProperty(new TimeIntervalKey(new EntityPropertyId(entityId, propId), new TimePointL(timeStart), new TimePointL(timeEnd), ValueType.INT), valSlice);
     }
 
     @Test
@@ -51,7 +52,7 @@ public class TestMe {
     }
 
     private void get(TemporalPropertyStore store, long entityId, int propId, int time) {
-        Slice val = store.getPointValue(entityId, propId, time);
+        Slice val = store.getPointValue(entityId, propId, new TimePointL(time));
         System.out.println(val==null ? null : (val.length()==0 ? '-' : val.input().readInt()));
     }
 }

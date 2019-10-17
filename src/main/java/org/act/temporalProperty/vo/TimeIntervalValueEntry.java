@@ -1,7 +1,5 @@
 package org.act.temporalProperty.vo;
 
-import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.MemTable;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
@@ -39,23 +37,18 @@ public class TimeIntervalValueEntry implements Map.Entry<TimeIntervalKey, Slice>
 
     public static TimeIntervalValueEntry decode(SliceInput in)
     {
-        long endTime = in.readLong();
-        int len = in.readInt();
-        InternalKey start = new InternalKey( in.readSlice( len ) );
-        len = in.readInt();
-        Slice value = in.readSlice( len );
-        return new TimeIntervalValueEntry( new TimeIntervalKey( start, endTime ), value );
+        TimeIntervalKey key = TimeIntervalKey.decode(in);
+        int len = in.readByte();
+        Slice value = in.readBytes(len);
+        return new TimeIntervalValueEntry( key, value );
     }
 
-    public static Slice encode(TimeIntervalKey key, Slice value)
+    public Slice encode()
     {
         DynamicSliceOutput out = new DynamicSliceOutput( 64 );
-        out.writeLong( key.to() );
-        Slice start = key.getStartKey().encode();
-        out.writeInt( start.length() );
-        out.writeBytes( start );
-        out.writeInt( value.length() );
-        out.writeBytes( value );
+        key.encode(out);
+        out.writeByte(val.length());
+        out.writeBytes( val );
         return out.slice();
     }
 }

@@ -10,7 +10,6 @@ import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
-import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.Slices;
 import org.act.temporalProperty.vo.EntityPropertyId;
@@ -93,23 +92,6 @@ public class MemTable
         }
     }
 
-    public void merge( MemTable toMerge )
-    {
-        this.table.putAll( toMerge.table );
-    }
-
-    public static Slice encode(TimeIntervalKey key, Slice value)
-    {
-        DynamicSliceOutput out = new DynamicSliceOutput( 64 );
-        out.writeLong( key.to() );
-        Slice start = key.getStartKey().encode();
-        out.writeInt( start.length() );
-        out.writeBytes( start );
-        out.writeInt( value.length() );
-        out.writeBytes( value );
-        return out.slice();
-    }
-
     public String toString()
     {
         Map<Integer,TemporalValue<Boolean>> result = new HashMap<>();
@@ -147,7 +129,7 @@ public class MemTable
         return new IntervalIterator();
     }
 
-    public boolean overlap( EntityPropertyId id, int startTime, int endTime )
+    public boolean overlap( EntityPropertyId id, TimePointL startTime, TimePointL endTime )
     {
         TemporalValue<Value> entityMap = table.get( id );
         if ( entityMap == null )
@@ -156,7 +138,7 @@ public class MemTable
         }
         else
         {
-            return entityMap.overlap( new TimePointL( startTime ), new TimePointL( endTime ) );
+            return entityMap.overlap( startTime, endTime );
         }
     }
 
@@ -176,14 +158,14 @@ public class MemTable
         table.put( key, value );
     }
 
-    public boolean overlap( int proId, int startTime, int endTime )
+    public boolean overlap(int proId, TimePointL startTime, TimePointL endTime )
     {
         for ( Entry<EntityPropertyId,TemporalValue<Value>> entityEntry : table.entrySet() )
         {
             if ( entityEntry.getKey().getPropertyId() == proId )
             {
                 TemporalValue<Value> entityMap = entityEntry.getValue();
-                if ( entityMap.overlap( new TimePointL( startTime ), new TimePointL( endTime ) ) )
+                if ( entityMap.overlap( startTime, endTime ) )
                 {
                     return true;
                 }
@@ -192,10 +174,8 @@ public class MemTable
         return false;
     }
 
-    public void coverTime( TemporalValue<Boolean> tMap, Set<Integer> proIds, int timeMin, int timeMax )
+    public void coverTime( TemporalValue<Boolean> tMap, Set<Integer> proIds, TimePointL start, TimePointL end )
     {
-        TimePointL start = new TimePointL( timeMin );
-        TimePointL end = new TimePointL( timeMax );
         for ( Entry<EntityPropertyId, TemporalValue<Value>> entityEntry : table.entrySet() )
         {
             if ( proIds.contains( entityEntry.getKey().getPropertyId() ) )
@@ -319,7 +299,7 @@ public class MemTable
             Entry<TimeInterval,Value> entry = tvIntIter.next();
             TimeInterval tInt = entry.getKey();
             Value value = entry.getValue();
-            TimeIntervalKey intervalKey = new TimeIntervalKey( value.id, tInt.from(), tInt.to(), value.valueType);
+            TimeIntervalKey intervalKey = new TimeIntervalKey( value.id, tInt.start(), tInt.end(), value.valueType);
             return new TimeIntervalValueEntry( intervalKey, value.val );
         }
     }

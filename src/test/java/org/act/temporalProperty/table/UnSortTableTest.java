@@ -1,18 +1,18 @@
 package org.act.temporalProperty.table;
 
-import java.io.File;
-import java.util.Map.Entry;
-
 import com.google.common.collect.PeekingIterator;
 import junit.framework.Assert;
-
-import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.MemTable;
 import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Map.Entry;
 
 public class UnSortTableTest
 {
@@ -33,7 +33,7 @@ public class UnSortTableTest
             table = new UnSortedTable( file );
             for( int i = 0; i<DATA_SIZE; i++ )
             {
-                TimeIntervalKey key = new TimeIntervalKey( new InternalKey( i, i, i, ValueType.VALUE ), i + 3 );
+                TimeIntervalKey key = new TimeIntervalKey( new EntityPropertyId(i, i), new TimePointL(i), new TimePointL(i + 3), ValueType.VALUE );
                 Slice value = new Slice(4);
                 value.setInt( 0, i );
                 table.add( key, value );

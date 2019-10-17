@@ -3,6 +3,8 @@ package org.act.temporalProperty.query;
 import com.google.common.base.Objects;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.util.SliceInput;
+import org.act.temporalProperty.util.SliceOutput;
 import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
@@ -13,21 +15,7 @@ public class TimeIntervalKey extends TimeInterval
     private final EntityPropertyId id;
     private final ValueType valueType;
 
-    public TimeIntervalKey( InternalKey start, long end )
-    {
-        super( start.getStartTime(), end );
-        this.id = start.getId();
-        valueType = start.getValueType();
-    }
-
-    public TimeIntervalKey( InternalKey start )
-    {
-        super( start.getStartTime() );
-        this.id = start.getId();
-        valueType = start.getValueType();
-    }
-
-    public TimeIntervalKey(EntityPropertyId id, long newStart, long end, ValueType valueType)
+    public TimeIntervalKey(EntityPropertyId id, TimePointL newStart, TimePointL end, ValueType valueType)
     {
         super( newStart, end );
         this.id = id;
@@ -45,12 +33,12 @@ public class TimeIntervalKey extends TimeInterval
 
     public InternalKey getStartKey()
     {
-        return new InternalKey( id, Math.toIntExact( from() ), valueType );
+        return new InternalKey( id, start(), valueType );
     }
 
     public InternalKey getEndKey()
     {
-        return new InternalKey( id, Math.toIntExact( to() + 1 ), ValueType.UNKNOWN );
+        return new InternalKey( id, end().next(), ValueType.UNKNOWN );
     }
 
     @Override
@@ -73,17 +61,16 @@ public class TimeIntervalKey extends TimeInterval
     {
         return Objects.hashCode( from() );
     }
-
-    public TimeIntervalKey changeEnd( long newEnd )
+    @Override
+    public TimeIntervalKey changeEnd( TimePointL newEnd )
     {
-        return new TimeIntervalKey( this.id, from(), newEnd, valueType);
+        return new TimeIntervalKey( this.id, start(), newEnd, valueType);
     }
-
-    public TimeIntervalKey changeStart( long newStart )
+    @Override
+    public TimeIntervalKey changeStart(TimePointL newStart )
     {
-        return new TimeIntervalKey( this.id, newStart, to(), valueType );
+        return new TimeIntervalKey( this.id, newStart, end(), valueType );
     }
-
     @Override
     public String toString()
     {
@@ -114,5 +101,21 @@ public class TimeIntervalKey extends TimeInterval
     public boolean between( int min, int maxTime )
     {
         return this.between( new TimePointL( min ), new TimePointL( maxTime ) );
+    }
+
+    public void encode(SliceOutput out) {
+        id.encode(out);
+        start().encode(out);
+        end().encode(out);
+        out.writeInt(valueType.getPersistentId());
+    }
+
+
+    public static TimeIntervalKey decode(SliceInput in) {
+        EntityPropertyId id = EntityPropertyId.decode(in);
+        TimePointL start = TimePointL.decode(in);
+        TimePointL end = TimePointL.decode(in);
+        int valType = in.readInt();
+        return new TimeIntervalKey(id, start, end, ValueType.getValueTypeByPersistentId(valType));
     }
 }

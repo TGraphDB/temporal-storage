@@ -3,9 +3,7 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.index.aggregation.TimeIntervalEntry;
-import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.Slice;
 
@@ -34,7 +32,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     }
 
     @Override
-    public void setValueType(ValueContentType valueType) {
+    public void setValueType(String valueType) {
         // do nothing
     }
 

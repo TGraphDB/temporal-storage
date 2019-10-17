@@ -1,23 +1,28 @@
 package org.act.temporalProperty.query;
 
 
+import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.util.SliceInput;
+import org.act.temporalProperty.util.SliceOutput;
+import org.act.temporalProperty.util.Slices;
+
+import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
+
 /**
  * Created by song on 2018-05-09.
  */
 public class TimePointL implements TPoint<TimePointL>
 {
-    private static final long INIT = -2;
-    private static final long NOW = Long.MAX_VALUE;
-    public static final TimePointL Now = new TimePointL(){
-        @Override public long val() { return NOW; }
+    private static final long INIT_VAL_LONG = -2L;
+    private static final long NOW_VAL_LONG = Long.MAX_VALUE;
+    public static final TimePointL Now = new TimePointL(true){
         @Override public boolean isNow() { return true; }
         @Override public boolean isInit(){ return false; }
         @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.NOW"); }
         @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.NOW"); }
         @Override public String toString() { return "NOW"; }
     };
-    public static final TimePointL Init = new TimePointL(){
-        @Override public long val() { return INIT; }
+    public static final TimePointL Init = new TimePointL(false){
         @Override public boolean isNow() { return false; }
         @Override public boolean isInit(){ return true; }
         @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.INIT"); }
@@ -25,15 +30,20 @@ public class TimePointL implements TPoint<TimePointL>
         @Override public String toString() { return "INIT"; }
     };
 
-    private long time;
+    protected long time;
 
     public TimePointL( long time )
     {
         this.time = time;
-        assert (time>=0 && time!=NOW && time!=NOW-1): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW-2));
+        assert (time>=0 && time<NOW_VAL_LONG-1): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW_VAL_LONG -2));
     }
 
-    private TimePointL(){}
+    // this constructor is used for now and init only.
+    protected TimePointL( boolean isNow )
+    {
+        if(isNow) this.time = NOW_VAL_LONG;
+        else this.time = INIT_VAL_LONG;
+    }
 
     @Override
     public TimePointL pre()
@@ -79,5 +89,26 @@ public class TimePointL implements TPoint<TimePointL>
     public String toString()
     {
         return String.valueOf( val() );
+    }
+
+    public Slice encode(){
+        Slice raw = Slices.allocate(SIZE_OF_LONG);
+        encode(raw.output());
+        return raw;
+    }
+
+    public static TimePointL decode(Slice in) {
+        return decode(in.input());
+    }
+
+    public static TimePointL decode(SliceInput in) {
+        long t = in.readLong();
+        if(t==NOW_VAL_LONG) return Now;
+        else if(t==INIT_VAL_LONG) return Init;
+        else return new TimePointL(t);
+    }
+
+    public void encode(SliceOutput out) {
+        out.writeLong(time);
     }
 }

@@ -1,6 +1,7 @@
 package org.act.temporalProperty.impl;
 
 import com.google.common.base.Function;
+import org.act.temporalProperty.query.TimePointL;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -10,10 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class FileMetaData
 {
-    public static final Function<FileMetaData, Integer> GET_LARGEST_USER_KEY = new Function<FileMetaData, Integer>()
+    public static final Function<FileMetaData, TimePointL> GET_LARGEST_USER_KEY = new Function<FileMetaData, TimePointL>()
     {
         @Override
-        public Integer apply(FileMetaData fileMetaData)
+        public TimePointL apply(FileMetaData fileMetaData)
         {
             return fileMetaData.getLargest();
         }
@@ -32,12 +33,12 @@ public class FileMetaData
     /**
      * 负责存储有效时间的起始时间
      */
-    private final int smallest;
+    private final TimePointL smallest;
 
     /**
      * 负责存储有效时间的结束席间
      */
-    private final int largest;
+    private final TimePointL largest;
     // todo this mutable state should be moved elsewhere
     private final AtomicInteger allowedSeeks = new AtomicInteger(1 << 30);
 
@@ -48,7 +49,7 @@ public class FileMetaData
      * @param smallest 有效时间的起始时间
      * @param largest 有效时间的结束时间
      */
-    public FileMetaData(long number, long fileSize, int smallest, int largest)
+    public FileMetaData(long number, long fileSize, TimePointL smallest, TimePointL largest)
     {
         this.number = number;
         this.fileSize = fileSize;
@@ -66,12 +67,12 @@ public class FileMetaData
         return number;
     }
 
-    public int getSmallest()
+    public TimePointL getSmallest()
     {
         return smallest;
     }
 
-    public int getLargest()
+    public TimePointL getLargest()
     {
         return largest;
     }

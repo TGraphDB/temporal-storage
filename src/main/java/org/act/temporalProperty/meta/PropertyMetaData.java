@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.FileBuffer;
 import org.act.temporalProperty.impl.FileMetaData;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.*;
@@ -15,8 +16,8 @@ import java.util.Map.Entry;
 public class PropertyMetaData {
     private final int propertyId;
     private final ValueContentType type;
-    private final TreeMap<Integer, FileMetaData> unstableByTime = new TreeMap<>();
-    private final TreeMap<Integer, FileMetaData> stableByTime = new TreeMap<>();
+    private final TreeMap<TimePointL, FileMetaData> unstableByTime = new TreeMap<>();
+    private final TreeMap<TimePointL, FileMetaData> stableByTime = new TreeMap<>();
     //所有的StableFile的元信息
     private final TreeMap<Long, FileMetaData> stableFiles = new TreeMap<>();
     //所有StableFile对应的Buffer
@@ -67,7 +68,7 @@ public class PropertyMetaData {
     }
 
     public FileMetaData latestStableMeta(){
-        Entry<Integer, FileMetaData> entry = stableByTime.lastEntry();
+        Entry<TimePointL, FileMetaData> entry = stableByTime.lastEntry();
         if(entry!=null) return entry.getValue();
         else return null;
     }
@@ -103,8 +104,8 @@ public class PropertyMetaData {
     }
 
     // returned meta's time is ASC order
-    public List<FileMetaData> overlappedStable(int startTime, int endTime) {
-        Integer start = stableByTime.floorKey(startTime);
+    public List<FileMetaData> overlappedStable(TimePointL startTime, TimePointL endTime) {
+        TimePointL start = stableByTime.floorKey(startTime);
         if(start!=null) {
             startTime = start;
         }
@@ -114,13 +115,14 @@ public class PropertyMetaData {
     /**
      * Return unstable metas whose corresponding file needed to be searched when query value at given `time`
      * the returned meta list, time is ASC order
+     * @param time
      */
-    public List<FileMetaData> unFloorTime(int time) {
+    public List<FileMetaData> unFloorTime(TimePointL time) {
         return new ArrayList<>(unstableByTime.headMap(time, true).values());
     }
 
-    public FileMetaData unFloorTimeOneMeta(int time) {
-        Integer start = unstableByTime.floorKey(time);
+    public FileMetaData unFloorTimeOneMeta(TimePointL time) {
+        TimePointL start = unstableByTime.floorKey(time);
         if(start==null) {
             return null;
         }else{
@@ -128,8 +130,8 @@ public class PropertyMetaData {
         }
     }
 
-    public FileMetaData stFloorTimeOneMeta(int time) {
-        Integer start = stableByTime.floorKey(time);
+    public FileMetaData stFloorTimeOneMeta(TimePointL time) {
+        TimePointL start = stableByTime.floorKey(time);
         if(start==null) {
             return null;
         }else{
@@ -137,7 +139,7 @@ public class PropertyMetaData {
         }
     }
 
-    public int diskFileMaxTime(){
+    public TimePointL diskFileMaxTime(){
         if(hasUnstable()) return unMaxTime();
         else if(hasStable()) return stMaxTime();
         else throw new TPSNHException("no disk file!");
@@ -147,7 +149,7 @@ public class PropertyMetaData {
      * 返回StableLevel存储的数据的最晚有效时间
      * @return -1 if no stable file available.
      */
-    public int stMaxTime(){
+    public TimePointL stMaxTime(){
         if(hasStable()){
             return stableByTime.lastEntry().getValue().getLargest();
         }else{
@@ -155,7 +157,7 @@ public class PropertyMetaData {
         }
     }
 
-    public int unMaxTime() {
+    public TimePointL unMaxTime() {
         if(hasUnstable()){
             return unstableByTime.lastEntry().getValue().getLargest();
         }else{
@@ -167,10 +169,9 @@ public class PropertyMetaData {
      * @param time is usually larger than stMaxTime.
      * @return the stable meta which contains the time.
      */
-    public FileMetaData getStContainsTime(int time) {
+    public FileMetaData getStContainsTime(TimePointL time) {
         assert hasStable():"no stable file!";
-        assert 0<=time:"time should >0 !";
-        Integer start = stableByTime.floorKey(time);
+        TimePointL start = stableByTime.floorKey(time);
         Preconditions.checkNotNull(start, new TPSNHException("should have 0<=time but get null"));
         return stableByTime.get(start);
     }
@@ -207,12 +208,12 @@ public class PropertyMetaData {
                 '}';
     }
 
-    public Collection<FileBuffer> overlappedBuffers( int startTime, int endTime )
+    public Collection<FileBuffer> overlappedBuffers(TimePointL startTime, TimePointL endTime )
     {
         List<FileBuffer> result = new ArrayList<>();
         if(hasStable())
         {
-            for(Entry<Integer, FileMetaData> entry : stableByTime.tailMap(startTime, true).entrySet())
+            for(Entry<TimePointL, FileMetaData> entry : stableByTime.tailMap(startTime, true).entrySet())
             {
                 FileBuffer buffer = getStableBuffers( entry.getValue().getNumber() );
                 if(buffer!=null) result.add(buffer);
@@ -220,7 +221,7 @@ public class PropertyMetaData {
         }
         if(hasUnstable())
         {
-            for(Entry<Integer, FileMetaData> entry : unstableByTime.headMap(endTime, true).entrySet())
+            for(Entry<TimePointL, FileMetaData> entry : unstableByTime.headMap(endTime, true).entrySet())
             {
                 FileBuffer buffer = getUnstableBuffers( entry.getValue().getNumber() );
                 if(buffer!=null) result.add(buffer);

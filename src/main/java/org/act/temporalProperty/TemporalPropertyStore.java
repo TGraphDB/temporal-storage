@@ -7,6 +7,7 @@ import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
@@ -28,8 +29,6 @@ public interface TemporalPropertyStore
 
 	int Version = 1;
 
-	int INIT = -1;
-	long NOW = Long.MAX_VALUE;
 	/**
 	 * 对某个时态属性进行时间点查询，返回查询的 结果
 	 * @param entityId 时态属性所属的点/边的id
@@ -37,7 +36,7 @@ public interface TemporalPropertyStore
 	 * @param time 需要查询的时间
 	 * @return @{Slice} 查询的结果
 	 */
-    Slice getPointValue( long entityId, int proId, int time );
+    Slice getPointValue( long entityId, int proId, TimePointL time );
     
     /**
 	 * 对某个时态属性进行时间段查询，返回查询的 结果
@@ -48,10 +47,10 @@ public interface TemporalPropertyStore
 	 * @param callback 时间段查询所采用的聚集类型
 	 * @return 用户在callback的onReturn函数中返回的结果，若callback为Aggregation的MIN或MAX函数，则结果集, get(MinMax.MIN)得到最小值, get(MinMax.MAX)得最大值. 若index中只定义了MIN,查询MAX为null
 	 */
-    Object getRangeValue( long id, int proId, int startTime, int endTime, InternalEntryRangeQueryCallBack callback );
+    Object getRangeValue(long id, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback );
 
     // query together with cache data
-	Object getRangeValue( long entityId, int proId, int start, int end, InternalEntryRangeQueryCallBack callBack, MemTable cache );
+	Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callBack, MemTable cache );
 
 	ValueContentType getPropertyValueType( int propertyId );
 
@@ -87,7 +86,7 @@ public interface TemporalPropertyStore
 	/**
 	 * Aggregation查询是getRangeValue的一种alias而已.
 	 */
-	Object aggregate(long entityId, int proId, int startTime, int endTime, InternalEntryRangeQueryCallBack callback);
+	Object aggregate(long entityId, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback);
 
 	/**
 	 * 创建Aggregation索引(可加速[在某段时间上对Value分组后统计各组时长]的查询操作).
@@ -101,7 +100,7 @@ public interface TemporalPropertyStore
 	 * @param timeUnit      can be Calendar.SECOND|HOUR|DAY|WEEK|SEMI_MONTH|MONTH|YEAR, see {@link org.act.temporalProperty.index.aggregation.AggregationIndexMeta#calcInterval(int, int, int, int)} for more detail.
 	 * @return index ID
 	 */
-    long createAggrDurationIndex(int propertyId, int start, int end, ValueGroupingMap valueGrouping, int every, int timeUnit);
+    long createAggrDurationIndex(int propertyId, TimePointL start, TimePointL end, ValueGroupingMap valueGrouping, int every, int timeUnit);
 
 	/**
 	 * 创建Aggregation索引(可加速[在某段时间上查找Value最大或最小值]的查询操作).
@@ -113,7 +112,7 @@ public interface TemporalPropertyStore
 	 * @param type       索引类型: 只索引最大值; 只索引最小值; 同时索引最大及最小值.
 	 * @return index ID
 	 */
-	long createAggrMinMaxIndex(int propertyId, int start, int end, int every, int timeUnit, IndexType type);
+	long createAggrMinMaxIndex(int propertyId, TimePointL start, TimePointL end, int every, int timeUnit, IndexType type);
 
 
 	/**
@@ -127,17 +126,17 @@ public interface TemporalPropertyStore
 	 * @param endTime   结束时间
 	 * @return CallBack定义的返回
 	 */
-	AggregationIndexQueryResult getByIndex( long indexId, long entityId, int proId, int startTime, int endTime );
+	AggregationIndexQueryResult getByIndex(long indexId, long entityId, int proId, TimePointL startTime, TimePointL endTime );
 
 	// query together with cache data
-	AggregationIndexQueryResult getByIndex( long indexId, long entityId, int proId, int startTime, int endTime, MemTable cache );
+	AggregationIndexQueryResult getByIndex(long indexId, long entityId, int proId, TimePointL startTime, TimePointL endTime, MemTable cache );
 	/**
 	 * 创建一个值索引
 	 * @param start  索引开始时间
 	 * @param end    索引结束时间
 	 * @param proIds 索引的属性id列表
 	 */
-	long createValueIndex(int start, int end, List<Integer> proIds);
+	long createValueIndex(TimePointL start, TimePointL end, List<Integer> proIds);
 
 	/**
 	 * get entity id which satisfy query condition

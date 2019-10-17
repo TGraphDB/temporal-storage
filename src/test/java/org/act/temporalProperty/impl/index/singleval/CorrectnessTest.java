@@ -7,7 +7,6 @@ import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.PropertyValueInterval;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
-import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.DataFileImporter;
 import org.act.temporalProperty.util.Slice;
@@ -287,7 +286,7 @@ public class CorrectnessTest {
     private class CustomCallBack implements InternalEntryRangeQueryCallBack {
         private long entityId;
         public CustomCallBack(long entityId){this.entityId=entityId;}
-        public void setValueType(ValueContentType valueType) {}
+        public void setValueType(String valueType) {}
         public void onNewEntry(InternalEntry entry) {}
         public Object onReturn() {return null;}
     }

@@ -3,7 +3,6 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.Slice;
 
@@ -51,7 +50,7 @@ public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRang
     }
 
     @Override
-    public void setValueType(ValueContentType valueType) {
+    public void setValueType(String valueType) {
         // do nothing.
     }
 

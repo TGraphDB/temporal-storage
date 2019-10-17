@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.index.IndexValueType;
-import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
 
@@ -24,7 +23,7 @@ public interface AggregationQuery extends TimeRangeQuery
         private Slice min;
 
         @Override
-        public void setValueType( ValueContentType valueType )
+        public void setValueType(String valueType )
         {
             cp = ValueGroupingMap.getComparator( IndexValueType.convertFrom( valueType ) );
         }
@@ -53,7 +52,7 @@ public interface AggregationQuery extends TimeRangeQuery
         private Slice max;
 
         @Override
-        public void setValueType( ValueContentType valueType )
+        public void setValueType(String valueType )
         {
             cp = ValueGroupingMap.getComparator( IndexValueType.convertFrom( valueType ) );
         }
@@ -85,7 +84,7 @@ public interface AggregationQuery extends TimeRangeQuery
         private Slice max;
 
         @Override
-        public void setValueType( ValueContentType valueType )
+        public void setValueType(String valueType )
         {
             cp = ValueGroupingMap.getComparator( IndexValueType.convertFrom( valueType ) );
         }

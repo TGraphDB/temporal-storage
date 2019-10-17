@@ -3,6 +3,7 @@ package org.act.temporalProperty.impl;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSNHException;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.Slice;
@@ -48,7 +49,7 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
                     else
                     {
                         old.next();
-                        return changeEndOldEntry( oldKey, oldEntry.getValue(), newKey.from() - 1 );
+                        return changeEndOldEntry( oldKey, oldEntry.getValue(), newKey.start().pre() );
                     }
                 }
                 else
@@ -97,7 +98,7 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
         }
     }
 
-    private Entry<TimeIntervalKey,Slice> changeEndOldEntry( TimeIntervalKey oldKey, Slice value, long newEnd )
+    private Entry<TimeIntervalKey,Slice> changeEndOldEntry(TimeIntervalKey oldKey, Slice value, TimePointL newEnd )
     {
         return mayChangedOldEntry( oldKey.changeEnd( newEnd ), value );
     }

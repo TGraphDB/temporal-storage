@@ -118,11 +118,6 @@ public class TemporalValue<V>
         return new IntervalIterator();
     }
 
-    //    public PeekingIterator<Entry<TimeInterval,V>> intervalEntries( TimePointL start )
-    //    {
-    //        return null;
-    //    }
-
     public PeekingIterator<Entry<TimeInterval,V>> intervalEntries( TimePointL start, TimePointL end )
     {
         return new AddIntervalIterator( start, end );

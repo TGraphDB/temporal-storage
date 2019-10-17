@@ -58,7 +58,7 @@ public class UnSortedTable implements Closeable
         DynamicSliceOutput out = new DynamicSliceOutput(64);
         boolean isCheckPoint = false;
         out.writeBoolean(isCheckPoint);
-        Slice entry = TimeIntervalValueEntry.encode( key, value );
+        Slice entry = new TimeIntervalValueEntry( key, value ).encode();
         out.writeInt( entry.length() );
         out.writeBytes( entry );
         this.log.addRecord(out.slice(), false);

@@ -3,10 +3,10 @@ package org.act.temporalProperty.impl;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.ValueUnknownException;
 import org.act.temporalProperty.query.TimeIntervalKey;
-import org.act.temporalProperty.table.TableComparator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.Slices;
-import org.junit.BeforeClass;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.junit.Test;
 
 import java.util.Map;
@@ -78,7 +78,7 @@ public class MemTableTest
     private void set(MemTable table, long entityId, int propId, int timeStart, int timeEnd, int value) {
         Slice valSlice = Slices.allocate(8);
         valSlice.output().writeInt(value);
-        table.addInterval(new TimeIntervalKey(new InternalKey(propId, entityId, timeStart, ValueType.INT), timeEnd), valSlice);
+        table.addInterval(new TimeIntervalKey(new EntityPropertyId(entityId, propId), new TimePointL(timeStart), new TimePointL(timeEnd), ValueType.INT), valSlice);
     }
 
 

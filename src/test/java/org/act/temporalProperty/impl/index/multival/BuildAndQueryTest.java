@@ -7,7 +7,6 @@ import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.PropertyValueInterval;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
-import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.DataFileImporter;
 import org.act.temporalProperty.util.Slice;
@@ -169,7 +168,7 @@ public class BuildAndQueryTest {
 
     private static void testRangeQuery(TemporalPropertyStore store) {
         store.getRangeValue(2, 1, 1560, 27000, new InternalEntryRangeQueryCallBack() {
-            public void setValueType(ValueContentType valueType) {}
+            public void setValueType(String valueType) {}
             public void onNewEntry(InternalEntry entry) {
                 log.info("{} {}", entry.getKey().getStartTime(), entry.getValue().getInt(0));
             }
@@ -184,7 +183,7 @@ public class BuildAndQueryTest {
     private class EntityIdCallBack implements InternalEntryRangeQueryCallBack {
         private long entityId;
         public EntityIdCallBack(long entityId){this.entityId=entityId;}
-        public void setValueType(ValueContentType valueType) {}
+        public void setValueType(String valueType) {}
         public void onNewEntry(InternalEntry entry) {}
         public Object onReturn() {return null;}
     }
