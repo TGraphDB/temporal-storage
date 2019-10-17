@@ -4,6 +4,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.index.value.rtree.IndexEntryOperator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.*;
@@ -13,15 +14,15 @@ import java.util.*;
  */
 public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> implements PeekingIterator<IndexEntry>{
     private final Iterator<TimePointEntry> tpIter;
-    private final int startTime;
-    private final int endTime;
+    private final TimePointL startTime;
+    private final TimePointL endTime;
     private final Map<Integer, TimePointEntry> map = new HashMap<>();
     private final List<Integer> proIdList;
     private final IndexEntryOperator op;
     private TimePointEntry lastEntry;
     private boolean reachEnd=false;
 
-    public IndexPoint2IntervalIterator(List<Integer> proIds, List<TimePointEntry> data, int startTime, int endTime, IndexEntryOperator op){
+    public IndexPoint2IntervalIterator(List<Integer> proIds, List<TimePointEntry> data, TimePointL startTime, TimePointL endTime, IndexEntryOperator op){
         this.proIdList = proIds;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -51,7 +52,7 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
             int curTime = cur.getTimePoint();
             int curProId = cur.getPropertyId();
 
-            if(curTime>endTime) { //skip
+            if(curTime.endTime>0) { //skip
                 //do nothing, skip cur without update lastEntry: it is ok
             }else if(lastEntry==null){ // start
                 map.put(curProId, cur);

@@ -3,6 +3,7 @@ package org.act.temporalProperty.index.value;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.index.value.rtree.IndexEntryOperator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.*;
@@ -22,12 +23,12 @@ public class IndexBuilderCallback {
         this.op = op;
     }
 
-    public void onCall(int propertyId, long entityId, int startTime, Slice value) {
+    public void onCall(int propertyId, long entityId, TimePointL startTime, Slice value) {
         if(!proIdSet.contains(propertyId)) throw new RuntimeException("SNH: pro not in given list");
         data.add(new TimePointEntry(propertyId, entityId, startTime, value));
     }
 
-    public PeekingIterator<IndexEntry> getIterator(int startTime, int endTime){
+    public PeekingIterator<IndexEntry> getIterator(TimePointL startTime, TimePointL endTime){
         return new IndexPoint2IntervalIterator(proIdList, data, startTime, endTime, op);
     }
 

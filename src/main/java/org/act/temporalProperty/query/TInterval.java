@@ -29,6 +29,12 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
         return to;
     }
 
+    /**
+     * time axis: -------------|-----------> time ascend
+     * this interval:   [------]
+     * @param time:            (* ... )
+     * @return true if
+     */
     public boolean lessThan( TIME_POINT time )
     {
         return time.compareTo( to ) > 0;
@@ -52,11 +58,6 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
     public boolean between( TIME_POINT start, TIME_POINT end )
     {
         return start.compareTo( from ) <= 0 && to.compareTo( end ) <= 0;
-    }
-
-    public boolean toNow()
-    {
-        return to.isNow();
     }
 
     public abstract TInterval<TIME_POINT> changeEnd( TIME_POINT newEnd );

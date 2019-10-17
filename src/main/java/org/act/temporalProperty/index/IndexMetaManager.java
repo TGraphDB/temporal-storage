@@ -6,6 +6,7 @@ import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 import org.act.temporalProperty.index.aggregation.AggregationIndexMeta;
 import org.act.temporalProperty.index.value.IndexMetaData;
+import org.act.temporalProperty.query.TimePointL;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,7 +31,7 @@ public class IndexMetaManager
     private final AtomicLong nextFileId;
 
     private final HashMap<Long,IndexMetaData> byId = new HashMap<>();
-    private final Map<Integer,TreeMap<Integer,IndexMetaData>> byProIdTime = new HashMap<>(); // proId, time
+    private final Map<Integer,TreeMap<TimePointL,IndexMetaData>> byProIdTime = new HashMap<>(); // proId, time
 
     private final LinkedList<IndexMetaData> offLineIndexes = new LinkedList<>();
 
@@ -91,7 +92,7 @@ public class IndexMetaManager
 
     public List<IndexMetaData> getByProId( int propertyId )
     {
-        TreeMap<Integer,IndexMetaData> indexTimeMap = byProIdTime.get( propertyId );
+        TreeMap<TimePointL,IndexMetaData> indexTimeMap = byProIdTime.get( propertyId );
         if ( indexTimeMap != null )
         {
             return new ArrayList<>( indexTimeMap.values() );
@@ -118,19 +119,17 @@ public class IndexMetaManager
         }
     }
 
-    public List<IndexMetaData> getValueIndex( List<Integer> pids, int timeMin, int timeMax )
+    public List<IndexMetaData> getValueIndex(List<Integer> pids, TimePointL timeMin, TimePointL timeMax )
     {
-        return new ArrayList<>( pids.stream()
-            .map( proId -> byProIdTime.get( proId ).subMap( timeMin, true, timeMax, true ).values() )
-            .flatMap( Collection::stream )
-            .filter( indexMetaData -> containsAll( indexMetaData.getPropertyIdList(), pids ) )
-            .collect( Collectors.toSet() ) );
+        return pids.stream()
+                .map(proId -> byProIdTime.get(proId).subMap(timeMin, true, timeMax, true).values())
+                .flatMap(Collection::stream)
+                .filter(indexMetaData -> containsAll(indexMetaData.getPropertyIdList(), pids)).distinct().collect(Collectors.toList());
     }
 
     private boolean containsAll( List<Integer> a, List<Integer> b )
     {
-        Set<Integer> ta = new HashSet<>( a );
-        return b.stream().allMatch( ta::contains );
+        return new HashSet<>( a ).containsAll(b);
     }
 
     public List<IndexMetaData> allIndexes()

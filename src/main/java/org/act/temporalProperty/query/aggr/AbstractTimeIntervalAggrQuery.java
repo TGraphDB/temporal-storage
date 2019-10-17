@@ -3,9 +3,10 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.index.aggregation.TimeIntervalEntry;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,35 +21,30 @@ import java.util.Map.Entry;
 public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeIntervalEntryAggrQuery<K,V>, InternalEntryRangeQueryCallBack {
     private final Map<K, V> groupValMap = new HashMap<>();
     private final Map<K, List<TimeIntervalEntry>> groupListMap = new HashMap<>();
-    private final int endTime;
-    private final int startTime;
+    private final TimePointL endTime;
+    private final TimePointL startTime;
     private boolean hasEntry = false;
     private InternalEntry lastEntry;
 
-    protected AbstractTimeIntervalAggrQuery( int startTime, int endTime )
+    protected AbstractTimeIntervalAggrQuery( TimePointL startTime, TimePointL endTime )
     {
         this.startTime = startTime;
         this.endTime = endTime;
     }
 
-    @Override
-    public void setValueType(String valueType) {
-        // do nothing
-    }
-
     public void onNewEntry(InternalEntry entry) {
         hasEntry = true;
         InternalKey key = entry.getKey();
-        int time = key.getStartTime();
+        TimePointL time = key.getStartTime();
         if ( lastEntry != null )
         {
-            int lastTime = lastEntry.getKey().getStartTime();
-            if ( lastTime < startTime )
+            TimePointL lastTime = lastEntry.getKey().getStartTime();
+            if ( lastTime.compareTo(startTime) < 0 )
             {
                 lastTime = startTime;
-                assert time > startTime;
+                assert time.compareTo(startTime) > 0;
             }
-            onEntry( lastTime, time - 1, lastEntry.getValue() );
+            onEntry( lastTime, time.pre(), lastEntry.getValue() );
         }//else: do nothing
         if ( key.getValueType().isValue() )
         {
@@ -61,7 +57,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     }
 
     public Object onReturn() {
-        if(hasEntry && lastEntry!=null && lastEntry.getKey().getStartTime()<=endTime){
+        if(hasEntry && lastEntry!=null && lastEntry.getKey().getStartTime().compareTo(endTime)<=0){
             onEntry(lastEntry.getKey().getStartTime(), endTime, lastEntry.getValue());
         }
         for(Entry<K, List<TimeIntervalEntry>> entry : groupListMap.entrySet()){
@@ -71,7 +67,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
         return onResult(groupValMap);
     }
 
-    private void onEntry(int start, int end, Slice value){
+    private void onEntry(TimePointL start, TimePointL end, Slice value){
         TimeIntervalEntry entry = new TimeIntervalEntry(start, end, value);
         K groupId = computeGroupId(entry);
         if(groupId!=null) {

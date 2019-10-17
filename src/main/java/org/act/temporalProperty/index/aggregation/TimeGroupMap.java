@@ -4,6 +4,9 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
+import org.act.temporalProperty.query.TimeInterval;
+import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.util.TimeIntervalUtil;
 import org.apache.commons.lang3.time.DateUtils;
 
 import java.util.Arrays;
@@ -38,12 +41,12 @@ public class TimeGroupMap
     private static Set<Integer> allowedTimeUnit =
             new HashSet<>( Arrays.asList( Calendar.YEAR, Calendar.MONTH, Calendar.DATE, Calendar.HOUR, Calendar.MINUTE, Calendar.SECOND ) );
 
-    private final int timeStart;
-    private final int timeEnd;
+    private final TimePointL timeStart;
+    private final TimePointL timeEnd;
     private final int tEvery;
     private final int timeUnit;
 
-    public TimeGroupMap( int timeStart, int timeEnd, int tEvery, int timeUnit )
+    public TimeGroupMap(TimePointL timeStart, TimePointL timeEnd, int tEvery, int timeUnit )
     {
         if ( !allowedTimeUnit.contains( timeUnit ) )
         { throw new TPSRuntimeException( "invalid timeUnit!" ); }
@@ -54,38 +57,34 @@ public class TimeGroupMap
         this.timeUnit = timeUnit;
     }
 
-    public NavigableSet<Integer> calcNewGroup( int min, int max )
+    public NavigableSet<TimePointL> calcNewGroup(TimePointL min, TimePointL max )
     {
-        min = Math.max( min, timeStart );
-        max = Math.min( max, timeEnd );
-        assert min <= max;
-        TreeSet<Integer> set = new TreeSet<>();
-        Iterators.addAll( set, new TimeGroupIterator( min, max, true ) );
+        TimeInterval common = TimeIntervalUtil.overlapInterval(min, max, timeStart, timeEnd);
+        TreeSet<TimePointL> set = new TreeSet<>();
+        Iterators.addAll( set, new TimeGroupIterator( common.start(), common.end(), true ) );
         return set;
     }
 
-    public NavigableSet<Integer> groupAvailable( int min, int max )
+    public NavigableSet<TimePointL> groupAvailable( TimePointL min, TimePointL max )
     {
-        min = Math.max( min, timeStart );
-        max = Math.min( max, timeEnd );
-        assert min <= max;
-        TreeSet<Integer> set = new TreeSet<>();
+        TimeInterval common = TimeIntervalUtil.overlapInterval(min, max, timeStart, timeEnd);
+        TreeSet<TimePointL> set = new TreeSet<>();
         Iterators.addAll( set, new TimeGroupIterator( min, max, false ) );
         return set;
     }
 
-    private class TimeGroupIterator extends AbstractIterator<Integer> implements PeekingIterator<Integer>
+    private class TimeGroupIterator extends AbstractIterator<TimePointL> implements PeekingIterator<TimePointL>
     {
-        private final int max;
+        private final TimePointL max;
         private final Calendar intervalStart;
         private final boolean isCreation;
         private boolean addFirst;
         private boolean reachEnd = false;
-        private int min;
+        private TimePointL min;
 
-        public TimeGroupIterator( int min, int max, boolean isCreation )
+        public TimeGroupIterator(TimePointL min, TimePointL max, boolean isCreation )
         {
-            assert timeStart <= min && max <= timeEnd;
+            assert timeStart.compareTo(min) <= 0 && max.compareTo(timeEnd)<=0;
             this.min = min;
             this.max = max;
             this.isCreation = isCreation;
@@ -116,7 +115,7 @@ public class TimeGroupMap
         }
 
         @Override
-        protected Integer computeNext()
+        protected TimePointL computeNext()
         {
             if ( reachEnd )
             { return endOfData(); }

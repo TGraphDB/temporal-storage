@@ -2,7 +2,7 @@ package org.act.temporalProperty.impl.query.aggr;
 
 import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.index.IndexType;
-import org.act.temporalProperty.index.aggregation.TimeIntervalEntry;
+import org.act.temporalProperty.query.aggr.TimeIntervalEntry;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult;

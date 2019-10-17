@@ -4,6 +4,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.index.EntityTimeIntervalEntry;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexKey;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.TimeIntervalUtil;
@@ -16,26 +17,26 @@ import java.util.*;
 public class Interval2AggrEntryIterator extends AbstractIterator<AggregationIndexEntry> implements PeekingIterator<AggregationIndexEntry> {
     private final Iterator<EntityTimeIntervalEntry> tpIter;
     private final TreeMap<Slice, Integer> valueGrouping;
-    private final NavigableSet<Integer> intervalStarts;
-    private final int intervalBegin;
-    private final int intervalFinish;
+    private final NavigableSet<TimePointL> intervalStarts;
+    private final TimePointL intervalBegin;
+    private final TimePointL intervalFinish;
 
-    private int eStart;
-    private int eEnd;
+    private TimePointL eStart;
+    private TimePointL eEnd;
     private EntityTimeIntervalEntry lastEntry;
 
     /**
      * @param iterator should only contains one property.
      * @param intervalStarts interval start time point TreeSet
      */
-    public Interval2AggrEntryIterator( Iterator<EntityTimeIntervalEntry> iterator, TreeMap<Slice, Integer> valueGrouping, NavigableSet<Integer> intervalStarts ) {
+    public Interval2AggrEntryIterator( Iterator<EntityTimeIntervalEntry> iterator, TreeMap<Slice, Integer> valueGrouping, NavigableSet<TimePointL> intervalStarts ) {
         this.tpIter = iterator;
         this.valueGrouping = valueGrouping;
         this.intervalStarts = intervalStarts;
         if(intervalStarts.size()<2) throw new TPSNHException("time interval too less!");
         this.intervalBegin = intervalStarts.first();
-        this.intervalFinish = intervalStarts.last()-1;
-        if(intervalBegin>intervalFinish) throw new TPSNHException("time interval begin > finish!");
+        this.intervalFinish = intervalStarts.last().pre();
+        if(intervalBegin.compareTo(intervalFinish)>0) throw new TPSNHException("time interval begin > finish!");
     }
 
     protected AggregationIndexEntry computeNext() {
@@ -44,12 +45,12 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
         }else {
             while (tpIter.hasNext()) {
                 EntityTimeIntervalEntry cur = tpIter.next();
-                int eStart = cur.start();
-                int eEnd = cur.end();
-                if(eEnd<eStart) throw new TPSNHException("end({}) < start({})", eEnd, eStart);
+                TimePointL eStart = cur.start();
+                TimePointL eEnd = cur.end();
+                if(eEnd.compareTo(eStart)<0) throw new TPSNHException("end({}) < start({})", eEnd, eStart);
                 if(TimeIntervalUtil.overlap(eStart, eEnd, intervalBegin, intervalFinish)){
-                    if(eStart<intervalBegin) eStart=intervalBegin;
-                    if(eEnd>intervalFinish) eEnd=intervalFinish;
+                    if(eStart.compareTo(intervalBegin)<0) eStart=intervalBegin;
+                    if(eEnd.compareTo(intervalFinish)>0) eEnd=intervalFinish;
                     return computeTimeGroup(eStart, eEnd, cur);
                 }//else: not in [intervalBegin, intervalFinish], do nothing, continue next loop;
             }
@@ -57,9 +58,9 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
         }
     }
 
-    private AggregationIndexEntry computeTimeGroup(int eStart, int eEnd, EntityTimeIntervalEntry entry) {
+    private AggregationIndexEntry computeTimeGroup(TimePointL eStart, TimePointL eEnd, EntityTimeIntervalEntry entry) {
         int duration;
-        int timeGroupId = intervalStarts.floor(eStart);
+        TimePointL timeGroupId = intervalStarts.floor(eStart);
         // if eStart and eEnd both in the same time range.
         if(Objects.equals(timeGroupId, intervalStarts.floor(eEnd))){
             duration = eEnd - eStart + 1;

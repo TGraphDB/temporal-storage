@@ -1,5 +1,6 @@
 package org.act.temporalProperty.index;
 
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 /**
@@ -7,10 +8,10 @@ import org.act.temporalProperty.util.Slice;
  */
 public class EntityTimeIntervalEntry {
     private final long entityId;
-    private final int start;
-    private final int end;
+    private final TimePointL start;
+    private final TimePointL end;
     private final Slice value;
-    public EntityTimeIntervalEntry(long entityId, int start, int end, Slice value){
+    public EntityTimeIntervalEntry(long entityId, TimePointL start, TimePointL end, Slice value){
         this.entityId = entityId;
         this.start = start;
         this.end = end;
@@ -21,11 +22,11 @@ public class EntityTimeIntervalEntry {
         return entityId;
     }
 
-    public int start(){
+    public TimePointL start(){
         return this.start;
     }
 
-    public int end(){
+    public TimePointL end(){
         return this.end;
     }
 

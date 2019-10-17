@@ -12,6 +12,7 @@ import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.PropertyFilterIterator;
 import org.act.temporalProperty.index.SimplePoint2IntervalIterator;
 import org.act.temporalProperty.meta.PropertyMetaData;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.*;
 import org.act.temporalProperty.util.Slice;
 import org.apache.commons.lang3.tuple.Triple;
@@ -43,7 +44,7 @@ public class AggregationIndexOperator
         this.sysIndexMeta = meta;
     }
 
-    public long createDuration(PropertyMetaData pMeta, int start, int end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
+    public long createDuration(PropertyMetaData pMeta, TimePointL start, TimePointL end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
         // 获得新索引文件的ID
         long indexId = sysIndexMeta.nextIndexId();
         //创建新的索引文件元信息
@@ -61,7 +62,7 @@ public class AggregationIndexOperator
         return indexId;
     }
 
-    public long createMinMax(PropertyMetaData pMeta, int start, int end, int every, int timeUnit, IndexType type) throws IOException {
+    public long createMinMax(PropertyMetaData pMeta, TimePointL start, TimePointL end, int every, int timeUnit, IndexType type) throws IOException {
         // 获得新索引文件的ID
         long indexId = sysIndexMeta.nextIndexId();
         //创建新的索引文件元信息
@@ -80,7 +81,7 @@ public class AggregationIndexOperator
         return indexId;
     }
 
-    public AggregationIndexQueryResult query( long entityId, int proId, int start, int end, long indexId, MemTable cache ) throws IOException {
+    public AggregationIndexQueryResult query(long entityId, int proId, TimePointL start, TimePointL end, long indexId, MemTable cache ) throws IOException {
         AggregationIndexMeta meta = (AggregationIndexMeta) sysIndexMeta.getByIndexId( indexId );
         if(meta==null || meta.getPropertyIdList().get(0)!=proId){
             throw new TPSRuntimeException("no index with id {}", indexId);
@@ -116,7 +117,7 @@ public class AggregationIndexOperator
 
     private class DurationIndexManager {
 
-        public AggregationIndexQueryResult query( long entityId, AggregationIndexMeta meta, int start, int end, MemTable cache ) throws IOException {
+        public AggregationIndexQueryResult query(long entityId, AggregationIndexMeta meta, TimePointL start, TimePointL end, MemTable cache ) throws IOException {
             Map<Integer,Integer> result = new TreeMap<>();
 
             // 找出可以用索引加速的时间区间
@@ -187,7 +188,7 @@ public class AggregationIndexOperator
             }
         }
 
-        private DurationStatisticAggregationQuery packQuery( AggregationIndexMeta meta, int start, int end )
+        private DurationStatisticAggregationQuery packQuery(AggregationIndexMeta meta, TimePointL start, TimePointL end )
         {
             TreeMap<Slice, Integer> vGroup = meta.getValGroupMap();
 
@@ -221,7 +222,7 @@ public class AggregationIndexOperator
 
     private class MinMaxIndexManager {
 
-        public AggregationIndexQueryResult query( long entityId, AggregationIndexMeta meta, int start, int end, MemTable cache ) throws IOException {
+        public AggregationIndexQueryResult query(long entityId, AggregationIndexMeta meta, TimePointL start, TimePointL end, MemTable cache ) throws IOException {
             Map<Integer, Slice> result = new HashMap<>();
             Comparator<? super Slice> cp = ValueGroupingMap.getComparator( meta.getValueTypes().get( 0 ) );
             boolean shouldAddMin = (meta.getType()==AGGR_MIN || meta.getType()==AGGR_MIN_MAX);
@@ -322,7 +323,7 @@ public class AggregationIndexOperator
             }
         }
 
-        private AbstractTimeIntervalAggrQuery packQuery( AggregationIndexMeta meta, Comparator<? super Slice> cp, int start, int end )
+        private AbstractTimeIntervalAggrQuery packQuery(AggregationIndexMeta meta, Comparator<? super Slice> cp, TimePointL start, TimePointL end )
         {
 
             return new AbstractTimeIntervalAggrQuery<Integer,Slice>( start, end )
@@ -369,10 +370,10 @@ public class AggregationIndexOperator
         }
     }
 
-    private IntervalStatus accelerateGroups( AggregationIndexMeta meta, int start, int end, long entityId, MemTable cache )
+    private IntervalStatus accelerateGroups(AggregationIndexMeta meta, TimePointL start, TimePointL end, long entityId, MemTable cache )
     {
         int proId = meta.getPropertyIdList().get( 0 );
-        List<Integer> time = Lists.newArrayList( meta.getTimeGroupAvailable( start, end + 1 ) );
+        List<Integer> time = Lists.newArrayList( meta.getTimeGroupAvailable( start, end.next() ) );
         IntervalStatus status = new IntervalStatus();
         if ( time.size() > 1 )
         {
@@ -498,7 +499,7 @@ public class AggregationIndexOperator
 
                 // 根据时间分块和value分区, 计算得出索引文件的Entry
                 FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<Integer> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
+                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
 
                 Iterator<AggregationIndexEntry> aggrEntries = new Interval2AggrEntryIterator( interval, meta.getValGroupMap(), subTimeGroup );
                 // 将iterator的entry放入数组进行排序
@@ -560,7 +561,7 @@ public class AggregationIndexOperator
 
                 // 根据时间分块和value分区, 计算得出索引文件的Entry(最大最小值)
                 FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<Integer> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
+                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
                 Iterator<Triple<Long,Integer,Slice>> minMax = new MinMaxAggrEntryIterator( interval, subTimeGroup );
                 // 将iterator的entry放入数组进行排序
                 List<Triple<Long,Integer,Slice>> data = Lists.newArrayList( minMax );

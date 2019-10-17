@@ -27,19 +27,9 @@ public class TimeInterval extends TInterval<TimePointL>
         return start().val();
     }
 
-    public int fromInt()
-    {
-        return start().valInt();
-    }
-
     public long to()
     {
         return end().val();
-    }
-
-    public int toInt()
-    {
-        return end().valInt();
     }
 
     @Override

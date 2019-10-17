@@ -5,24 +5,22 @@ import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
-
-import java.util.Iterator;
+import org.act.temporalProperty.query.TimePointL;
 
 /**
  * Created by song on 2018-04-06.
  */
 public class SimplePoint2IntervalIterator extends AbstractIterator<EntityTimeIntervalEntry> implements PeekingIterator<EntityTimeIntervalEntry> {
     private final OnePropertyChecker tpIter;
-    private final int endTime;
+    private final TimePointL endTime;
     private InternalEntry lastEntry = null;
 
     /**
      * @param tpIter  should only contains one property.
      * @param endTime
      */
-    public SimplePoint2IntervalIterator( PeekingIterator<InternalEntry> tpIter, int endTime ) {
+    public SimplePoint2IntervalIterator(PeekingIterator<InternalEntry> tpIter, TimePointL endTime ) {
         this.tpIter = new OnePropertyChecker(tpIter);
         this.endTime = endTime;
         if (tpIter.hasNext()) {
@@ -40,12 +38,12 @@ public class SimplePoint2IntervalIterator extends AbstractIterator<EntityTimeInt
                 InternalKey lastKey = lastEntry.getKey();
                 InternalEntry e = tpIter.next();
                 InternalKey curKey = e.getKey();
-                if ( curKey.getStartTime() > endTime )
+                if ( curKey.getStartTime().compareTo(endTime) > 0 )
                 { continue; }
 
                 if(lastKey.getValueType()!=ValueType.INVALID) {
                     if (curKey.getEntityId() == lastKey.getEntityId()) {
-                        newEntry = new EntityTimeIntervalEntry(lastKey.getEntityId(), lastKey.getStartTime(), curKey.getStartTime() - 1, lastEntry.getValue());
+                        newEntry = new EntityTimeIntervalEntry(lastKey.getEntityId(), lastKey.getStartTime(), curKey.getStartTime().pre(), lastEntry.getValue());
                     } else {
                         newEntry = new EntityTimeIntervalEntry(lastKey.getEntityId(), lastKey.getStartTime(), endTime, lastEntry.getValue());
                     }

@@ -5,6 +5,7 @@ import org.act.temporalProperty.index.IndexFileMeta;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.IndexMetaData;
 import org.act.temporalProperty.index.IndexType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -28,7 +28,7 @@ public class AggregationIndexMeta extends IndexMetaData {
     private final int timeUnit;
     private TimeGroupMap tGroupMap;
 
-    public AggregationIndexMeta( long indexId, IndexType type, int pid, IndexValueType vType, int start, int end,
+    public AggregationIndexMeta(long indexId, IndexType type, int pid, IndexValueType vType, TimePointL start, TimePointL end,
                                 int tEvery, int timeUnit, TreeMap<Slice, Integer> valueGroup) {
         super( indexId, type, Lists.newArrayList( pid ), Lists.newArrayList( vType ), start, end );
         this.vGroupMap = valueGroup;
@@ -117,9 +117,9 @@ public class AggregationIndexMeta extends IndexMetaData {
         return decode(in.input());
     }
 
-    public TreeSet<Integer> getTimeGroupAvailable( int start, int end )
+    public TreeSet<TimePointL> getTimeGroupAvailable(TimePointL start, TimePointL end )
     {
-        TreeSet<Integer> result = new TreeSet<>();
+        TreeSet<TimePointL> result = new TreeSet<>();
         Collection<IndexFileMeta> files = this.getFilesByTime( start, end );
         for ( IndexFileMeta f : files )
         {
