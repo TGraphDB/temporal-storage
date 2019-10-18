@@ -3,6 +3,7 @@ package org.act.temporalProperty.index.value.rtree;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
@@ -13,13 +14,13 @@ import org.act.temporalProperty.util.VariableLengthQuantity;
  * Created by song on 2018-01-21.
  */
 public class IndexEntry {
-    private final int start;
-    private final int end;
+    private final TimePointL start;
+    private final TimePointL end;
     private final Slice[] value;
     private Long entityId = null;
 
-    public IndexEntry(int start, int end, Slice[] value) {
-        Preconditions.checkArgument(start <= end, "start %s > end %s", start, end);
+    public IndexEntry(TimePointL start, TimePointL end, Slice[] value) {
+        Preconditions.checkArgument(start.compareTo(end) <= 0, "start %s > end %s", start, end);
         this.start = start;
         this.end = end;
         this.value = value;
@@ -36,15 +37,15 @@ public class IndexEntry {
         if(hasEntityId){
             this.entityId = VariableLengthQuantity.readVariableLengthLong(in);
         }
-        this.start = in.readInt();
-        this.end = in.readInt();
+        this.start = TimePointL.decode(in);
+        this.end = TimePointL.decode(in);
         this.value = new Slice[valueCount];
         for(int i=0; i<valueCount; i++) {
             this.value[i] = nextEntry(in);
         }
     }
 
-    public IndexEntry(long entityId, int startTime, int endTime, Slice[] values) {
+    public IndexEntry(long entityId, TimePointL startTime, TimePointL endTime, Slice[] values) {
         this(startTime, endTime, values);
         this.entityId = entityId;
     }
@@ -70,11 +71,11 @@ public class IndexEntry {
 //        else throw new RuntimeException("do not contains entityId");
     }
 
-    public int getStart() {
+    public TimePointL getStart() {
         return start;
     }
 
-    public int getEnd() {
+    public TimePointL getEnd() {
         return end;
     }
 
@@ -89,8 +90,8 @@ public class IndexEntry {
         }else{
             out.writeByte(value.length);
         }
-        out.writeInt(start);
-        out.writeInt(end);
+        start.encode(out);
+        end.encode(out);
         for(Slice entry : value){
             putNextEntry(out, entry);
         }

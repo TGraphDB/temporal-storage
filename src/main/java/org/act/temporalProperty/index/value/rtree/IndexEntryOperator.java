@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.act.temporalProperty.index.*;
 import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.PropertyValueInterval;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.List;
@@ -66,9 +67,9 @@ public class IndexEntryOperator {
     public int compare(IndexEntry entry1, IndexEntry entry2, int dimIndex) {
         switch (dimIndex) {
             case 0:
-                return Integer.compare(entry1.getStart(), entry2.getStart());
+                return entry1.getStart().compareTo(entry2.getStart());
             case 1:
-                return Integer.compare(entry1.getEnd(), entry2.getEnd());
+                return entry1.getEnd().compareTo(entry2.getEnd());
             default:
                 int valIndex = toValueIndex(dimIndex);
                 return values.get(valIndex).compare(
@@ -82,16 +83,16 @@ public class IndexEntryOperator {
             return compare(bound1.getMin(), bound2.getMin(), dimIndex);
         }else{
             if(dimIndex==0){
-                int min1 = bound1.getMin().getStart();
-                int max1 = bound1.getMax().getStart();
-                int min2 = bound2.getMin().getStart();
-                int max2 = bound2.getMax().getStart();
+                TimePointL min1 = bound1.getMin().getStart();
+                TimePointL max1 = bound1.getMax().getStart();
+                TimePointL min2 = bound2.getMin().getStart();
+                TimePointL max2 = bound2.getMax().getStart();
                 return compareRange(min1, max1, min2, max2);
             }else if(dimIndex==1) {
-                int min1 = bound1.getMin().getEnd();
-                int max1 = bound1.getMax().getEnd();
-                int min2 = bound2.getMin().getEnd();
-                int max2 = bound2.getMax().getEnd();
+                TimePointL min1 = bound1.getMin().getEnd();
+                TimePointL max1 = bound1.getMax().getEnd();
+                TimePointL min2 = bound2.getMin().getEnd();
+                TimePointL max2 = bound2.getMax().getEnd();
                 return compareRange(min1, max1, min2, max2);
             }else{
                 int valIndex = toValueIndex(dimIndex);
@@ -104,11 +105,11 @@ public class IndexEntryOperator {
         }
     }
 
-    private int compareRange(int min1, int max1, int min2, int max2){
-        long tmp1 = min1;
-        tmp1 += max1;
-        long tmp2 = min2;
-        tmp2 += max2;
+    private int compareRange(TimePointL min1, TimePointL max1, TimePointL min2, TimePointL max2){
+        long tmp1 = min1.val();
+        tmp1 += max1.val();
+        long tmp2 = min2.val();
+        tmp2 += max2.val();
         return Long.compare(tmp1, tmp2);
     }
 
@@ -124,8 +125,8 @@ public class IndexEntryOperator {
             maxVal[i] = p.getValueMax();
         }
 
-        IndexEntry min = new IndexEntry(0, regions.getTimeMin(), minVal);
-        IndexEntry max = new IndexEntry(regions.getTimeMax(), Integer.MAX_VALUE, maxVal);
+        IndexEntry min = new IndexEntry(TimePointL.Init, regions.getTimeMin(), minVal);
+        IndexEntry max = new IndexEntry(regions.getTimeMax(), TimePointL.Now, maxVal);
 
         return new RTreeRange(min, max, this);
     }
@@ -138,7 +139,7 @@ public class IndexEntryOperator {
             minVal[i] = minmax[0];
             maxVal[i] = minmax[1];
         }
-        int[] t = calcMinMaxTime(entries);
+        TimePointL[] t = calcMinMaxTime(entries);
         IndexEntry min = new IndexEntry(t[0], t[1], minVal);
         IndexEntry max = new IndexEntry(t[2], t[3], maxVal);
         return new IndexEntry[]{min, max};
@@ -160,23 +161,26 @@ public class IndexEntryOperator {
         return new Slice[]{min, max};
     }
 
-    private int[] calcMinMaxTime(List<IndexEntry> entries) {
-        int minStart = 0, maxStart = 0, minEnd = 0, maxEnd = 0;
+    private TimePointL[] calcMinMaxTime(List<IndexEntry> entries) {
+        TimePointL minStart = TimePointL.Init;
+        TimePointL maxStart = TimePointL.Init;
+        TimePointL minEnd = TimePointL.Init;
+        TimePointL maxEnd = TimePointL.Init;
         for(int i=0; i<entries.size(); i++){
             IndexEntry entry = entries.get(i);
             if(i==0){
                 minStart=maxStart=entry.getStart();
                 minEnd = maxEnd = entry.getEnd();
             }else {
-                int start = entry.getStart();
-                int end = entry.getEnd();
-                if(start<minStart) minStart = start;
-                if(start>maxStart) maxStart = start;
-                if(end<minEnd) minEnd = end;
-                if(end>maxEnd) maxEnd = end;
+                TimePointL start = entry.getStart();
+                TimePointL end = entry.getEnd();
+                if(start.compareTo(minStart)<0) minStart = start;
+                if(start.compareTo(maxStart)>0) maxStart = start;
+                if(end.compareTo(minEnd)<0) minEnd = end;
+                if(end.compareTo(maxEnd)>0) maxEnd = end;
             }
         }
-        return new int[]{minStart, minEnd, maxStart, maxEnd};
+        return new TimePointL[]{minStart, minEnd, maxStart, maxEnd};
     }
 
     public String toString(IndexEntry entry) {

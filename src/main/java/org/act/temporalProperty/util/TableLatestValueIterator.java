@@ -4,6 +4,7 @@ import org.act.temporalProperty.helper.AbstractSearchableIterator;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
+import org.act.temporalProperty.query.TimePointL;
 
 import java.util.NoSuchElementException;
 
@@ -125,14 +126,14 @@ public class TableLatestValueIterator implements SearchableIterator
      */
     private static class ChangeTimeIterator extends AbstractSearchableIterator{
         private final SearchableIterator input;
-        private final int startTime;
+        private final TimePointL startTime;
 
         /**
          * update every entry key's startTime to `startTime`.
          * @param input
          * @param startTime
          */
-        ChangeTimeIterator(SearchableIterator input, int startTime){
+        ChangeTimeIterator(SearchableIterator input, TimePointL startTime){
             this.input = input;
             this.startTime = startTime;
         }
@@ -168,7 +169,7 @@ public class TableLatestValueIterator implements SearchableIterator
         }
     }
 
-    public static SearchableIterator setNewStart(SearchableIterator input, int time){
+    public static SearchableIterator setNewStart(SearchableIterator input, TimePointL time){
         return new ChangeTimeIterator(new TableLatestValueIterator(input), time);
     }
 }

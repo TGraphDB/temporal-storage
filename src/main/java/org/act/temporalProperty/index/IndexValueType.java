@@ -165,6 +165,16 @@ public enum IndexValueType {
         }
     }
 
+    public static IndexValueType convertFrom(String type){
+        switch(type){
+            case "INT": return IndexValueType.INT;
+            case "LONG": return IndexValueType.LONG;
+            case "FLOAT": return IndexValueType.FLOAT;
+            case "DOUBLE": return IndexValueType.DOUBLE;
+            default:return IndexValueType.STRING;
+        }
+    }
+
     public abstract int compare(Slice entry1, Slice entry2);
     public abstract int compareRange(Slice min1, Slice max1, Slice min2, Slice max2);
 

@@ -1,8 +1,10 @@
 package org.act.temporalProperty.query.aggr;
 
 import com.google.common.base.Objects;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.UserComparator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 
 /**
@@ -10,16 +12,17 @@ import org.act.temporalProperty.util.SliceOutput;
  */
 public class AggregationIndexKey implements Comparable<AggregationIndexKey>{
     private long entityId;
-    private int timeGroupId;
+    private TimePointL timeGroupId;
     private int valueGroupId;
 
     public AggregationIndexKey(Slice raw){
-        entityId = raw.getLong(0);
-        timeGroupId = raw.getInt(8);
-        valueGroupId = raw.getInt(12);
+        SliceInput in = raw.input();
+        entityId = in.readLong();
+        timeGroupId = TimePointL.decode(in);
+        valueGroupId = in.readInt();
     }
 
-    public AggregationIndexKey(long entityId, int timeGroupId, int valueGroupId){
+    public AggregationIndexKey(long entityId, TimePointL timeGroupId, int valueGroupId){
         this.entityId = entityId;
         this.timeGroupId = timeGroupId;
         this.valueGroupId = valueGroupId;
@@ -29,7 +32,7 @@ public class AggregationIndexKey implements Comparable<AggregationIndexKey>{
         return entityId;
     }
 
-    public int getTimeGroupId() {
+    public TimePointL getTimeGroupId() {
         return timeGroupId;
     }
 
@@ -41,7 +44,7 @@ public class AggregationIndexKey implements Comparable<AggregationIndexKey>{
         Slice raw = new Slice(16);
         SliceOutput out = raw.output();
         out.writeLong( entityId );
-        out.writeInt( timeGroupId );
+        timeGroupId.encode(out);
         out.writeInt( valueGroupId );
         return raw;
     }
@@ -68,7 +71,7 @@ public class AggregationIndexKey implements Comparable<AggregationIndexKey>{
     public int compareTo(AggregationIndexKey o) {
         int r = Long.compare(this.entityId, o.entityId);
         if(r==0){
-            r = Integer.compare(this.timeGroupId, o.timeGroupId);
+            r = this.timeGroupId.compareTo(o.timeGroupId);
             if(r==0){
                 return Integer.compare(this.valueGroupId, o.valueGroupId);
             }else{

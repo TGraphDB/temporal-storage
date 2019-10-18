@@ -6,6 +6,8 @@ import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 import org.act.temporalProperty.util.Slices;
 
+import java.util.Objects;
+
 import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
 
 /**
@@ -89,6 +91,19 @@ public class TimePointL implements TPoint<TimePointL>
     public String toString()
     {
         return String.valueOf( val() );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TimePointL that = (TimePointL) o;
+        return time == that.time;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(time);
     }
 
     public Slice encode(){

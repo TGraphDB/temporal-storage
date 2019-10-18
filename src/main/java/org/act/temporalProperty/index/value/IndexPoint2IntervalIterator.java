@@ -30,7 +30,7 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
         data.sort((o1, o2) -> {
             int eidCmp = Long.compare(o1.getEntityId(), o2.getEntityId());
             if(eidCmp==0) {
-                int timeCmp = Integer.compare(o1.getTimePoint(), o2.getTimePoint());
+                int timeCmp = o1.getTimePoint().compareTo(o2.getTimePoint());
                 if(timeCmp==0){
                     return Integer.compare(o1.getPropertyId(), o2.getPropertyId());
                 }else{
@@ -49,12 +49,13 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
         while(tpIter.hasNext()) {
             TimePointEntry cur = tpIter.next();
             long curEID = cur.getEntityId();
-            int curTime = cur.getTimePoint();
+            TimePointL curTime = cur.getTimePoint();
             int curProId = cur.getPropertyId();
 
-            if(curTime.endTime>0) { //skip
-                //do nothing, skip cur without update lastEntry: it is ok
-            }else if(lastEntry==null){ // start
+//            if(curTime.endTime>0) { //skip//todo: seems error, need rethink.
+//                //do nothing, skip cur without update lastEntry: it is ok
+//            }else
+                if(lastEntry==null){ // start
                 map.put(curProId, cur);
                 lastEntry = cur;
             }else if(curEID != lastEntry.getEntityId()){ //cross entity: output then state to start
@@ -64,9 +65,9 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
                 lastEntry = cur;
                 return result;
             }else{ // same entity
-                if(curTime>lastEntry.getTimePoint()){
-                    if(curTime>startTime) { // should output
-                        IndexEntry result = outputEntry(curTime - 1);
+                if(curTime.compareTo(lastEntry.getTimePoint())>0){
+                    if(curTime.compareTo(startTime)>0) { // should output
+                        IndexEntry result = outputEntry(curTime.pre());
                         map.put(curProId, cur);
                         lastEntry = cur;
                         return result;
@@ -90,9 +91,9 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
         }
     }
 
-    private IndexEntry outputEntry(int endTime) {
+    private IndexEntry outputEntry(TimePointL endTime) {
         Slice[] vList = new Slice[proIdList.size()];
-        int latestStartTime = -1;
+        TimePointL latestStartTime = TimePointL.Init;
         long entityId = -1;
         for(int i=0; i<proIdList.size(); i++){
             Integer proId = proIdList.get(i);
@@ -101,14 +102,14 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
                 vList[i] = null;
             }else{
                 vList[i] = point.getValue();
-                if(latestStartTime<point.getTimePoint()) latestStartTime = point.getTimePoint();
+                if(latestStartTime.compareTo(point.getTimePoint())<0) latestStartTime = point.getTimePoint();
                 if(entityId!=-1 && entityId!=point.getEntityId()){
                     throw new RuntimeException("SNH: entity not equal");
                 }
                 if(entityId==-1) entityId = point.getEntityId();
             }
         }
-        if(latestStartTime<startTime) latestStartTime = startTime;
+        if(latestStartTime.compareTo(startTime)<0) latestStartTime = startTime;
         return new IndexEntry(entityId, latestStartTime, endTime, vList);
     }
 

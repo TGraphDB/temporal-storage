@@ -59,15 +59,15 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
     }
 
     private AggregationIndexEntry computeTimeGroup(TimePointL eStart, TimePointL eEnd, EntityTimeIntervalEntry entry) {
-        int duration;
+        long duration;
         TimePointL timeGroupId = intervalStarts.floor(eStart);
         // if eStart and eEnd both in the same time range.
         if(Objects.equals(timeGroupId, intervalStarts.floor(eEnd))){
-            duration = eEnd - eStart + 1;
+            duration = eEnd.val() - eStart.val() + 1;
             lastEntry = null;
             return outputEntry(entry, timeGroupId, duration);
         }else{
-            duration = intervalStarts.higher(eStart) - eStart; //no need +1.
+            duration = intervalStarts.higher(eStart).val() - eStart.val(); //no need +1.
             this.eStart = intervalStarts.higher(eStart);
             this.eEnd = eEnd;
             lastEntry = entry;
@@ -75,7 +75,7 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
         }
     }
 
-    private AggregationIndexEntry outputEntry(EntityTimeIntervalEntry entry, int timeGroupId, int duration) {
+    private AggregationIndexEntry outputEntry(EntityTimeIntervalEntry entry, TimePointL timeGroupId, long duration) {
         Slice val = entry.value();
         Map.Entry<Slice, Integer> valGroup = valueGrouping.floorEntry(val);
         AggregationIndexKey key;

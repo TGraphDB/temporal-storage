@@ -16,14 +16,14 @@ import java.util.Objects;
 /**
  * Created by song on 2018-04-06.
  */
-public class MinMaxAggrEntryIterator extends AbstractIterator<Triple<Long,Integer,Slice>> implements PeekingIterator<Triple<Long,Integer,Slice>> {
+public class MinMaxAggrEntryIterator extends AbstractIterator<Triple<Long, TimePointL, Slice>> implements PeekingIterator<Triple<Long,TimePointL,Slice>> {
     private final Iterator<EntityTimeIntervalEntry> tpIter;
-    private final NavigableSet<Integer> intervalStarts;
+    private final NavigableSet<TimePointL> intervalStarts;
     private final TimePointL intervalBegin;
     private final TimePointL intervalFinish;
 
-    private int eStart;
-    private int eEnd;
+    private TimePointL eStart;
+    private TimePointL eEnd;
     private EntityTimeIntervalEntry lastEntry;
 
     /**
@@ -35,11 +35,11 @@ public class MinMaxAggrEntryIterator extends AbstractIterator<Triple<Long,Intege
         this.intervalStarts = intervalStarts;
         if(intervalStarts.size()<2) throw new TPSNHException("time interval too less!");
         this.intervalBegin = intervalStarts.first();
-        this.intervalFinish = intervalStarts.last()-1;
-        if(intervalBegin>intervalFinish) throw new TPSNHException("time interval begin > finish!");
+        this.intervalFinish = intervalStarts.last().pre();
+        if(intervalBegin.compareTo(intervalFinish)>0) throw new TPSNHException("time interval begin > finish!");
     }
 
-    protected Triple<Long,Integer,Slice> computeNext() {
+    protected Triple<Long, TimePointL, Slice> computeNext() {
         if(lastEntry!=null){
             return computeTimeGroup(this.eStart, this.eEnd, lastEntry);
         }else {
@@ -58,8 +58,8 @@ public class MinMaxAggrEntryIterator extends AbstractIterator<Triple<Long,Intege
         }
     }
 
-    private Triple<Long,Integer,Slice> computeTimeGroup(TimePointL eStart, TimePointL eEnd, EntityTimeIntervalEntry entry) {
-        int timeGroupId = intervalStarts.floor(eStart);
+    private Triple<Long, TimePointL, Slice> computeTimeGroup(TimePointL eStart, TimePointL eEnd, EntityTimeIntervalEntry entry) {
+        TimePointL timeGroupId = intervalStarts.floor(eStart);
         // if eStart and eEnd both in the same time range.
         if(Objects.equals(timeGroupId, intervalStarts.floor(eEnd))){
             lastEntry = null;

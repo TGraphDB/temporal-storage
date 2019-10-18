@@ -4,6 +4,7 @@ import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.vo.EntityPropertyId;
 
@@ -23,7 +24,7 @@ public class EPEntryIterator extends AbstractSearchableIterator {
 
     @Override
     public void seekToFirst() {
-        InternalKey earliestKey = new InternalKey(id, 0);
+        InternalKey earliestKey = new InternalKey(id, TimePointL.Init);
         iter.seekFloor(earliestKey);
         super.resetState();
     }

@@ -18,7 +18,7 @@ public abstract class DurationStatisticAggregationQuery<K> extends AbstractTimeI
     public Integer aggregate(K k, Collection<TimeIntervalEntry> groupItems) {
         int timeSumDuration = 0;
         for(TimeIntervalEntry entry : groupItems){
-            timeSumDuration += (entry.end()-entry.start()+1);
+            timeSumDuration += (entry.end().val()-entry.start().val()+1);
         }
         return timeSumDuration;
     }

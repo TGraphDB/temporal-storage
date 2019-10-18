@@ -101,8 +101,8 @@ public class IndexMetaData {
     public void encode(SliceOutput out){
         out.writeInt(this.getType().getId());
         out.writeLong(this.getId());
-        out.writeInt(this.getTimeStart());
-        out.writeInt(this.getTimeEnd());
+        this.getTimeStart().encode(out);
+        this.getTimeEnd().encode(out);
         out.writeInt(this.getPropertyIdList().size());
         for(Integer pid : this.getPropertyIdList()){
             out.writeInt(pid);
@@ -136,8 +136,8 @@ public class IndexMetaData {
     public IndexMetaData( SliceInput in ){
         this.type = IndexType.decode(in.readInt());
         this.id = in.readInt();
-        this.timeStart = in.readInt();
-        this.timeEnd = in.readInt();
+        this.timeStart = TimePointL.decode(in);
+        this.timeEnd = TimePointL.decode(in);
         int count = in.readInt();
         List<Integer> pidList = new ArrayList<>();
         for (int i = 0; i < count; i++) {

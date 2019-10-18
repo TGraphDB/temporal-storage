@@ -16,16 +16,16 @@ public class TimeIntervalUtil
     }
 
     public static TimeInterval overlapInterval(TimePointL min, TimePointL max, TimePointL timeStart, TimePointL timeEnd) {
-        TimePointL begin = maxTimePoint(min, timeStart);
-        TimePointL finish = minTimePoint(max, timeEnd);
+        TimePointL begin = max(min, timeStart);
+        TimePointL finish = min(max, timeEnd);
         return new TimeInterval(begin, finish);
     }
 
-    private static TimePointL maxTimePoint(TimePointL a, TimePointL b) {
+    public static TimePointL max(TimePointL a, TimePointL b) {
         return a.compareTo(b)>0 ? a : b;
     }
 
-    private static TimePointL minTimePoint(TimePointL a, TimePointL b) {
+    public static TimePointL min(TimePointL a, TimePointL b) {
         return a.compareTo(b)<0 ? a : b;
     }
 

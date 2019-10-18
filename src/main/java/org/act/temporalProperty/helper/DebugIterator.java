@@ -8,6 +8,7 @@ import org.act.temporalProperty.impl.IntervalIterator;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.Map.Entry;
@@ -65,7 +66,7 @@ public class DebugIterator extends AbstractSearchableIterator
     private void isKeyEqual( InternalEntry entry )
     {
         InternalKey curT = entry.getKey();
-        if(curT.compareTo( new InternalKey( 0, 0, 349529, ValueType.VALUE ) )==0){
+        if(curT.compareTo( new InternalKey( 0, 0, new TimePointL(349529), ValueType.VALUE ) )==0){
             System.out.println("reach pre correct key: "+curT);
         }
     }

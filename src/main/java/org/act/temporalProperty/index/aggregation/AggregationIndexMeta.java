@@ -26,7 +26,7 @@ public class AggregationIndexMeta extends IndexMetaData {
     private final TreeMap<Slice, Integer> vGroupMap;
     private final int tEvery;
     private final int timeUnit;
-    private TimeGroupMap tGroupMap;
+    private TimeGroupBuilder tGroupMap;
 
     public AggregationIndexMeta(long indexId, IndexType type, int pid, IndexValueType vType, TimePointL start, TimePointL end,
                                 int tEvery, int timeUnit, TreeMap<Slice, Integer> valueGroup) {
@@ -34,14 +34,14 @@ public class AggregationIndexMeta extends IndexMetaData {
         this.vGroupMap = valueGroup;
         this.tEvery = tEvery;
         this.timeUnit = timeUnit;
-        this.tGroupMap = new TimeGroupMap( getTimeStart(), getTimeEnd(), tEvery, timeUnit );
+        this.tGroupMap = new UnixTimestampTimeGroupBuilder( getTimeStart(), getTimeEnd(), tEvery, timeUnit );
     }
 
     public TreeMap<Slice, Integer> getValGroupMap() {
         return vGroupMap;
     }
 
-    public TimeGroupMap getTimeGroupMap()
+    public TimeGroupBuilder getTimeGroupMap()
     {
         return tGroupMap;
     }
@@ -86,9 +86,9 @@ public class AggregationIndexMeta extends IndexMetaData {
 
     public static AggregationIndexMeta decode(SliceInput in){
         IndexType type = IndexType.decode(in.readInt());
-        int fileId = in.readInt();
-        int timeStart = in.readInt();
-        int timeEnd = in.readInt();
+        long fileId = in.readLong();
+        TimePointL timeStart = TimePointL.decode(in);
+        TimePointL timeEnd = TimePointL.decode(in);
         int count = in.readInt();
         assert count==1:"more then one property!";
         List<Integer> pidList = new ArrayList<>();
