@@ -4,7 +4,9 @@ import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.MemTable;
 import org.act.temporalProperty.impl.PackInternalKeyIterator;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.TableComparator;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -22,10 +24,7 @@ public class TableLatestValueIteratorTest
             for( long i = 0; i<ID_NUM; i++ )
                 for( int p = 0; p<PRO_NUM; p++ )
                 {
-                    Slice idSlice = new Slice( 12 );
-                    idSlice.setLong( 0, i );
-                    idSlice.setInt( 8, p );
-                    InternalKey key = new InternalKey( idSlice, t, ValueType.VALUE );
+                    InternalKey key = new InternalKey( new EntityPropertyId(i, p), new TimePointL(t), ValueType.VALUE );
                     table.addToNow( key, key.encode() );
                 }
     }

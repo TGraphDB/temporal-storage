@@ -2,6 +2,7 @@ package org.act.temporalProperty.index;
 
 import org.act.temporalProperty.impl.Filename;
 import org.act.temporalProperty.impl.SeekingIterator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexKey;
 import org.act.temporalProperty.table.MMapTable;
 import org.act.temporalProperty.util.Slice;
@@ -25,7 +26,7 @@ public class AggregationFileReader
         String indexDir = "/tmp/temporal.property.test/index/";
 //        for(int i=0; i<=3; i++){
         int i=0;
-        AggregationIndexKey search = new AggregationIndexKey( 0 , 0, 0 );
+        AggregationIndexKey search = new AggregationIndexKey( 0 , new TimePointL(0), 0 );
         read(indexDir+ Filename.aggrIndexFileName(i), search);
 //            break;
 //        }

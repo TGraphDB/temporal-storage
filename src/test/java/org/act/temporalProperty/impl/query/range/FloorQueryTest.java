@@ -1,6 +1,7 @@
 package org.act.temporalProperty.impl.query.range;
 
 import org.act.temporalProperty.TemporalPropertyStore;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.StoreBuilder;
 import org.junit.Test;
@@ -14,7 +15,7 @@ import java.util.List;
  * Created by song on 2018-01-24.
  */
 public class FloorQueryTest {
-    private static Logger log = LoggerFactory.getLogger(RangeQueryTest.class);
+    private static Logger log = LoggerFactory.getLogger(FloorQueryTest.class);
     private static String dbDir = "/tmp/temporal.property.test";
     private TemporalPropertyStore store;
 
@@ -29,7 +30,7 @@ public class FloorQueryTest {
             }
             log.debug("version {} write finish", entityId);
         }
-        Slice val = store.getPointValue(1, 0, 4);
+        Slice val = store.getPointValue(1, 0, new TimePointL(4));
         log.debug("{}", val.getInt(0)==4);
     }
 
@@ -42,7 +43,7 @@ public class FloorQueryTest {
                 StoreBuilder.setIntProperty(store, time, entityId, 0, time);
             }
         }
-        Slice val = store.getPointValue(1, 0, 9);
+        Slice val = store.getPointValue(1, 0, new TimePointL(9));
         if(val!=null) log.debug("{}", val.getInt(0));
         store.shutDown();
     }
@@ -60,7 +61,7 @@ public class FloorQueryTest {
             }
             log.debug("version {} write finish", entityId);
         }
-        Slice val = store.getPointValue(1, 3, 4); // bug, throws NoSuchElementException
+        Slice val = store.getPointValue(1, 3, new TimePointL(4)); // bug, throws NoSuchElementException
         log.debug("{}", val.getInt(0)); // should be 0
     }
 

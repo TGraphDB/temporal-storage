@@ -12,6 +12,7 @@ import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.SystemMetaFile;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.*;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
@@ -107,8 +108,8 @@ public class DBFileInfoReader
             System.out.println("Empty 000000.dbtmp file.");
             return;
         }
-        int maxTime = Integer.MIN_VALUE;
-        int minTime = Integer.MAX_VALUE;
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
         long size = 0;
         long recordCount = 0;
         while( iterator.hasNext() )
@@ -118,15 +119,9 @@ public class DBFileInfoReader
             Slice value = entry.getValue();
             InternalKey internalKey = new InternalKey( key );
             System.out.println(internalKey+" "+value);
-            int time = internalKey.getStartTime();
-            if( time < minTime )
-            {
-                minTime = time;
-            }
-            if( time > maxTime )
-            {
-                maxTime = time;
-            }
+            TimePointL time = internalKey.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
             size += (key.length() + value.length());
             recordCount++;
         }

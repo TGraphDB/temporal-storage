@@ -56,7 +56,7 @@ public class MemTable
     {
         Preconditions.checkNotNull( key );
         ValueType valueType = key.getValueType();
-        Preconditions.checkArgument( valueType != ValueType.UNKNOWN && valueType!=ValueType.VALUE);
+        Preconditions.checkArgument( valueType!=ValueType.VALUE);
         add( key.getId(), key, new Value( key.getId(), key.getValueType(), value ) );
     }
 
