@@ -4,6 +4,7 @@ import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 
 public class EntityPropertyId implements Comparable<EntityPropertyId>, Serializable {
@@ -31,6 +32,20 @@ public class EntityPropertyId implements Comparable<EntityPropertyId>, Serializa
         }else{
             return result;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EntityPropertyId that = (EntityPropertyId) o;
+        return entityId == that.entityId &&
+                propertyId == that.propertyId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(entityId, propertyId);
     }
 
     @Override

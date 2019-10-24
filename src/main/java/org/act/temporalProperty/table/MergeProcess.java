@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
 
+import org.act.temporalProperty.helper.EqualValFilterIterator;
+import org.act.temporalProperty.helper.InvalidEntityFilterIterator;
 import org.act.temporalProperty.helper.SameLevelMergeIterator;
 import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.IndexStore;
@@ -284,7 +286,7 @@ public class MergeProcess extends Thread
                     SearchableIterator mergeIterator;
                     FileBuffer filebuffer = pMeta.getUnstableBuffers(fileNumber);
                     if (null != filebuffer) {
-                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), table.iterator());
+                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), new PackInternalKeyIterator(table.iterator()));
                         channel2close.add(filebuffer);
                         files2delete.add(new File(propStoreDir, Filename.unbufferFileName(fileNumber)));
                     } else {
@@ -302,7 +304,10 @@ public class MergeProcess extends Thread
                 } else {
                     diskDataIter = unstableIter;
                 }
-                return new UnknownToInvalidIterator( TwoLevelMergeIterator.toDisk(this.mem.iterator(), diskDataIter) );
+                return new UnknownToInvalidIterator(
+                        new InvalidEntityFilterIterator(
+                                new EqualValFilterIterator(
+                                        TwoLevelMergeIterator.merge(this.mem.iterator(), diskDataIter) )));
             }
         }
 

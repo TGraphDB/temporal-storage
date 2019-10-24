@@ -3,6 +3,7 @@ package org.act.temporalProperty.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.TemporalPropertyStore;
+import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.exception.ValueUnknownException;
 import org.act.temporalProperty.helper.StoreInitial;
@@ -224,41 +225,28 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     public boolean createProperty( int propertyId, ValueContentType type )
     {
         meta.lock.lockExclusive();
-        try
-        {
+        try {
             SinglePropertyStore prop = meta.proStores().get( propertyId );
-            if ( prop == null )
-            {
-                try
-                {
+            if ( prop == null ) {
+                try {
                     PropertyMetaData pMeta = new PropertyMetaData( propertyId, type );
                     meta.addStore( propertyId, new SinglePropertyStore( pMeta, dbDir, cache, index ) );
                     meta.addProperty( pMeta );
                     return true;
-                }
-                catch ( Throwable ignore )
-                {
+                } catch ( Throwable ignore ) {
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 PropertyMetaData pMeta = meta.getProperties().get( propertyId );
-                if ( pMeta != null && pMeta.getType() == type )
-                {
+                if ( pMeta != null && pMeta.getType() == type ) {
                     // already exist, maybe in recovery. so just delete all property then create again.
                     deleteProperty( propertyId );
-                    createProperty( propertyId, type );
-                    return true;
-                }
-                else
-                {
+                    return createProperty( propertyId, type );
+                } else {
                     throw new TPSRuntimeException( "create temporal property failed, exist property("+(pMeta==null?null:pMeta.getType())+") with same id but diff type! (new type: "+type+")" );
                 }
             }
-        }
-        finally
-        {
+        } finally {
             meta.lock.unlockExclusive();
         }
     }
@@ -266,10 +254,10 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public boolean setProperty( TimeIntervalKey key, Slice value )
     {
-        if ( !meta.getProperties().containsKey( key.getId().getPropertyId() ) )
-        {
-            createProperty( key.getId().getPropertyId(), key.getValueType().toValueContentType() );
-//            throw new TPSNHException( "no such property id: " + key.getKey().getPropertyId() + ". should create first!" );
+        if ( !meta.getProperties().containsKey( key.getId().getPropertyId() ) ) {
+            if(!createProperty( key.getId().getPropertyId(), key.getValueType().toValueContentType() )){
+                throw new TPSNHException( "create property failed: " + key.getId().getPropertyId() + " type: "+key.getValueType() );
+            }
         }
 
         meta.lock.lockExclusive();

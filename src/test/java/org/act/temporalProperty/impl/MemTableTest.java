@@ -59,7 +59,7 @@ public class MemTableTest
             }
         }
 
-        for (MemTable.MemTableIterator it = table.iterator(); it.hasNext();) {
+        for (SearchableIterator it = table.iterator(); it.hasNext();) {
             InternalEntry entry = it.next();
             System.out.println(entry.getKey()+" "+entry.getValue());
             try {

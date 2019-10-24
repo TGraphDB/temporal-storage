@@ -313,12 +313,12 @@ public class SinglePropertyStore
         TableBuilder builder = new TableBuilder(new Options(), channel, TableComparator.instance());
         Table table = this.cache.getTable(filePath);
 
-        /**
-         * 写存储过程
-         * 会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
-         * 使用bufferFileName做判断，若"st"开头则是合并stable file
+        /*
+          写存储过程
+          会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
+          使用bufferFileName做判断，若"st"开头则是合并stable file
          */
-        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), table.iterator());
+        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), new PackInternalKeyIterator(table.iterator()));
         while (iterator.hasNext()) {
             InternalEntry entry = iterator.next();
             builder.add(entry.getKey().encode(), entry.getValue());

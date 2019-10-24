@@ -3,11 +3,7 @@ package org.act.temporalProperty.index;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
-import org.act.temporalProperty.impl.FileMetaData;
-import org.act.temporalProperty.impl.Filename;
-import org.act.temporalProperty.impl.InternalEntry;
-import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.aggregation.AggregationIndexEntry;
 import org.act.temporalProperty.index.aggregation.AggregationIndexFileWriter;
 import org.act.temporalProperty.index.aggregation.AggregationIndexMeta;
@@ -272,7 +268,7 @@ public interface IndexUpdater
                 }
             }
 
-            TwoLevelMergeIterator merged =
+            SearchableIterator merged =
                     TwoLevelMergeIterator.merge( new List2SearchableIterator( propertyNewData ), new List2SearchableIterator( propertyOldIntervalData ) );
             while ( merged.hasNext() )
             {

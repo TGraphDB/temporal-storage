@@ -5,6 +5,7 @@ import org.act.temporalProperty.helper.StoreInitial;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.MemTable;
+import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.rtree.*;
 import org.act.temporalProperty.meta.SystemMeta;
@@ -37,7 +38,7 @@ public class DBFileInfoReader
         if(SystemUtils.IS_OS_WINDOWS){
             return "temporal.property.test";
         }else{
-            return "/tmp/test-db1";
+            return "/media/song/test/db-network-only/temporal.relationship.properties";
         }
     }
 
@@ -79,7 +80,7 @@ public class DBFileInfoReader
         StoreInitial store = new StoreInitial(new File(this.dbDir()));
         MemTable table = store.getMemTable();
         int i=0;
-        for (MemTable.MemTableIterator it = table.iterator(); it.hasNext() && i<10; i++) {
+        for (SearchableIterator it = table.iterator(); it.hasNext() && i<10; i++) {
             InternalEntry entry = it.next();
             System.out.println(entry.getKey()+" "+entry.getValue());
         }
@@ -88,6 +89,48 @@ public class DBFileInfoReader
             Map.Entry<TimeIntervalKey, Slice> entry = it.next();
             System.out.println(entry.getKey()+" "+entry.getValue());
         }
+    }
+
+
+
+    @Test
+    public void onePropertyFilesInfo() throws IOException {
+        String propertyId = "3";
+        File metaFile = new File( this.dbDir() + "/" + propertyId );
+        if(!metaFile.exists()){
+            System.out.println("##### Warning: file not exist: "+ metaFile.getAbsolutePath());
+            return;
+        }
+        System.out.println("################## "+propertyId+" #################");
+        FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + propertyId ) );
+        FileChannel channel = inputStream.getChannel();
+        Table table = new MMapTable( propertyId, channel, TableComparator.instance(), false );
+        TableIterator iterator = table.iterator();
+        if( !iterator.hasNext() )
+        {
+            System.out.println("Empty 000000.dbtmp file.");
+            return;
+        }
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
+        long size = 0;
+        long recordCount = 0;
+        while( iterator.hasNext() )
+        {
+            Map.Entry<Slice,Slice> entry = iterator.next();
+            Slice key = entry.getKey();
+            Slice value = entry.getValue();
+            InternalKey internalKey = InternalKey.decode( key );
+            System.out.println(internalKey+" "+value);
+            TimePointL time = internalKey.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
+            size += (key.length() + value.length());
+            recordCount++;
+        }
+        inputStream.close();
+        channel.close();
+        System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount);
     }
 
     @Test
