@@ -117,7 +117,7 @@ public class DBFileInfoReader
             Map.Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
-            InternalKey internalKey = new InternalKey( key );
+            InternalKey internalKey = InternalKey.decode( key );
             System.out.println(internalKey+" "+value);
             TimePointL time = internalKey.getStartTime();
             minTime = TimeIntervalUtil.min(minTime, time);

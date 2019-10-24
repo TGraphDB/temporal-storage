@@ -19,14 +19,7 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  */
 public class InternalKey implements Comparable<InternalKey>
 {
-    /**
-     * 属性id
-     */
-    private final int propertyId;
-    /**
-     * 点/边id
-     */
-    private final long entityId;
+    private final EntityPropertyId id;
     /**
      * 一个动态属性某个值的起始时间
      */
@@ -48,8 +41,7 @@ public class InternalKey implements Comparable<InternalKey>
         Preconditions.checkNotNull(valueType);
         Preconditions.checkNotNull(startTime);
 
-        this.propertyId = Id.getPropertyId();
-        this.entityId = Id.getEntityId();
+        this.id = Id;
         this.startTime = startTime;
         this.valueType = valueType;
     }
@@ -59,8 +51,7 @@ public class InternalKey implements Comparable<InternalKey>
         Preconditions.checkNotNull(startTime);
         Preconditions.checkNotNull(valueType);
 
-        this.propertyId = propertyId;
-        this.entityId = entityId;
+        this.id = new EntityPropertyId(entityId, propertyId);
         this.startTime = startTime;
         this.valueType = valueType;
     }
@@ -75,37 +66,22 @@ public class InternalKey implements Comparable<InternalKey>
     }
 
     /**
-     * 新建一个InternalKey，将相关Slice传入，可用于解码相关信息。如起始时间，record类型，id等
-     * @param data
-     */
-    public InternalKey(Slice data)
-    {
-        Preconditions.checkNotNull(data);
-        Preconditions.checkArgument(data.length() >= SIZE_OF_LONG, "data must be at least %s bytes", SIZE_OF_LONG);
-        this.propertyId = data.getInt(8);
-        this.entityId = data.getLong(0);
-        long packedSequenceAndType = data.getLong( data.length() - SIZE_OF_LONG );
-        this.startTime = new TimePointL(SequenceNumber.unpackTime(packedSequenceAndType));
-        this.valueType = SequenceNumber.unpackValueType(packedSequenceAndType);
-    }
-
-    /**
      * 返回唯一确定某个动态属性的标识，其中其点/边id保存在返回值的前8位，属性id保存在返回值的后4位。
      * @return 唯一确定某个动态属性的标识
      */
     public EntityPropertyId getId()
     {
-        return new EntityPropertyId(entityId, propertyId);
+        return id;
     }
 
     public int getPropertyId()
     {
-        return propertyId;
+        return id.getPropertyId();
     }
 
     public long getEntityId()
     {
-        return entityId;
+        return id.getEntityId();
     }
     
     /**
@@ -136,15 +112,14 @@ public class InternalKey implements Comparable<InternalKey>
             return false;
         }
         InternalKey that = (InternalKey) o;
-        return  entityId == that.entityId &&
-                propertyId == that.propertyId &&
+        return  id.equals(that.id) &&
                 startTime == that.startTime &&
                 valueType == that.valueType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(propertyId, entityId, startTime, valueType);
+        return Objects.hash(id, startTime, valueType);
     }
 
     @Override

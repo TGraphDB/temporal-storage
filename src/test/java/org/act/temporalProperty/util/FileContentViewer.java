@@ -89,7 +89,7 @@ public class FileContentViewer
             Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
-            InternalKey internalKey = new InternalKey( key );
+            InternalKey internalKey = InternalKey.decode( key );
             if(!callBack.onEntry(entryCount, internalKey, value)) break;
             TimePointL time = internalKey.getStartTime();
             minTime = TimeIntervalUtil.min(minTime, time);

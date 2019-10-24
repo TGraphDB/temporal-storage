@@ -21,7 +21,7 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
     protected InternalEntry computeNext() {
         if(in.hasNext()){
             Entry<Slice, Slice> tmp = in.next();
-            return new InternalEntry(new InternalKey(tmp.getKey()), tmp.getValue());
+            return new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
         }else {
             return endOfData();
         }

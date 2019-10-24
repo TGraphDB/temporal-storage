@@ -102,10 +102,10 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
 
     private void delete(InternalKey from, TimePointL to){
         if(to==TimePointL.Init){
-            table.tailMap( from.encode() ).keySet().removeIf( key -> new InternalKey(key).getEntityId()==from.getEntityId() );
+            table.tailMap( from.encode() ).keySet().removeIf( key -> InternalKey.decode(key).getEntityId()==from.getEntityId() );
         }else{
             table.tailMap( from.encode() ).keySet().removeIf( key -> {
-                InternalKey tmp = new InternalKey( key );
+                InternalKey tmp = InternalKey.decode( key );
                 return (tmp.getEntityId()==from.getEntityId() && tmp.getStartTime().compareTo(to)<=0);
             });
         }
@@ -122,7 +122,7 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
         if (entry == null) {
             return null;
         }
-        InternalKey ansKey = new InternalKey( entry.getKey() );
+        InternalKey ansKey = InternalKey.decode( entry.getKey() );
         if( !ansKey.getId().equals( key.getId() ) )
             return null;
         return entry.getValue();

@@ -145,7 +145,7 @@ public class TableBuilder
 //            assert (userComparator.compare(key, lastKey) > 0) : "key must be greater than last key";
             if(userComparator.compare(key, lastKey) <= 0){
 //                throw new AssertionError("key must be greater than last key, "+new AggregationIndexKey( lastKey)+" "+new AggregationIndexKey( key));
-                throw new AssertionError("key must be greater than last key, "+new InternalKey( lastKey )+" "+new InternalKey( key ));
+                throw new AssertionError("key must be greater than last key, "+InternalKey.decode( lastKey )+" "+InternalKey.decode( key ));
             }
         }
 

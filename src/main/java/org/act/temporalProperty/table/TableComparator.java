@@ -20,7 +20,7 @@ public class TableComparator implements UserComparator
     
     public static synchronized TableComparator instance()
     {
-        return new TableComparator(Comparator.comparing(InternalKey::new));
+        return new TableComparator(Comparator.comparing(InternalKey::decode));
     }
 
     public static synchronized TableComparator forAggrIndex()
