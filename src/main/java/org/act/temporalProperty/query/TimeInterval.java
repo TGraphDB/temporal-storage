@@ -68,7 +68,7 @@ public class TimeInterval extends TInterval<TimePointL>
     @Override
     public String toString()
     {
-        return "TimeInterval{start=" + from() + ", end=" + to() + '}';
+        return "TimeInterval[" + start() + ", " + end() + ']';
     }
 
 }

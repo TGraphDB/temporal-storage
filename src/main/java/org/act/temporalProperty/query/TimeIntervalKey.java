@@ -74,7 +74,7 @@ public class TimeIntervalKey extends TimeInterval
     @Override
     public String toString()
     {
-        return "TimeIntervalKey{start=" + from() + ", end=" + to() + ", pro=" + id.getPropertyId() + ", eid=" + id.getEntityId() + ", type=" +
+        return "TimeIntervalKey{start=" + start() + ", end=" + end() + ", pro=" + id.getPropertyId() + ", eid=" + id.getEntityId() + ", type=" +
                 valueType + '}';
     }
 

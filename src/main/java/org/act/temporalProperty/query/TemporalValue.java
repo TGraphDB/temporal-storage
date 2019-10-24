@@ -1,16 +1,13 @@
 package org.act.temporalProperty.query;
 
-import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.apache.commons.lang3.tuple.Triple;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 
@@ -22,7 +19,7 @@ import java.util.TreeMap;
  */
 public class TemporalValue<V>
 {
-    private final TreeMap<TimePointL,Value> map = new TreeMap<>();
+    private final TreeMap<TimePointL, ValWithFlag> map = new TreeMap<>();
 
     public TemporalValue( V initialValue )
     {
@@ -40,7 +37,7 @@ public class TemporalValue<V>
             map.tailMap( interval.start(), true ).clear();
             map.put( interval.start(), val( value ) );
         }else{
-            Value end = map.get( interval.end().next() );
+            ValWithFlag end = map.get( interval.end().next() );
             map.subMap( interval.start(), true, interval.end(), true ).clear();
             map.put( interval.start(), val( value ) );
             if ( end == null )
@@ -56,10 +53,10 @@ public class TemporalValue<V>
 
     public V get( TimePointL time )
     {
-        Entry<TimePointL,Value> entry = map.floorEntry( time );
+        Entry<TimePointL, ValWithFlag> entry = map.floorEntry( time );
         if(entry!=null)
         {
-            Value val = entry.getValue();
+            ValWithFlag val = entry.getValue();
             if ( val == null || val.isUnknown ) { return null; }
             else {
                 return val.value;
@@ -69,19 +66,19 @@ public class TemporalValue<V>
         }
     }
 
-    private Value valUnknown()
+    private ValWithFlag valUnknown()
     {
-        return new Value( true, null );
+        return new ValWithFlag( true, null );
     }
 
-    private Value val( V value )
+    private ValWithFlag val(V value )
     {
-        return new Value( false, value );
+        return new ValWithFlag( false, value );
     }
 
     public boolean overlap( TimePointL startTime, TimePointL endTime )
     {
-        Entry<TimePointL,Value> floor = map.floorEntry( endTime );
+        Entry<TimePointL, ValWithFlag> floor = map.floorEntry( endTime );
         if ( floor == null )
         {
             return false;
@@ -131,7 +128,7 @@ public class TemporalValue<V>
 
     public PeekingIterator<Triple<TimePointL,Boolean,V>> pointEntries( TimePointL startTime )
     {
-        Entry<TimePointL,Value> floor = map.floorEntry( startTime );
+        Entry<TimePointL, ValWithFlag> floor = map.floorEntry( startTime );
         if ( floor != null )
         {
             return Iterators.peekingIterator( Iterators.transform( map.tailMap( floor.getKey(), true ).entrySet().iterator(),
@@ -155,12 +152,12 @@ public class TemporalValue<V>
         return null;
     }
 
-    private class Value
+    private class ValWithFlag
     {
         private boolean isUnknown;
         private V value;
 
-        Value( boolean isUnknown, V value )
+        ValWithFlag(boolean isUnknown, V value )
         {
             this.isUnknown = isUnknown;
             this.value = value;
@@ -200,7 +197,7 @@ public class TemporalValue<V>
 
     private class IntervalIterator extends AbstractIterator<Entry<TimeInterval,V>> implements PeekingIterator<Entry<TimeInterval,V>>
     {
-        PeekingIterator<Entry<TimePointL,Value>> iterator = Iterators.peekingIterator( map.entrySet().iterator() );
+        PeekingIterator<Entry<TimePointL, ValWithFlag>> iterator = Iterators.peekingIterator( map.entrySet().iterator() );
 
         @Override
         protected Entry<TimeInterval,V> computeNext()
@@ -209,10 +206,10 @@ public class TemporalValue<V>
             {
                 if ( !isUnknown( iterator.peek() ) )
                 {
-                    Entry<TimePointL,Value> start = iterator.next();
+                    Entry<TimePointL, ValWithFlag> start = iterator.next();
                     if ( iterator.hasNext() )
                     {
-                        Entry<TimePointL,Value> endNext = iterator.peek();
+                        Entry<TimePointL, ValWithFlag> endNext = iterator.peek();
                         return new TimeIntervalValueEntry( new TimeInterval( start.getKey(), endNext.getKey().pre() ), start.getValue().value );
                     }
                     else
@@ -228,7 +225,7 @@ public class TemporalValue<V>
             return endOfData();
         }
 
-        private boolean isUnknown( Entry<TimePointL,Value> entry )
+        private boolean isUnknown( Entry<TimePointL, ValWithFlag> entry )
         {
             return entry.getValue().isUnknown;
         }
@@ -238,13 +235,13 @@ public class TemporalValue<V>
     {
         private final TimePointL end;
         private TimeIntervalValueEntry start;
-        PeekingIterator<Entry<TimePointL,Value>> iterator;
+        PeekingIterator<Entry<TimePointL, ValWithFlag>> iterator;
 
         public AddIntervalIterator( TimePointL start, TimePointL end )
         {
             this.end = end;
             this.iterator = Iterators.peekingIterator( map.subMap( start, end ).entrySet().iterator() );
-            Entry<TimePointL,Value> floorEntry = map.floorEntry( start );
+            Entry<TimePointL, ValWithFlag> floorEntry = map.floorEntry( start );
             if ( !floorEntry.getValue().isUnknown && floorEntry.getKey().compareTo( start ) < 0 )
             {
                 this.start = new TimeIntervalValueEntry( new TimeInterval( start, floorEntry.getKey().pre() ), floorEntry.getValue().value );
@@ -265,10 +262,10 @@ public class TemporalValue<V>
             {
                 if ( !isUnknown( iterator.peek() ) )
                 {
-                    Entry<TimePointL,Value> start = iterator.next();
+                    Entry<TimePointL, ValWithFlag> start = iterator.next();
                     if ( iterator.hasNext() )
                     {
-                        Entry<TimePointL,Value> end = iterator.peek();
+                        Entry<TimePointL, ValWithFlag> end = iterator.peek();
                         return new TimeIntervalValueEntry( new TimeInterval( start.getKey(), end.getKey() ), start.getValue().value );
                     }
                     else
@@ -280,7 +277,7 @@ public class TemporalValue<V>
             return endOfData();
         }
 
-        private boolean isUnknown( Entry<TimePointL,Value> entry )
+        private boolean isUnknown( Entry<TimePointL, ValWithFlag> entry )
         {
             return entry.getValue().isUnknown;
         }

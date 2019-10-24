@@ -33,6 +33,14 @@ public class EntityPropertyId implements Comparable<EntityPropertyId>, Serializa
         }
     }
 
+    @Override
+    public String toString() {
+        return "EntityPropertyId{" +
+                "entityId=" + entityId +
+                ", propertyId=" + propertyId +
+                '}';
+    }
+
     public void encode(SliceOutput out){
         out.writeInt(propertyId);
         out.writeLong(entityId);
