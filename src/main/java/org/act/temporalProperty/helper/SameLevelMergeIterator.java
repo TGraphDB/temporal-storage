@@ -85,7 +85,7 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     @Override
     public String toString() {
-        return "SameLevelMergeIterator{" +
+        return "SameLevelMergeIterator@"+hashCode()+"{" +
                 "heap=" + heap +
                 ", iterators=" + iterators +
                 '}';

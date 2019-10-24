@@ -6,6 +6,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.ValueUnknownException;
 import org.act.temporalProperty.helper.AbstractSearchableIterator;
+import org.act.temporalProperty.helper.DebugIterator;
 import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimeIntervalKey;
@@ -120,9 +121,9 @@ public class MemTable
         return sb.toString();
     }
 
-    public MemTableIterator iterator()
+    public SearchableIterator iterator()
     {
-        return new MemTableIterator(table);
+        return new DebugIterator(new MemTableIterator(table));
     }
 
     public PeekingIterator<Entry<TimeIntervalKey,Slice>> intervalEntryIterator()
@@ -205,7 +206,10 @@ public class MemTable
     }
 
     /**
-     *
+     * 迭代结果中不可能有连续的Unknown项。
+     * 理由：1. 同一个TemporalValue中不可能操作后出现连续两个Unknown标记的数据项。（产生unknown的原因是这里的值原先是unknown状态（可能
+     * 是空或unknown，但都表示unknown状态）时才会产生UNKNOWN数据项，而不可能把原先有值的地方变成unknown。
+     * 2. 每个temporalValue迭代出来的第一项也不可能是unknown的，因此多个temporalValue不会产生连续的unknown标记。
      */
     public static class MemTableIterator extends AbstractSearchableIterator
     {

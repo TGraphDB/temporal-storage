@@ -1,10 +1,12 @@
 package org.act.temporalProperty.helper;
 
+import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
 
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -34,6 +36,15 @@ import static com.google.common.base.Preconditions.checkState;
 
 public abstract class AbstractSearchableIterator implements SearchableIterator
 {
+//    public static Map<InternalKey, List<Integer>> from = new ConcurrentSkipListMap<>();//Collections.synchronizedMap(new WeakHashMap<>());
+//    public static void searchKey(InternalKey key){
+//        from.forEach((internalKey, peekingIterators) -> {
+//            if(Objects.equals(internalKey, key)){
+//                peekingIterators.forEach(System.out::println);
+//            }
+//        });
+//    }
+
     private enum State
     {
         READY,     // We have computed the next element and haven't returned it yet.
@@ -92,6 +103,16 @@ public abstract class AbstractSearchableIterator implements SearchableIterator
         next = computeNext();
         if ( state != State.DONE )
         {
+//            //add debug info
+//            List<Integer> iters = from.get(next.getKey());
+//            if(iters!=null) {
+//                iters.add(this.hashCode());
+//            }else{
+//                iters = new LinkedList<>();
+//                iters.add(this.hashCode());
+//                from.put(next.getKey(), iters);
+//            }
+//            // end debug
             state = State.READY;
             return true;
         }

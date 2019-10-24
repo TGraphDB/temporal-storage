@@ -11,6 +11,8 @@ import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 
 /**
@@ -18,55 +20,49 @@ import java.util.Map.Entry;
  */
 public class DebugIterator extends AbstractSearchableIterator
 {
-
     private final SearchableIterator in;
-    private final String name;
+    private final LinkedList<InternalKey> preKeys = new LinkedList<>();
     private InternalKey preKey = null;
     private InternalKey min = null;
     private InternalKey max = null;
 
-    public DebugIterator( SearchableIterator in, String name )
-    {
-        this.in = in;
-        this.name = name;
-    }
-
     public DebugIterator( SearchableIterator in )
     {
         this.in = in;
-        this.name = "";
     }
 
     @Override
     protected InternalEntry computeNext()
     {
-        return check();
-    }
-
-    private InternalEntry noCheck()
-    {
-        return in.hasNext() ? in.next() : endOfData();
-    }
-
-    private InternalEntry check()
-    {
         if(in.hasNext()){
-            InternalEntry curEntry = in.next();
-            assertKeyInc( curEntry );
-            updateMinMax( curEntry );
-            isKeyEqual( curEntry );
-            return curEntry;
-        }
-        else
-        {
+            return check(in.next());
+        }else{
             return endOfData();
         }
+    }
+
+    private InternalEntry check(InternalEntry curEntry)
+    {
+        preKeys.add(curEntry.getKey());
+        if(preKeys.size()>4) preKeys.poll();
+        assertKeyInc( curEntry );
+        assertKeyKnown(curEntry.getKey());
+        updateMinMax( curEntry );
+        isKeyEqual( curEntry );
+        return curEntry;
+    }
+
+    // 保证key不是连续unknown状态
+    private void assertKeyKnown(InternalKey key) {
+//        if(preKeys.pollLast().getValueType()==ValueType.UNKNOWN){
+//
+//        }
     }
 
     private void isKeyEqual( InternalEntry entry )
     {
         InternalKey curT = entry.getKey();
-        if(curT.compareTo( new InternalKey( 0, 0, new TimePointL(349529), ValueType.VALUE ) )==0){
+        if(curT.compareTo( new InternalKey( 3, 120048, new TimePointL(1272652202), ValueType.VALUE ) )==0){
             System.out.println("reach pre correct key: "+curT);
         }
     }
@@ -82,7 +78,9 @@ public class DebugIterator extends AbstractSearchableIterator
             InternalKey curT = entry.getKey();
             if ( curT.compareTo( preKey ) <= 0 )
             {
-                throw new TPSNHException( "key dec! " + preKey + " " + curT );
+                System.out.println("########### ERROR@"+this.hashCode()+" ##########");
+                preKeys.forEach(System.out::println);
+                System.out.println( "key not inc! " + preKey + " " + curT );
             }
             else
             {
@@ -114,43 +112,44 @@ public class DebugIterator extends AbstractSearchableIterator
 
     @Override
     public String toString() {
-        return "DebugIterator{" +
-                "in=" + in +
-                ", preKey=" + preKey +
-                ", min=" + min +
-                ", max=" + max +
-                '}';
-    }
-
-    public static class ForInterval extends AbstractIterator<Entry<TimeIntervalKey,Slice>> implements IntervalIterator
-    {
-        private TimeIntervalKey preKey;
-        private IntervalIterator in;
-
-        public ForInterval( IntervalIterator it )
-        {
-            this.in = it;
-        }
-
-        @Override
-        protected Entry<TimeIntervalKey,Slice> computeNext()
-        {
-            if(in.hasNext()){
-                if(preKey == null){
-                    preKey = in.peek().getKey();
-                    return in.next();
-                }else{
-                    TimeIntervalKey curT = in.peek().getKey();
-                    if(curT.getStartKey().compareTo( preKey.getStartKey() )>=0){
-                        throw new TPSNHException("key not inc! "+ preKey +" "+ curT);
-                    }else{
-                        preKey = curT;
-                        return in.next();
+        String inner = in.toString().replace("\n", "").replace("|--", "").replace("{}", "");
+        StringBuilder sb = new StringBuilder();
+        int level = 1;
+        boolean skipBlank = false;
+        for(int i=0; i<inner.length(); i++){
+            char c = inner.charAt(i);
+            switch (c) {
+                case '{':
+                    sb.append(c).append('\n');
+                    for(int j=0; j<level; j++){
+                        sb.append("|--");
                     }
-                }
-            }else{
-                return endOfData();
+                    level++;
+                    break;
+                case '}':
+                    level--;
+                    sb.append(c);
+                    break;
+                case ',':
+                    skipBlank = true;
+                    sb.append(c);
+                    break;
+                case ' ':
+                    if(skipBlank){
+                       continue;
+                    }else{
+                        sb.append(c);
+                        break;
+                    }
+                default:
+                    if(skipBlank){
+                        skipBlank = false;
+                        sb.append('\n').append(c);
+                    }else{
+                        sb.append(c);
+                    }
             }
         }
+        return "Debug@"+hashCode()+"_"+sb.toString();
     }
 }
