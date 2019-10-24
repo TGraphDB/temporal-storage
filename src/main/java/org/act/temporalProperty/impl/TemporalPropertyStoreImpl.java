@@ -253,7 +253,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                 }
                 else
                 {
-                    throw new TPSRuntimeException( "create temporal property failed, exist property with same id but diff type!" );
+                    throw new TPSRuntimeException( "create temporal property failed, exist property("+(pMeta==null?null:pMeta.getType())+") with same id but diff type! (new type: "+type+")" );
                 }
             }
         }
