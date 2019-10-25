@@ -1,19 +1,14 @@
 package org.act.temporalProperty.helper;
 
 import com.google.common.collect.AbstractIterator;
-import org.act.temporalProperty.exception.TPSNHException;
+import com.sun.istack.internal.NotNull;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.IntervalIterator;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
-import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
-import org.act.temporalProperty.util.Slice;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
+import java.util.*;
 
 /**
  * Created by song on 2018-03-28.
@@ -21,14 +16,18 @@ import java.util.Map.Entry;
 public class DebugIterator extends AbstractSearchableIterator
 {
     private final SearchableIterator in;
-    private final LinkedList<InternalKey> preKeys = new LinkedList<>();
-    private InternalKey preKey = null;
+    private final InternalKeyFixedLengthFifoQueue preKeys = new InternalKeyFixedLengthFifoQueue(4);
     private InternalKey min = null;
     private InternalKey max = null;
 
-    public DebugIterator( SearchableIterator in )
+    private DebugIterator(SearchableIterator in)
     {
         this.in = in;
+    }
+
+    public static SearchableIterator wrap(SearchableIterator iterator) {
+        if(iterator instanceof DebugIterator) return iterator;
+        else return new DebugIterator(iterator);
     }
 
     @Override
@@ -43,12 +42,11 @@ public class DebugIterator extends AbstractSearchableIterator
 
     private InternalEntry check(InternalEntry curEntry)
     {
-        preKeys.add(curEntry.getKey());
-        if(preKeys.size()>4) preKeys.poll();
         assertKeyInc( curEntry );
         assertKeyKnown(curEntry.getKey());
         updateMinMax( curEntry );
         isKeyEqual( curEntry );
+        preKeys.add(curEntry.getKey());
         return curEntry;
     }
 
@@ -69,24 +67,16 @@ public class DebugIterator extends AbstractSearchableIterator
 
     private void assertKeyInc( InternalEntry entry )
     {
-        if ( preKey == null )
-        {
-            preKey = entry.getKey();
-        }
-        else
-        {
+        try{
+            InternalKey preKey = preKeys.getLast();
             InternalKey curT = entry.getKey();
             if ( curT.compareTo( preKey ) <= 0 )
             {
                 System.out.println("########### ERROR@"+this.hashCode()+" ##########");
-                preKeys.forEach(System.out::println);
-                System.out.println( "key not inc! " + preKey + " " + curT );
+                System.out.println( "key not inc! " + internalKeyInline(preKey) + " " + internalKeyInline(curT) );
+                System.out.println(this.toString());
             }
-            else
-            {
-                preKey = curT;
-            }
-        }
+        }catch (NoSuchElementException ignore){}
     }
 
     private void updateMinMax( InternalEntry entry )
@@ -110,22 +100,48 @@ public class DebugIterator extends AbstractSearchableIterator
         return in.seekFloor(targetKey);
     }
 
+    private String internalKeyInline(InternalKey key){
+        return key.toString().replace('{','(').replace('}',')').replace(", "," ");
+    }
+
     @Override
     public String toString() {
-        String inner = in.toString().replace("\n", "").replace("|--", "").replace("{}", "");
+        boolean printPreKeys = true;
+
+        String inner = in.toString().replace("\n", "").replace("|--", "");
+        if(!printPreKeys) {
+            inner = inner.replace("{}", "");
+        }
         StringBuilder sb = new StringBuilder();
-        int level = 1;
+        int level = 0;
         boolean skipBlank = false;
+
         for(int i=0; i<inner.length(); i++){
             char c = inner.charAt(i);
             switch (c) {
                 case '{':
+                case '[':
                     sb.append(c).append('\n');
+                    level++;
                     for(int j=0; j<level; j++){
                         sb.append("|--");
                     }
-                    level++;
+                    if(c=='{' && printPreKeys){
+                        printPreKeys=false;
+                        sb.append("preKeys=[\n");
+                        level++;
+                        int k=1;
+                        for(InternalKey key : preKeys){
+                            for(int j=0; j<level; j++){ sb.append("|--"); }
+                            sb.append(internalKeyInline(key));
+                            if(k<preKeys.size()) sb.append(',').append('\n');
+                            k++;
+                        }
+                        sb.append("],\n");
+                        level--;
+                    }
                     break;
+                case ']':
                 case '}':
                     level--;
                     sb.append(c);
@@ -144,12 +160,48 @@ public class DebugIterator extends AbstractSearchableIterator
                 default:
                     if(skipBlank){
                         skipBlank = false;
-                        sb.append('\n').append(c);
+                        sb.append('\n');
+                        for(int j=0; j<level; j++){
+                            sb.append("|--");
+                        }
+                        sb.append(c);
                     }else{
                         sb.append(c);
                     }
             }
         }
         return "Debug@"+hashCode()+"_"+sb.toString();
+    }
+
+
+    private static class InternalKeyFixedLengthFifoQueue implements Iterable<InternalKey>{
+        private final LinkedList<InternalKey> pool = new LinkedList<>();
+        private final int len;
+        private int addCount = 0;
+
+        InternalKeyFixedLengthFifoQueue(int len) {
+            this.len = len;
+        }
+
+        void add(InternalKey newest) {
+            pool.add(newest);
+            addCount++;
+            if(addCount>len){
+                pool.poll();
+            }
+        }
+
+        int size(){
+            return Math.min(addCount, len);
+        }
+
+        InternalKey getLast(){
+            return pool.getLast();
+        }
+
+        @Override
+        public Iterator<InternalKey> iterator() {
+            return pool.iterator();
+        }
     }
 }

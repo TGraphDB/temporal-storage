@@ -123,7 +123,7 @@ public class MemTable
 
     public SearchableIterator iterator()
     {
-        return new DebugIterator(new MemTableIterator(table));
+        return DebugIterator.wrap(new MemTableIterator(table));
     }
 
     public PeekingIterator<Entry<TimeIntervalKey,Slice>> intervalEntryIterator()

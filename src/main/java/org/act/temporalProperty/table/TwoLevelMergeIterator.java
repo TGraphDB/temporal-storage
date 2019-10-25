@@ -6,8 +6,6 @@ import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
-import org.act.temporalProperty.query.TimePointL;
-import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * 将相邻Level的数据（如某文件及其Buffer）合并，并组成统一的Iterator。
@@ -22,8 +20,8 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
 
     public TwoLevelMergeIterator(SearchableIterator latest, SearchableIterator old)
     {
-        this.latest = latest;
-        this.old = old;
+        this.latest = DebugIterator.wrap(latest);
+        this.old = DebugIterator.wrap(old);
     }
 
     @Override
@@ -33,7 +31,6 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
             InternalEntry disk = old.peek();
             InternalKey memKey = mem.getKey();
             InternalKey diskKey = disk.getKey();
-            
 
             int r = diskKey.compareTo(memKey);
             if(r<0){
@@ -123,6 +120,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     public void seekToFirst()
     {
         super.resetState();
+        oldCurrent = null;
         this.latest.seekToFirst();
         this.old.seekToFirst();
     }
@@ -130,6 +128,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     @Override
     public boolean seekFloor(InternalKey targetKey )
     {
+        oldCurrent = null;
         this.latest.seekFloor( targetKey );
         this.old.seekFloor( targetKey );
         return super.seekFloor(targetKey);
@@ -144,6 +143,6 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     }
 
     public static SearchableIterator merge(SearchableIterator latest, SearchableIterator old){
-        return new DebugIterator(new TwoLevelMergeIterator(latest, old));
+        return DebugIterator.wrap(new TwoLevelMergeIterator(latest, old));
     }
 }
