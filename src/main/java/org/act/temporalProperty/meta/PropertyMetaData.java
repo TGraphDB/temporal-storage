@@ -7,8 +7,12 @@ import org.act.temporalProperty.impl.FileMetaData;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Created by song on 2018-01-17.
@@ -121,21 +125,21 @@ public class PropertyMetaData {
         return new ArrayList<>(unstableByTime.headMap(time, true).values());
     }
 
-    public FileMetaData unFloorTimeOneMeta(TimePointL time) {
-        TimePointL start = unstableByTime.floorKey(time);
+    public Set<Entry<TimePointL, FileMetaData>> unFloorTimeMetaList(TimePointL from, TimePointL to) {
+        TimePointL start = unstableByTime.floorKey(from);
         if(start==null) {
             return null;
         }else{
-            return unstableByTime.get(start);
+            return unstableByTime.subMap(start, true, to, true).entrySet();
         }
     }
 
-    public FileMetaData stFloorTimeOneMeta(TimePointL time) {
-        TimePointL start = stableByTime.floorKey(time);
+    public Set<Entry<TimePointL, FileMetaData>> stFloorTimeMetaIterator(TimePointL from, TimePointL to) {
+        TimePointL start = stableByTime.floorKey(from);
         if(start==null) {
             return null;
         }else{
-            return stableByTime.get(start);
+            return stableByTime.subMap(start, true, to, true).entrySet();
         }
     }
 

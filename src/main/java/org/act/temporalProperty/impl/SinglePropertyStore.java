@@ -247,45 +247,52 @@ public class SinglePropertyStore
      */
     private void insertUnstableBuffer( TimeIntervalKey key, Slice value ) throws IOException
     {
-        FileMetaData meta = propertyMeta.unFloorTimeOneMeta( key.start() );
-        assert meta!=null : "SNH: meta should not null!";
-
-        FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
-        if( null == buffer ) {
-            String fileName = Filename.unbufferFileName(meta.getNumber());
-            buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
-            propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
-        }
-        if(key.end().compareTo(meta.getLargest())==0){ //see https://github.com/TGraphDB/temporal-storage/issues/4#issuecomment-546302108
-            buffer.add(key.changeEnd(TimePointL.Now), value);
-        }else{
-            buffer.add( key, value );
-        }
-        if(buffer.size()>1024*1024*10) {
-            unBufferToFile( meta, buffer );
+        assert propertyMeta.hasUnstable();
+        for(Entry<TimePointL, FileMetaData> entry : propertyMeta.unFloorTimeMetaList( key.start(), key.end() )){
+            FileMetaData meta = entry.getValue();
+            FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
+            if( null == buffer ) {
+                String fileName = Filename.unbufferFileName(meta.getNumber());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
+            }
+            TimeIntervalKey validKey = key;
+            if(validKey.start().compareTo(meta.getSmallest())<0){
+                validKey = validKey.changeStart(meta.getSmallest());
+            }
+            if(validKey.end().compareTo(meta.getLargest())>=0){
+                validKey = validKey.changeEnd(TimePointL.Now);
+            }
+            buffer.add( validKey, value );
+            if(buffer.size()>1024*1024*10) {
+                unBufferToFile( meta, buffer );
+            }
         }
     }
 
     private void insertStableBuffer( TimeIntervalKey key, Slice value ) throws IOException {
-        FileMetaData meta = propertyMeta.stFloorTimeOneMeta( key.start() );
-        assert meta!=null : "SNH: meta should not null!";
-
-        FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
-        if( null == buffer ) {
-            String fileName = Filename.stbufferFileName(meta.getNumber());
-            buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
-            propertyMeta.addStableBuffer(meta.getNumber(), buffer);
-        }
-        if(key.end().compareTo(meta.getLargest())==0){
-            buffer.add(key.changeEnd(TimePointL.Now), value);
-        }else{
-            buffer.add( key, value );
-        }
-        if(buffer.size()>1024*1024*10) {
-            stBufferToFile( meta, buffer );
+        assert propertyMeta.hasStable();
+        for(Entry<TimePointL, FileMetaData> entry : propertyMeta.stFloorTimeMetaIterator(key.start(), key.end())){
+            FileMetaData meta = entry.getValue();
+            FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
+            if( null == buffer ) {
+                String fileName = Filename.stbufferFileName(meta.getNumber());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                propertyMeta.addStableBuffer(meta.getNumber(), buffer);
+            }
+            TimeIntervalKey validKey = key;
+            if(validKey.start().compareTo(meta.getSmallest())<0){
+                validKey = validKey.changeStart(meta.getSmallest());
+            }
+            if(validKey.end().compareTo(meta.getLargest())>=0){
+                validKey = validKey.changeEnd(TimePointL.Now);
+            }
+            buffer.add( validKey, value );
+            if(buffer.size()>1024*1024*10) {
+                stBufferToFile( meta, buffer );
+            }
         }
     }
-
 
     private void unBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
         IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), false, meta, buffer.getMemTable());

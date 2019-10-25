@@ -16,7 +16,7 @@ import java.util.*;
 public class DebugIterator extends AbstractSearchableIterator
 {
     private final SearchableIterator in;
-    private final InternalKeyFixedLengthFifoQueue preKeys = new InternalKeyFixedLengthFifoQueue(4);
+    private final InternalKeyFixedLengthFifoQueue preKeys = new InternalKeyFixedLengthFifoQueue(5);
     private InternalKey min = null;
     private InternalKey max = null;
 
@@ -26,8 +26,9 @@ public class DebugIterator extends AbstractSearchableIterator
     }
 
     public static SearchableIterator wrap(SearchableIterator iterator) {
-        if(iterator instanceof DebugIterator) return iterator;
-        else return new DebugIterator(iterator);
+        return iterator;
+//        if(iterator instanceof DebugIterator) return iterator;
+//        else return new DebugIterator(iterator);
     }
 
     @Override
@@ -123,11 +124,9 @@ public class DebugIterator extends AbstractSearchableIterator
                 case '[':
                     sb.append(c).append('\n');
                     level++;
-                    for(int j=0; j<level; j++){
-                        sb.append("|--");
-                    }
                     if(c=='{' && printPreKeys){
                         printPreKeys=false;
+                        for(int j=0; j<level; j++){ sb.append("|--"); }
                         sb.append("preKeys=[\n");
                         level++;
                         int k=1;
@@ -140,6 +139,7 @@ public class DebugIterator extends AbstractSearchableIterator
                         sb.append("],\n");
                         level--;
                     }
+                    for(int j=0; j<level; j++){ sb.append("|--"); }
                     break;
                 case ']':
                 case '}':
