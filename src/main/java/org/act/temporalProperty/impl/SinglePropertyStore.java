@@ -198,7 +198,17 @@ public class SinglePropertyStore
                     insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
                     toMerge.addInterval( timeInterval.changeStart( unMaxTime.next() ), val );
                 }
-            }else if( unExist && stExist){
+            }else if(!unExist && stExist){
+                TimePointL stMaxTime = propertyMeta.stMaxTime();
+                if( timeInterval.lessThan( stMaxTime.next() )){
+                    insertStableBuffer(timeInterval, val);
+                }else if(timeInterval.greaterOrEq( stMaxTime.next() )){
+                    toMerge.addInterval(timeInterval, val);
+                }else{
+                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
+                    toMerge.addInterval( timeInterval.changeStart( stMaxTime.next() ), val );
+                }
+            }else{//unExist && stExist
                 TimePointL stMaxTime = propertyMeta.stMaxTime();
                 TimePointL unMaxTime = propertyMeta.unMaxTime();
                 if( timeInterval.span( stMaxTime, unMaxTime.next() )){ // timeInterval.start < stMaxTime <= unMaxTime+1 <= timeInterval.end
@@ -219,16 +229,6 @@ public class SinglePropertyStore
                     insertUnstableBuffer( timeInterval, val );
                 }else{
                     throw new TPSNHException( "no such scenery!" );
-                }
-            }else{ // !unExist && stExist
-                TimePointL stMaxTime = propertyMeta.stMaxTime();
-                if( timeInterval.lessThan( stMaxTime.next() )){
-                    insertStableBuffer(timeInterval, val);
-                }else if(timeInterval.greaterOrEq( stMaxTime.next() )){
-                    toMerge.addInterval(timeInterval, val);
-                }else{
-                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( stMaxTime.next() ), val );
                 }
             }
         }
@@ -256,7 +256,11 @@ public class SinglePropertyStore
             buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
             propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
         }
-        buffer.add( key, value );
+        if(key.end().compareTo(meta.getLargest())==0){ //see https://github.com/TGraphDB/temporal-storage/issues/4#issuecomment-546302108
+            buffer.add(key.changeEnd(TimePointL.Now), value);
+        }else{
+            buffer.add( key, value );
+        }
         if(buffer.size()>1024*1024*10) {
             unBufferToFile( meta, buffer );
         }
@@ -272,7 +276,11 @@ public class SinglePropertyStore
             buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
             propertyMeta.addStableBuffer(meta.getNumber(), buffer);
         }
-        buffer.add( key, value );
+        if(key.end().compareTo(meta.getLargest())==0){
+            buffer.add(key.changeEnd(TimePointL.Now), value);
+        }else{
+            buffer.add( key, value );
+        }
         if(buffer.size()>1024*1024*10) {
             stBufferToFile( meta, buffer );
         }

@@ -37,8 +37,9 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     public void add( SearchableIterator append )
     {
-        this.iterators.add(append);
-        if(append.hasNext()) heap.add(append);
+        SearchableIterator debug = DebugIterator.wrap(append);
+        this.iterators.add(debug);
+        if(append.hasNext()) heap.add(debug);
     }
 
     @Override
@@ -86,8 +87,8 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
     @Override
     public String toString() {
         return "SameLevelMergeIterator@"+hashCode()+"{" +
-                "heap=" + heap +
-                ", iterators=" + iterators +
+//                "heap=" + heap + ", " +
+                "iterators=" + iterators +
                 '}';
     }
 }
