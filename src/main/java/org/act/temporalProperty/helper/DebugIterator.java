@@ -1,14 +1,14 @@
 package org.act.temporalProperty.helper;
 
-import com.google.common.collect.AbstractIterator;
-import com.sun.istack.internal.NotNull;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.query.TimePointL;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
 /**
  * Created by song on 2018-03-28.
