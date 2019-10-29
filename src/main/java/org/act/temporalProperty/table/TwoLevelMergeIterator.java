@@ -6,6 +6,7 @@ import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * 将相邻Level的数据（如某文件及其Buffer）合并，并组成统一的Iterator。
@@ -65,7 +66,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
                 } else {
                     oldCurrent = disk;
                     latest.next();//必须先调latest的next再delOld
-                    delOld(memKey);
+                    delOld(memKey.getId());
                     return mem;
                 }
             }
@@ -93,12 +94,12 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     }
 
     //从old中移除项，直到相同ID的项
-    private void delOld(InternalKey k) {
+    private void delOld(EntityPropertyId id) {
         if(latest.hasNext()){
             InternalKey until = latest.peek().getKey();
             while(old.hasNext()){
                 InternalKey oldKey = old.peek().getKey();
-                if(oldKey.getId().equals(k.getId()) && oldKey.compareTo(until)<0){
+                if(oldKey.getId().equals(id) && oldKey.compareTo(until)<0){
                     oldCurrent = old.next();
                 }else{
                     return;
@@ -107,7 +108,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
         }else{
             while(old.hasNext()) {
                 InternalKey oldKey = old.peek().getKey();
-                if(oldKey.getId().equals(k.getId())) {
+                if(oldKey.getId().equals(id)) {
                     oldCurrent = old.next();
                 }else{
                     return;
