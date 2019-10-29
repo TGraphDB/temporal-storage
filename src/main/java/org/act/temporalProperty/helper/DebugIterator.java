@@ -91,6 +91,7 @@ public class DebugIterator extends AbstractSearchableIterator
     @Override
     public void seekToFirst() {
         super.resetState();
+        preKeys.clear();
         in.seekToFirst();
     }
 
@@ -98,6 +99,7 @@ public class DebugIterator extends AbstractSearchableIterator
     public boolean seekFloor(InternalKey targetKey )
     {
         super.resetState();
+        preKeys.clear();
         return in.seekFloor(targetKey);
     }
 
@@ -202,6 +204,11 @@ public class DebugIterator extends AbstractSearchableIterator
         @Override
         public Iterator<InternalKey> iterator() {
             return pool.iterator();
+        }
+
+        public void clear() {
+            pool.clear();
+            addCount=0;
         }
     }
 }
