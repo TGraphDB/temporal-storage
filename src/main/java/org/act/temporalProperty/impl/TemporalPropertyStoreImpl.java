@@ -254,13 +254,12 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public boolean setProperty( TimeIntervalKey key, Slice value )
     {
+        meta.lock.lockExclusive();
         if ( !meta.getProperties().containsKey( key.getId().getPropertyId() ) ) {
             if(!createProperty( key.getId().getPropertyId(), key.getValueType().toValueContentType() )){
                 throw new TPSNHException( "create property failed: " + key.getId().getPropertyId() + " type: "+key.getValueType() );
             }
         }
-
-        meta.lock.lockExclusive();
         try
         {
             if ( forbiddenWrite )
