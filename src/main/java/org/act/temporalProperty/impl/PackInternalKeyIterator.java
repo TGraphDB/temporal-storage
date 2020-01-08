@@ -21,7 +21,7 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
     protected InternalEntry computeNext() {
         if(in.hasNext()){
             Entry<Slice, Slice> tmp = in.next();
-            return new InternalEntry(new InternalKey(tmp.getKey()), tmp.getValue());
+            return new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
         }else {
             return endOfData();
         }
@@ -29,13 +29,20 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
 
     @Override
     public void seekToFirst() {
-        super.resetState();
+        this.resetState();
         in.seekToFirst();
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
-        super.resetState();
+    public boolean seekFloor(InternalKey targetKey) {
         in.seek(targetKey.encode());
+        return super.seekFloor(targetKey);
+    }
+
+    @Override
+    public String toString() {
+        return "PackInternalKeyIterator{" +
+                "in=" + in +
+                '}';
     }
 }

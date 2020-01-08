@@ -39,8 +39,20 @@ public class EntityFilterIterator extends AbstractSearchableIterator {
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         super.resetState();
-        in.seek(targetKey);
+        if(in.seekFloor(targetKey) && this.hasNext()){
+            return (this.peek().getKey().compareTo(targetKey) <= 0);
+        }else {
+            return false;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "EntityFilterIterator{" +
+                "entityIdSet=" + entityIdSet +
+                ", in=" + in +
+                '}';
     }
 }

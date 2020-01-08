@@ -1,6 +1,6 @@
 package org.act.temporalProperty.query.aggr;
 
-import org.act.temporalProperty.index.aggregation.TimeIntervalEntry;
+import org.act.temporalProperty.query.TimePointL;
 
 import java.util.*;
 
@@ -10,7 +10,7 @@ import java.util.*;
  */
 public abstract class DurationStatisticAggregationQuery<K> extends AbstractTimeIntervalAggrQuery<K,Integer> {
 
-    public DurationStatisticAggregationQuery(int startTime, int endTime) {
+    public DurationStatisticAggregationQuery(TimePointL startTime, TimePointL endTime) {
         super(startTime, endTime);
     }
 
@@ -18,7 +18,7 @@ public abstract class DurationStatisticAggregationQuery<K> extends AbstractTimeI
     public Integer aggregate(K k, Collection<TimeIntervalEntry> groupItems) {
         int timeSumDuration = 0;
         for(TimeIntervalEntry entry : groupItems){
-            timeSumDuration += (entry.end()-entry.start()+1);
+            timeSumDuration += (entry.end().val()-entry.start().val()+1);
         }
         return timeSumDuration;
     }

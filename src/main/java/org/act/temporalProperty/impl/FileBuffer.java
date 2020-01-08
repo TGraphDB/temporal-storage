@@ -5,9 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.act.temporalProperty.impl.MemTable.MemTableIterator;
 import org.act.temporalProperty.query.TimeIntervalKey;
-import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.table.UnSortedTable;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
@@ -67,7 +65,7 @@ public class FileBuffer implements Closeable
      * 返回用于访问的iterator
      * @return
      */
-    public MemTableIterator iterator()
+    public SearchableIterator iterator()
     {
         return this.memTable.iterator();
     }

@@ -8,6 +8,7 @@ import org.act.temporalProperty.index.IndexStore;
 import org.act.temporalProperty.index.IndexUpdater;
 import org.act.temporalProperty.meta.PropertyMetaData;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.TwoLevelMergeIterator;
 import org.act.temporalProperty.table.MergeProcess.MergeTask;
 import org.act.temporalProperty.table.Table;
@@ -15,6 +16,7 @@ import org.act.temporalProperty.table.TableBuilder;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.FileUtils;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 
 /**
  * Created by song on 2018-03-14.
@@ -76,18 +77,18 @@ public class SinglePropertyStore
     /**
      * 进行时间点查询，参考{@link TemporalPropertyStore}中的说明
      */
-    public Slice getPointValue(Slice idSlice, int time )
+    public Slice getPointValue(InternalKey searchKey)
     {
-        InternalKey searchKey = new InternalKey(idSlice, time);
+        TimePointL time = searchKey.getStartTime();
         boolean hasStable = propertyMeta.hasStable();
-        if(propertyMeta.hasUnstable() && ((hasStable && time>propertyMeta.stMaxTime()) || (!hasStable && time>=0))){
+        if(propertyMeta.hasUnstable() && (!hasStable || time.compareTo(propertyMeta.stMaxTime()) > 0)){
             Slice result = this.unPointValue( searchKey );
             if( null == result || result.length() == 0 ) {
                 return null;
             }else {
                 return result;
             }
-        }else if(hasStable && time <= propertyMeta.stMaxTime()){
+        }else if(hasStable && time.compareTo(propertyMeta.stMaxTime())<=0){
             FileMetaData meta = propertyMeta.getStContainsTime(time);
             return this.stPointValue(meta, searchKey);
         }else{
@@ -95,14 +96,14 @@ public class SinglePropertyStore
         }
     }
 
-    EPAppendIterator getRangeValueIter(Slice idSlice, int startTime, int endTime)
+    EPAppendIterator getRangeValueIter(EntityPropertyId id, TimePointL startTime, TimePointL endTime)
     {
         List<FileMetaData> stList = propertyMeta.overlappedStable(startTime, endTime);
         List<FileMetaData> unList = propertyMeta.unFloorTime(endTime);
-        stList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
-        unList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
+        stList.sort(Comparator.comparing(FileMetaData::getSmallest));
+        unList.sort(Comparator.comparing(FileMetaData::getSmallest));
 
-        EPAppendIterator iterator = new EPAppendIterator(idSlice);
+        EPAppendIterator iterator = new EPAppendIterator(id);
         for(FileMetaData meta : stList){
             SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
@@ -126,26 +127,22 @@ public class SinglePropertyStore
 
     private Slice unPointValue(InternalKey searchKey) {
         List<FileMetaData> checkList = propertyMeta.unFloorTime(searchKey.getStartTime());
-        checkList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
+        checkList.sort(Comparator.comparing(FileMetaData::getSmallest));
         for (FileMetaData meta : checkList) {
             SearchableIterator iterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber()));
             FileBuffer buffer = propertyMeta.getUnstableBuffers(meta.getNumber());
             if (null != buffer) {
                 iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
             }
-            iterator.seek(searchKey);
-            Entry<InternalKey, Slice> entry;
-            try {
-                entry = iterator.next();
-            } catch (NoSuchElementException e) {
-                continue;
-            }
-            InternalKey resultKey = entry.getKey();
-            if (    resultKey.getId().equals(searchKey.getId()) &&
-                    resultKey.getValueType().isValue() &&
-                    resultKey.getStartTime() <= searchKey.getStartTime()) {
-                return entry.getValue();
-            } // else continue
+            if(iterator.seekFloor(searchKey)){
+                Entry<InternalKey, Slice> entry = iterator.next();
+                InternalKey resultKey = entry.getKey();
+                if (    resultKey.getId().equals(searchKey.getId()) && // same entity id && same property id.
+//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.-- But it is irrelevant, the result is same.
+                        resultKey.getStartTime().compareTo(searchKey.getStartTime())<=0) {
+                    return entry.getValue();
+                } // else continue search others
+            } // else (searchKey smaller than iterator.firstKey) continue
         }
         // search unstable complete but not found. now search latest stable file
         FileMetaData meta = propertyMeta.latestStableMeta();
@@ -162,19 +159,17 @@ public class SinglePropertyStore
         if (null != buffer) {
             iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
         }
-        iterator.seek(searchKey);
-        Entry<InternalKey, Slice> entry;
-        try {
-            entry = iterator.next();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
-        InternalKey resultKey = entry.getKey();
-        if (    resultKey.getId().equals(searchKey.getId()) &&
-                resultKey.getStartTime()<=searchKey.getStartTime() &&
-                resultKey.getValueType().isValue()) {
-            return entry.getValue();
-        }else{
+        if(iterator.seekFloor(searchKey)){
+            Entry<InternalKey, Slice> entry = iterator.next();
+            InternalKey resultKey = entry.getKey();
+            if (    resultKey.getId().equals(searchKey.getId()) &&
+                    resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
+                    resultKey.getStartTime().compareTo(searchKey.getStartTime())<=0) {
+                return entry.getValue();
+            }else{
+                return null;
+            }
+        } else {
             return null;
         }
     }
@@ -194,46 +189,46 @@ public class SinglePropertyStore
             if( !unExist && !stExist ){
                 toMerge.addInterval(timeInterval, val);
             }else if( unExist && !stExist){
-                int unMaxTime = propertyMeta.unMaxTime();
-                if(timeInterval.lessThan( unMaxTime + 1 ) ) {
+                TimePointL unMaxTime = propertyMeta.unMaxTime();
+                if(timeInterval.lessThan( unMaxTime.next() ) ) {
                     insertUnstableBuffer(timeInterval, val);
-                }else if(timeInterval.greaterOrEq( unMaxTime + 1 )){
-                    toMerge.addInterval(entry.getKey(), val);
+                }else if(timeInterval.greaterOrEq( unMaxTime.next() )){
+                    toMerge.addInterval(timeInterval, val);
                 }else{
                     insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( unMaxTime + 1 ), val );
+                    toMerge.addInterval( timeInterval.changeStart( unMaxTime.next() ), val );
                 }
-            }else if( unExist && stExist){
-                int stMaxTime = propertyMeta.stMaxTime();
-                int unMaxTime = propertyMeta.unMaxTime();
-                if( timeInterval.span( stMaxTime, unMaxTime + 1 )){
-                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
-                    insertUnstableBuffer( timeInterval.changeStart( stMaxTime + 1 ).changeEnd( unMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( stMaxTime + 1 ), val );
-                }else if( timeInterval.lessThan( stMaxTime + 1 )){
-                    insertStableBuffer(timeInterval, val );
-                }else if(timeInterval.greaterOrEq( unMaxTime + 1 )){
-                    toMerge.addInterval( timeInterval, val );
-                }else if(timeInterval.span( stMaxTime + 1 )){
-                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
-                    insertUnstableBuffer( timeInterval.changeStart( stMaxTime + 1 ), val );
-                }else if(timeInterval.span( unMaxTime + 1 )){
-                    insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( unMaxTime + 1 ), val );
-                }else if(timeInterval.between( stMaxTime + 1, unMaxTime )){
-                    insertUnstableBuffer( timeInterval, val );
-                }else{
-                    throw new TPSNHException( "no such scenery!" );
-                }
-            }else{ // !unExist && stExist
-                int stMaxTime = propertyMeta.stMaxTime();
-                if( timeInterval.lessThan( stMaxTime + 1 )){
+            }else if(!unExist && stExist){
+                TimePointL stMaxTime = propertyMeta.stMaxTime();
+                if( timeInterval.lessThan( stMaxTime.next() )){
                     insertStableBuffer(timeInterval, val);
-                }else if(timeInterval.greaterOrEq( stMaxTime + 1 )){
+                }else if(timeInterval.greaterOrEq( stMaxTime.next() )){
                     toMerge.addInterval(timeInterval, val);
                 }else{
                     insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
-                    toMerge.addInterval( timeInterval.changeStart( stMaxTime + 1 ), val );
+                    toMerge.addInterval( timeInterval.changeStart( stMaxTime.next() ), val );
+                }
+            }else{//unExist && stExist
+                TimePointL stMaxTime = propertyMeta.stMaxTime();
+                TimePointL unMaxTime = propertyMeta.unMaxTime();
+                if( timeInterval.span( stMaxTime, unMaxTime.next() )){ // timeInterval.start < stMaxTime <= unMaxTime+1 <= timeInterval.end
+                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
+                    insertUnstableBuffer( timeInterval.changeStart( stMaxTime.next() ).changeEnd( unMaxTime ), val );
+                    toMerge.addInterval( timeInterval.changeStart( unMaxTime.next() ), val );
+                }else if( timeInterval.lessThan( stMaxTime.next() )){
+                    insertStableBuffer(timeInterval, val );
+                }else if(timeInterval.greaterOrEq( unMaxTime.next() )){
+                    toMerge.addInterval( timeInterval, val );
+                }else if(timeInterval.span( stMaxTime.next() )){ // timeInterval.start < stMaxTime+1 <= timeInterval.end
+                    insertStableBuffer( timeInterval.changeEnd( stMaxTime ), val );
+                    insertUnstableBuffer( timeInterval.changeStart( stMaxTime.next() ), val );
+                }else if(timeInterval.span( unMaxTime.next() )){
+                    insertUnstableBuffer( timeInterval.changeEnd( unMaxTime ), val );
+                    toMerge.addInterval( timeInterval.changeStart( unMaxTime.next() ), val );
+                }else if(timeInterval.between( stMaxTime.next(), unMaxTime )){ // stMaxTime+1 <= timeInterval.start <= timeInterval.end <= unMaxTime
+                    insertUnstableBuffer( timeInterval, val );
+                }else{
+                    throw new TPSNHException( "no such scenery!" );
                 }
             }
         }
@@ -252,37 +247,52 @@ public class SinglePropertyStore
      */
     private void insertUnstableBuffer( TimeIntervalKey key, Slice value ) throws IOException
     {
-        FileMetaData meta = propertyMeta.unFloorTimeOneMeta( Math.toIntExact( key.from() ) );
-        assert meta!=null : "SNH: meta should not null!";
-
-        FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
-        if( null == buffer ) {
-            String fileName = Filename.unbufferFileName(meta.getNumber());
-            buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
-            propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
-        }
-        buffer.add( key, value );
-        if(buffer.size()>1024*1024*10) {
-            unBufferToFile( meta, buffer );
+        assert propertyMeta.hasUnstable();
+        for(Entry<TimePointL, FileMetaData> entry : propertyMeta.unFloorTimeMetaList( key.start(), key.end() )){
+            FileMetaData meta = entry.getValue();
+            FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
+            if( null == buffer ) {
+                String fileName = Filename.unbufferFileName(meta.getNumber());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
+            }
+            TimeIntervalKey validKey = key;
+            if(validKey.start().compareTo(meta.getSmallest())<0){
+                validKey = validKey.changeStart(meta.getSmallest());
+            }
+            if(validKey.end().compareTo(meta.getLargest())>=0){
+                validKey = validKey.changeEnd(TimePointL.Now);
+            }
+            buffer.add( validKey, value );
+            if(buffer.size()>1024*1024*10) {
+                unBufferToFile( meta, buffer );
+            }
         }
     }
 
     private void insertStableBuffer( TimeIntervalKey key, Slice value ) throws IOException {
-        FileMetaData meta = propertyMeta.stFloorTimeOneMeta( Math.toIntExact( key.from() ) );
-        assert meta!=null : "SNH: meta should not null!";
-
-        FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
-        if( null == buffer ) {
-            String fileName = Filename.stbufferFileName(meta.getNumber());
-            buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
-            propertyMeta.addStableBuffer(meta.getNumber(), buffer);
-        }
-        buffer.add( key, value );
-        if(buffer.size()>1024*1024*10) {
-            stBufferToFile( meta, buffer );
+        assert propertyMeta.hasStable();
+        for(Entry<TimePointL, FileMetaData> entry : propertyMeta.stFloorTimeMetaIterator(key.start(), key.end())){
+            FileMetaData meta = entry.getValue();
+            FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
+            if( null == buffer ) {
+                String fileName = Filename.stbufferFileName(meta.getNumber());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                propertyMeta.addStableBuffer(meta.getNumber(), buffer);
+            }
+            TimeIntervalKey validKey = key;
+            if(validKey.start().compareTo(meta.getSmallest())<0){
+                validKey = validKey.changeStart(meta.getSmallest());
+            }
+            if(validKey.end().compareTo(meta.getLargest())>=0){
+                validKey = validKey.changeEnd(TimePointL.Now);
+            }
+            buffer.add( validKey, value );
+            if(buffer.size()>1024*1024*10) {
+                stBufferToFile( meta, buffer );
+            }
         }
     }
-
 
     private void unBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
         IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), false, meta, buffer.getMemTable());
@@ -318,12 +328,12 @@ public class SinglePropertyStore
         TableBuilder builder = new TableBuilder(new Options(), channel, TableComparator.instance());
         Table table = this.cache.getTable(filePath);
 
-        /**
-         * 写存储过程
-         * 会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
-         * 使用bufferFileName做判断，若"st"开头则是合并stable file
+        /*
+          写存储过程
+          会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
+          使用bufferFileName做判断，若"st"开头则是合并stable file
          */
-        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), table.iterator());
+        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), new PackInternalKeyIterator(table.iterator()));
         while (iterator.hasNext()) {
             InternalEntry entry = iterator.next();
             builder.add(entry.getKey().encode(), entry.getValue());
@@ -343,10 +353,10 @@ public class SinglePropertyStore
 
     // boolean stand for: isStable.
     // do not build index for unstable files.
-    List<Triple<Boolean, FileMetaData, SearchableIterator>> buildIndexIterator( int startTime, int endTime ) {
+    List<Triple<Boolean, FileMetaData, SearchableIterator>> buildIndexIterator(TimePointL startTime, TimePointL endTime ) {
         List<FileMetaData> stList = propertyMeta.overlappedStable(startTime, endTime);
 //        List<FileMetaData> unList = propertyMeta.unFloorTime(endTime);
-        stList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
+        stList.sort(Comparator.comparing(FileMetaData::getSmallest));
 //        unList.sort(Comparator.comparingInt(FileMetaData::getSmallest));
 
         List<Triple<Boolean, FileMetaData, SearchableIterator>> results = new ArrayList<>();

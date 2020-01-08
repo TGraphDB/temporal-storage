@@ -28,7 +28,7 @@ public abstract class PairViewFilterByNextIterator<T> extends AbstractIterator<T
             }
         }
         if(first !=null){ // next==null
-            assert second ==null:"next should be null!";
+//            assert second ==null:"next should be null!";
             if(shouldReturnFirst(first, null)){
                 return shift2next();
             }else{
@@ -52,4 +52,12 @@ public abstract class PairViewFilterByNextIterator<T> extends AbstractIterator<T
 
     protected abstract boolean shouldReturnFirst(T cur, T next);
 
+    @Override
+    public String toString() {
+        return "PairViewFilterByNextIterator{" +
+                "in=" + in +
+                ", first=" + first +
+                ", second=" + second +
+                '}';
+    }
 }

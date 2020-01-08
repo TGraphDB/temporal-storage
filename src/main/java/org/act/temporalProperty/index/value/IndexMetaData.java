@@ -2,13 +2,11 @@ package org.act.temporalProperty.index.value;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.TreeMultimap;
 import org.act.temporalProperty.index.IndexFileMeta;
 import org.act.temporalProperty.index.IndexType;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.aggregation.AggregationIndexMeta;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
@@ -16,7 +14,6 @@ import org.act.temporalProperty.util.SliceOutput;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +28,15 @@ public class IndexMetaData {
     private long id;
     private IndexType type;
     private List<Integer> propertyIdList;
-    private int timeStart;
-    private int timeEnd;
+    private TimePointL timeStart;
+    private TimePointL timeEnd;
     private Map<Long,IndexFileMeta> stableFileIds = new HashMap<>(); // key is corFileId, not indexFile id.
     private Map<Long,IndexFileMeta> unstableFileIds = new HashMap<>();
-    private TreeMap<Integer,IndexFileMeta> fileByTime = new TreeMap<>();
+    private TreeMap<TimePointL,IndexFileMeta> fileByTime = new TreeMap<>();
     private boolean online;
 
-    public IndexMetaData( long id, IndexType type, List<Integer> pidList, List<IndexValueType> types, int start, int end ) {
-        Preconditions.checkArgument( start <= end );
+    public IndexMetaData(long id, IndexType type, List<Integer> pidList, List<IndexValueType> types, TimePointL start, TimePointL end ) {
+        Preconditions.checkArgument( start.compareTo(end) <= 0 );
         this.id = id;
         this.type = type;
         this.propertyIdList = pidList;
@@ -57,11 +54,11 @@ public class IndexMetaData {
         return type;
     }
 
-    public int getTimeStart() {
+    public TimePointL getTimeStart() {
         return timeStart;
     }
 
-    public int getTimeEnd() {
+    public TimePointL getTimeEnd() {
         return timeEnd;
     }
 
@@ -104,8 +101,8 @@ public class IndexMetaData {
     public void encode(SliceOutput out){
         out.writeInt(this.getType().getId());
         out.writeLong(this.getId());
-        out.writeInt(this.getTimeStart());
-        out.writeInt(this.getTimeEnd());
+        this.getTimeStart().encode(out);
+        this.getTimeEnd().encode(out);
         out.writeInt(this.getPropertyIdList().size());
         for(Integer pid : this.getPropertyIdList()){
             out.writeInt(pid);
@@ -139,8 +136,8 @@ public class IndexMetaData {
     public IndexMetaData( SliceInput in ){
         this.type = IndexType.decode(in.readInt());
         this.id = in.readInt();
-        this.timeStart = in.readInt();
-        this.timeEnd = in.readInt();
+        this.timeStart = TimePointL.decode(in);
+        this.timeEnd = TimePointL.decode(in);
         int count = in.readInt();
         List<Integer> pidList = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -218,9 +215,9 @@ public class IndexMetaData {
      * @param end   inclusive
      * @return file which time overlaps this range.
      */
-    public Collection<IndexFileMeta> getFilesByTime( int start, int end )
+    public Collection<IndexFileMeta> getFilesByTime(TimePointL start, TimePointL end )
     {
-        Entry<Integer,IndexFileMeta> floorKey = fileByTime.floorEntry( start );
+        Entry<TimePointL, IndexFileMeta> floorKey = fileByTime.floorEntry( start );
         if ( floorKey == null )
         {
             return fileByTime.subMap( start, true, end, true ).values();

@@ -31,7 +31,7 @@ public class AggregationIndexFileWriter {
             TableBuilder builder = new TableBuilder( new Options(), targetChannel, AggregationIndexKey.sliceComparator);
             // merge same AggregationIndexKey, sum up their duration.
             AggregationIndexEntry lastEntry = null;
-            int duration = 0;
+            long duration = 0;
             while (data.hasNext()) {
                 AggregationIndexEntry entry = data.next();
                 if(lastEntry==null){
@@ -39,16 +39,16 @@ public class AggregationIndexFileWriter {
                 }else if(entry.getKey().equals(lastEntry.getKey())) {
                     duration += entry.getDuration();
                 } else{ // key not equal, so we add lastKey.
-                    Slice dur = new Slice(4);
-                    dur.setInt(0, duration);
+                    Slice dur = new Slice(8);
+                    dur.setLong(0, duration);
                     builder.add(lastEntry.getKey().encode(), dur);
                     duration = entry.getDuration();
                 }
                 lastEntry = entry;
             }
             if(lastEntry!=null) {
-                Slice dur = new Slice(4);
-                dur.setInt(0, duration);
+                Slice dur = new Slice(8);
+                dur.setLong(0, duration);
                 builder.add(lastEntry.getKey().encode(), dur);
             }
             builder.finish();

@@ -10,7 +10,9 @@ import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.Options;
 import org.act.temporalProperty.impl.SequenceNumber;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.junit.BeforeClass;
 
 public class TableUpdaterTest
@@ -49,7 +51,7 @@ public class TableUpdaterTest
                         value.setInt( 8, p );
                         long sequence = SequenceNumber.packTimeAndValueType( t, ValueType.VALUE );
                         value.setLong( 12, sequence );
-                        InternalKey key = new InternalKey( idSlice, t, ValueType.VALUE );
+                        InternalKey key = new InternalKey( new EntityPropertyId(i, p), new TimePointL(t), ValueType.VALUE );
                         builder.add( key.encode(), value );
                     }
                 }

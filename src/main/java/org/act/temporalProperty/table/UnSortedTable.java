@@ -5,6 +5,7 @@ import java.nio.channels.FileChannel;
 import java.util.*;
 
 import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
@@ -30,19 +31,19 @@ public class UnSortedTable implements Closeable
         FileChannel channel = inputStream.getChannel();
         LogReader logReader = new LogReader(channel, null, false, 0);
         Slice record;
-        List<MemTable.TimeIntervalValueEntry> entries = new LinkedList<>();
+        List<TimeIntervalValueEntry> entries = new LinkedList<>();
         while ((record = logReader.readRecord()) != null) {
             SliceInput in = record.input();
             boolean isCheckPoint = in.readBoolean();
             if(!isCheckPoint) {
                 int entryLen = in.readInt();
                 Slice entryRaw = in.readBytes(entryLen);
-                MemTable.TimeIntervalValueEntry entry = MemTable.decode( entryRaw.input() );
+                TimeIntervalValueEntry entry = TimeIntervalValueEntry.decode( entryRaw.input() );
                 entries.add(entry);
             }else{
-                Iterator<MemTable.TimeIntervalValueEntry> iterator = entries.iterator();
+                Iterator<TimeIntervalValueEntry> iterator = entries.iterator();
                 while(iterator.hasNext()) {
-                    MemTable.TimeIntervalValueEntry entry = iterator.next();
+                    TimeIntervalValueEntry entry = iterator.next();
                     table.addInterval(entry.getKey(), entry.getValue());
                 }
                 entries.clear();
@@ -57,7 +58,7 @@ public class UnSortedTable implements Closeable
         DynamicSliceOutput out = new DynamicSliceOutput(64);
         boolean isCheckPoint = false;
         out.writeBoolean(isCheckPoint);
-        Slice entry = MemTable.encode( key, value );
+        Slice entry = new TimeIntervalValueEntry( key, value ).encode();
         out.writeInt( entry.length() );
         out.writeBytes( entry );
         this.log.addRecord(out.slice(), false);

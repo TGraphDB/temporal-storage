@@ -1,7 +1,8 @@
 package org.act.temporalProperty.impl.query.aggr;
 
 import org.act.temporalProperty.TemporalPropertyStore;
-import org.act.temporalProperty.index.aggregation.TimeIntervalEntry;
+import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.query.aggr.TimeIntervalEntry;
 import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.aggr.DurationStatisticAggregationQuery;
 import org.act.temporalProperty.util.Slice;
@@ -38,7 +39,7 @@ public class CorrectnessTest {
         for(long i=sep; i<2*sep; i++) {
             StoreBuilder.setIntProperty(store, (int)i, 2, 0, (int)i);
         }
-        Slice val = store.getPointValue(1,0, sep*2-10);
+        Slice val = store.getPointValue(1,0, new TimePointL(sep*2-10));
         log.debug("point query result {}", val.getInt(0));
         log.debug("if you see next line, then means no bug.");
         Object resultMap = queryAggr(store, 0, 1, sep*2-10, sep*2, 1);
@@ -47,13 +48,16 @@ public class CorrectnessTest {
     }
 
     private Object queryAggr(TemporalPropertyStore store, int proId, int entityId, int start, int end, int interval) {
-        return store.aggregate(entityId, proId, start, end, new DurationStatisticAggregationQuery<Integer>(start, end) {
+        TimePointL s = new TimePointL(start);
+        TimePointL e = new TimePointL(end);
+        return store.aggregate(entityId, proId, s, e, new DurationStatisticAggregationQuery<TimePointL>(s, e) {
+            @Override public void setValueType(String valueType) { }
             @Override
-            public Integer computeGroupId(TimeIntervalEntry entry) {
-                return asInt(entry.value());
+            public TimePointL computeGroupId(TimeIntervalEntry entry) {
+                return new TimePointL(asInt(entry.value()));
             }
             @Override
-            public Object onResult(Map<Integer, Integer> result) {
+            public Object onResult(Map<TimePointL, Integer> result) {
                 return result;
             }
         });

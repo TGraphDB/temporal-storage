@@ -5,6 +5,7 @@ import org.act.temporalProperty.index.IndexFileMeta;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.IndexMetaData;
 import org.act.temporalProperty.index.IndexType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -26,22 +26,22 @@ public class AggregationIndexMeta extends IndexMetaData {
     private final TreeMap<Slice, Integer> vGroupMap;
     private final int tEvery;
     private final int timeUnit;
-    private TimeGroupMap tGroupMap;
+    private TimeGroupBuilder tGroupMap;
 
-    public AggregationIndexMeta( long indexId, IndexType type, int pid, IndexValueType vType, int start, int end,
+    public AggregationIndexMeta(long indexId, IndexType type, int pid, IndexValueType vType, TimePointL start, TimePointL end,
                                 int tEvery, int timeUnit, TreeMap<Slice, Integer> valueGroup) {
         super( indexId, type, Lists.newArrayList( pid ), Lists.newArrayList( vType ), start, end );
         this.vGroupMap = valueGroup;
         this.tEvery = tEvery;
         this.timeUnit = timeUnit;
-        this.tGroupMap = new TimeGroupMap( getTimeStart(), getTimeEnd(), tEvery, timeUnit );
+        this.tGroupMap = new UnixTimestampTimeGroupBuilder( getTimeStart(), getTimeEnd(), tEvery, timeUnit );
     }
 
     public TreeMap<Slice, Integer> getValGroupMap() {
         return vGroupMap;
     }
 
-    public TimeGroupMap getTimeGroupMap()
+    public TimeGroupBuilder getTimeGroupMap()
     {
         return tGroupMap;
     }
@@ -86,9 +86,9 @@ public class AggregationIndexMeta extends IndexMetaData {
 
     public static AggregationIndexMeta decode(SliceInput in){
         IndexType type = IndexType.decode(in.readInt());
-        int fileId = in.readInt();
-        int timeStart = in.readInt();
-        int timeEnd = in.readInt();
+        long fileId = in.readLong();
+        TimePointL timeStart = TimePointL.decode(in);
+        TimePointL timeEnd = TimePointL.decode(in);
         int count = in.readInt();
         assert count==1:"more then one property!";
         List<Integer> pidList = new ArrayList<>();
@@ -117,9 +117,9 @@ public class AggregationIndexMeta extends IndexMetaData {
         return decode(in.input());
     }
 
-    public TreeSet<Integer> getTimeGroupAvailable( int start, int end )
+    public TreeSet<TimePointL> getTimeGroupAvailable(TimePointL start, TimePointL end )
     {
-        TreeSet<Integer> result = new TreeSet<>();
+        TreeSet<TimePointL> result = new TreeSet<>();
         Collection<IndexFileMeta> files = this.getFilesByTime( start, end );
         for ( IndexFileMeta f : files )
         {

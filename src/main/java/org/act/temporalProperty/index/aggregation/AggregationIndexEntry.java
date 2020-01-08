@@ -7,21 +7,21 @@ import java.util.Map;
 /**
  * Created by song on 2018-04-05.
  */
-public class AggregationIndexEntry implements Map.Entry<AggregationIndexKey, Integer> {
+public class AggregationIndexEntry implements Map.Entry<AggregationIndexKey, Long> {
     private final AggregationIndexKey key;
-    private int duration;
+    private long duration;
 
     public AggregationIndexEntry(AggregationIndexKey key) {
         this.key = key;
         this.duration = 0;
     }
 
-    public AggregationIndexEntry(AggregationIndexKey key, int duration){
+    public AggregationIndexEntry(AggregationIndexKey key, long duration){
         this.key = key;
         this.duration = duration;
     }
 
-    public int getDuration(){
+    public long getDuration(){
         return duration;
     }
 
@@ -30,13 +30,13 @@ public class AggregationIndexEntry implements Map.Entry<AggregationIndexKey, Int
     }
 
     @Override
-    public Integer getValue() {
+    public Long getValue() {
         return getDuration();
     }
 
     @Override
-    public Integer setValue(Integer value) {
-        int old = duration;
+    public Long setValue(Long value) {
+        Long old = duration;
         this.duration = value;
         return old;
     }

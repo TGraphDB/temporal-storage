@@ -3,9 +3,11 @@ package org.act.temporalProperty.impl;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSNHException;
-import org.act.temporalProperty.impl.MemTable.TimeIntervalValueEntry;
+import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Map.Entry;
@@ -31,15 +33,13 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
             Entry<TimeIntervalKey,Slice> newEntry = latest.peek();
             TimeIntervalKey oldKey = getNextOldKey( oldEntry );
             TimeIntervalKey newKey = newEntry.getKey();
-            InternalKey oldInternalKey = oldKey.getKey();
-            InternalKey newInternalKey = newKey.getKey();
 
-            int r = oldInternalKey.compareTo( newInternalKey );
-            if ( oldInternalKey.getId().equals( newInternalKey.getId() ) )
+            int r = oldKey.getStartKey().compareTo( newKey.getStartKey() );
+            if ( oldKey.getId().equals( newKey.getId() ) )
             {
                 if ( r < 0 )
                 {
-                    if ( oldKey.to() < newKey.from() )
+                    if ( oldKey.end().compareTo(newKey.start()) < 0 )
                     {
                         old.next();
                         return mayChangedOldEntry( oldKey, oldEntry.getValue() );
@@ -47,19 +47,19 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
                     else
                     {
                         old.next();
-                        return changeEndOldEntry( oldKey, oldEntry.getValue(), newKey.from() - 1 );
+                        return changeEndOldEntry( oldKey, oldEntry.getValue(), newKey.start().pre() );
                     }
                 }
                 else
                 {
                     changedNextOldKey = null;
-                    if ( oldKey.from() > newKey.from() )
+                    if ( oldKey.start().compareTo(newKey.start()) > 0 )
                     {
                         return latest.next();
                     }
                     else
                     {
-                        pollOldUntil( newInternalKey.getId(), newKey.to() );
+                        pollOldUntil( newKey.getId(), newKey.end() );
                         return latest.next();
                     }
                 }
@@ -96,7 +96,7 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
         }
     }
 
-    private Entry<TimeIntervalKey,Slice> changeEndOldEntry( TimeIntervalKey oldKey, Slice value, long newEnd )
+    private Entry<TimeIntervalKey,Slice> changeEndOldEntry(TimeIntervalKey oldKey, Slice value, TimePointL newEnd )
     {
         return mayChangedOldEntry( oldKey.changeEnd( newEnd ), value );
     }
@@ -127,19 +127,19 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
         }
     }
 
-    private void pollOldUntil( Slice id, long end )
+    private void pollOldUntil(EntityPropertyId id, TimePointL end )
     {
         while ( old.hasNext() )
         {
             Entry<TimeIntervalKey,Slice> oldEntry = old.peek();
             TimeIntervalKey oldKey = oldEntry.getKey();
-            InternalKey oldInternalKey = oldKey.getKey();
-            if ( !oldInternalKey.getId().equals( id ) )
+            EntityPropertyId oldInternalKey = oldKey.getId();
+            if ( !oldInternalKey.equals( id ) )
             {
                 changedNextOldKey = null;
                 return;
             }
-            if ( oldKey.to() <= end )
+            if ( oldKey.end().compareTo(end) <= 0 )
             {
                 old.next();
             }
@@ -152,9 +152,9 @@ public class TwoLevelIntervalMergeIterator extends AbstractIterator<Entry<TimeIn
         {
             Entry<TimeIntervalKey,Slice> oldEntry = old.peek();
             TimeIntervalKey oldKey = oldEntry.getKey();
-            if ( oldKey.from() <= end )
+            if ( oldKey.start().compareTo(end) <= 0 )
             {
-                changedNextOldKey = Pair.of( oldKey, oldKey.changeStart( end + 1 ) );
+                changedNextOldKey = Pair.of( oldKey, oldKey.changeStart( end.next() ) );
             }
         }
     }

@@ -4,8 +4,10 @@ package org.act.temporalProperty.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.UserComparator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.util.TimeIntervalUtil;
 
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -29,24 +31,24 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
     /**
      * 当前MemTable中数据的最小有效时间
      */
-    private int start = Integer.MAX_VALUE;
+    private TimePointL start = TimePointL.Now;
 
     /**
      * 当前MemTable中数据的最大有效时间
      */
-    private int end = -1;
+    private TimePointL end = TimePointL.Init;
 
     public MemTableTimePoint(UserComparator internalKeyComparator )
     {
         table = new ConcurrentSkipListMap<>(internalKeyComparator);
     }
 
-    public int getStartTime()
+    public TimePointL getStartTime()
     {
         return start;
     }
 
-    public int getEndTime()
+    public TimePointL getEndTime()
     {
         return end;
     }
@@ -70,11 +72,11 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
     {
 //        Preconditions.checkArgument( key.length() == 20, "key should all be 20 bytes" );
 //        InternalKey internalKey = new InternalKey( key );
-        delete( key, -1 );
+        delete( key, TimePointL.Init );
 
-        int startTime = key.getStartTime();
-        if( startTime < this.start ) this.start = startTime;
-        if( startTime > this.end ) this.end = startTime;
+        TimePointL startTime = key.getStartTime();
+        this.start = TimeIntervalUtil.min(startTime, start);
+        this.end = TimeIntervalUtil.max(startTime, end);
 
         table.put(key.encode(), value);
 
@@ -89,23 +91,22 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
 
 
 
-        int startTime = key.getStartTime();
-        if( startTime < this.start )
-            this.start = startTime;
-        if( startTime > this.end )
-            this.end = startTime;
+        TimePointL startTime = key.getStartTime();
+        this.start = TimeIntervalUtil.min(startTime, start);
+        this.end = TimeIntervalUtil.max(startTime, end);
+
         table.put(key.encode(), value);
 
         approximateMemoryUsage.addAndGet( value.length() + 20 ); // 20 is key.length()
     }
 
-    private void delete(InternalKey from, int to){
-        if(to==-1){
-            table.tailMap( from.encode() ).keySet().removeIf( key -> new InternalKey(key).getEntityId()==from.getEntityId() );
+    private void delete(InternalKey from, TimePointL to){
+        if(to==TimePointL.Init){
+            table.tailMap( from.encode() ).keySet().removeIf( key -> InternalKey.decode(key).getEntityId()==from.getEntityId() );
         }else{
             table.tailMap( from.encode() ).keySet().removeIf( key -> {
-                InternalKey tmp = new InternalKey( key );
-                return (tmp.getEntityId()==from.getEntityId() && tmp.getStartTime()<=to);
+                InternalKey tmp = InternalKey.decode( key );
+                return (tmp.getEntityId()==from.getEntityId() && tmp.getStartTime().compareTo(to)<=0);
             });
         }
     }
@@ -121,7 +122,7 @@ public class MemTableTimePoint implements SeekingIterable<Slice, Slice>
         if (entry == null) {
             return null;
         }
-        InternalKey ansKey = new InternalKey( entry.getKey() );
+        InternalKey ansKey = InternalKey.decode( entry.getKey() );
         if( !ansKey.getId().equals( key.getId() ) )
             return null;
         return entry.getValue();

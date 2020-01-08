@@ -1,13 +1,16 @@
 package org.act.temporalProperty.yangfan;
 
-import org.act.temporalProperty.impl.index.multival.BuildAndQueryTest;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -118,7 +121,7 @@ public class dataFileImporter {
         Slice segmentCount = new Slice(4);
         segmentCount.setInt(0, Integer.valueOf(fields[9]));
 
-        entryList.add(new IndexEntry(entityId, startTime, NOW_TIME,
+        entryList.add(new IndexEntry(entityId, new TimePointL(startTime), new TimePointL(NOW_TIME),
                 new Slice[]{travelTime, fullStatus, vehicleCount, segmentCount}));
     }
 

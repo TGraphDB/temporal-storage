@@ -1,15 +1,20 @@
 package org.act.temporalProperty.util;
 
+import com.google.common.collect.PeekingIterator;
+import org.act.temporalProperty.helper.StoreInitial;
+import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
+import org.act.temporalProperty.impl.MemTable;
+import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.rtree.*;
 import org.act.temporalProperty.meta.SystemMeta;
 import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.SystemMetaFile;
-import org.act.temporalProperty.table.FileChannelTable;
-import org.act.temporalProperty.table.Table;
-import org.act.temporalProperty.table.TableComparator;
-import org.act.temporalProperty.table.TableIterator;
+import org.act.temporalProperty.query.TimeInterval;
+import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.table.*;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
 
@@ -33,7 +38,7 @@ public class DBFileInfoReader
         if(SystemUtils.IS_OS_WINDOWS){
             return "temporal.property.test";
         }else{
-            return "/tmp/temporal.property.test";
+            return "/media/song/test/db-network-only/temporal.relationship.properties";
         }
     }
 
@@ -71,7 +76,65 @@ public class DBFileInfoReader
     }
 
     @Test
-    public void dbtmpFileInfo() throws IOException {
+    public void dbTmpFileInfo() throws IOException {
+        StoreInitial store = new StoreInitial(new File(this.dbDir()));
+        MemTable table = store.getMemTable();
+        int i=0;
+        for (SearchableIterator it = table.iterator(); it.hasNext() && i<10; i++) {
+            InternalEntry entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+        }
+        i=0;
+        for (PeekingIterator<Map.Entry<TimeIntervalKey, Slice>> it = table.intervalEntryIterator(); it.hasNext() && i<10; i++) {
+            Map.Entry<TimeIntervalKey, Slice> entry = it.next();
+            System.out.println(entry.getKey()+" "+entry.getValue());
+        }
+    }
+
+
+
+    @Test
+    public void onePropertyFilesInfo() throws IOException {
+        String propertyId = "3";
+        File metaFile = new File( this.dbDir() + "/" + propertyId );
+        if(!metaFile.exists()){
+            System.out.println("##### Warning: file not exist: "+ metaFile.getAbsolutePath());
+            return;
+        }
+        System.out.println("################## "+propertyId+" #################");
+        FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + propertyId ) );
+        FileChannel channel = inputStream.getChannel();
+        Table table = new MMapTable( propertyId, channel, TableComparator.instance(), false );
+        TableIterator iterator = table.iterator();
+        if( !iterator.hasNext() )
+        {
+            System.out.println("Empty 000000.dbtmp file.");
+            return;
+        }
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
+        long size = 0;
+        long recordCount = 0;
+        while( iterator.hasNext() )
+        {
+            Map.Entry<Slice,Slice> entry = iterator.next();
+            Slice key = entry.getKey();
+            Slice value = entry.getValue();
+            InternalKey internalKey = InternalKey.decode( key );
+            System.out.println(internalKey+" "+value);
+            TimePointL time = internalKey.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
+            size += (key.length() + value.length());
+            recordCount++;
+        }
+        inputStream.close();
+        channel.close();
+        System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount);
+    }
+
+    @Test
+    public void dbUnstableFileInfo() throws IOException {
         String fileName = "000000.dbtmp";
         File metaFile = new File( this.dbDir() + "/" + fileName );
         if(!metaFile.exists()){
@@ -81,15 +144,15 @@ public class DBFileInfoReader
         System.out.println("################## "+fileName+" #################");
         FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + fileName ) );
         FileChannel channel = inputStream.getChannel();
-        Table table = new FileChannelTable( fileName, channel, TableComparator.instance(), false );
+        Table table = new MMapTable( fileName, channel, TableComparator.instance(), false );
         TableIterator iterator = table.iterator();
         if( !iterator.hasNext() )
         {
             System.out.println("Empty 000000.dbtmp file.");
             return;
         }
-        int maxTime = Integer.MIN_VALUE;
-        int minTime = Integer.MAX_VALUE;
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
         long size = 0;
         long recordCount = 0;
         while( iterator.hasNext() )
@@ -97,16 +160,11 @@ public class DBFileInfoReader
             Map.Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
-            InternalKey internalKey = new InternalKey( key );
-            int time = internalKey.getStartTime();
-            if( time < minTime )
-            {
-                minTime = time;
-            }
-            if( time > maxTime )
-            {
-                maxTime = time;
-            }
+            InternalKey internalKey = InternalKey.decode( key );
+            System.out.println(internalKey+" "+value);
+            TimePointL time = internalKey.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
             size += (key.length() + value.length());
             recordCount++;
         }

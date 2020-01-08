@@ -51,7 +51,7 @@ public class ValueIndexOperator
         this.sysIndexMeta = meta;
     }
 
-    public long create(int start, int end, List<Integer> proIds, List<IndexValueType> types) throws IOException {
+    public long create(TimePointL start, TimePointL end, List<Integer> proIds, List<IndexValueType> types) throws IOException {
         long indexId = sysIndexMeta.nextIndexId();
         if (proIds.size() == 1) {
             sysIndexMeta.addOfflineMeta( new IndexMetaData( indexId, SINGLE_VALUE, proIds, types, start, end ) );
@@ -77,8 +77,8 @@ public class ValueIndexOperator
         List<Integer> pids = proIntervals.stream().map( PropertyValueInterval::getProId ).collect( Collectors.toList() );
         List<IndexMetaData> indexList = sysIndexMeta.getValueIndex( pids, condition.getTimeMin(), condition.getTimeMax() );
         for(IndexMetaData meta : indexList){
-            int s = meta.getTimeStart();
-            int e = meta.getTimeEnd();
+            TimePointL s = meta.getTimeStart();
+            TimePointL e = meta.getTimeEnd();
             if(TimeIntervalUtil.contains( s, e, condition.getTimeMin(), condition.getTimeMax())){
                 Set<Integer> pSetMeta = new HashSet<>(meta.getPropertyIdList());
                 if(pSetMeta.size()==pids.size() && !pSetMeta.retainAll(pids)) {
@@ -130,18 +130,18 @@ public class ValueIndexOperator
         }
 
         PeekingIterator<Entry<TimeInterval,Boolean>> iter;
-        iter = validTime.intervalEntries( new TimePointL( condition.getTimeMin() ), new TimePointL( condition.getTimeMax() ) );
-        List<Pair<Integer,Integer>> validTimeList = Lists.newArrayList( Iterators.transform( iter, entry -> Pair.of( Math.toIntExact( entry.getKey().from() ), Math.toIntExact( entry.getKey().to() ) )) );
+        iter = validTime.intervalEntries( condition.getTimeMin(), condition.getTimeMax() );
+        List<TimeInterval> validTimeList = Lists.newArrayList( Iterators.transform( iter, Entry::getKey));
         return subQueryRegions( validTimeList, condition );
     }
 
-    public List<IndexQueryRegion> subQueryRegions( List<Pair<Integer,Integer>> validTime, IndexQueryRegion condition )
+    public List<IndexQueryRegion> subQueryRegions(List<TimeInterval> validTime, IndexQueryRegion condition )
     {
         List<PropertyValueInterval> proVals = condition.getPropertyValueIntervals();
-        return validTime.stream().map( pair ->
+        return validTime.stream().map( interval ->
                                        {
-                                           IndexQueryRegion query = new IndexQueryRegion( pair.getLeft(), pair.getRight() );
-                                           proVals.forEach( query::add );
+                                           IndexQueryRegion query = new IndexQueryRegion( interval.start(), interval.end() );
+                                           proVals.forEach(query::add);
                                            return query;
                                        } ).collect( Collectors.toList() );
     }

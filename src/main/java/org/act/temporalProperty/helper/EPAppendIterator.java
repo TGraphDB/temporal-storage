@@ -1,11 +1,7 @@
 package org.act.temporalProperty.helper;
 
-import com.google.common.collect.AbstractIterator;
 import org.act.temporalProperty.impl.*;
-import org.act.temporalProperty.util.Slice;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-01-24.
@@ -17,10 +13,10 @@ import java.util.List;
  */
 public class EPAppendIterator extends SameLevelMergeIterator {
     // each sub iterator's time should be inc (e.g. 0 is the earliest time)
-    private Slice id;
+    private EntityPropertyId id;
 
-    public EPAppendIterator(Slice idSlice) {
-        this.id = idSlice;
+    public EPAppendIterator(EntityPropertyId id) {
+        this.id = id;
     }
 
     public void append(SearchableIterator iterator) {
@@ -38,18 +34,20 @@ public class EPAppendIterator extends SameLevelMergeIterator {
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         checkIfValidKey(targetKey);
-        super.seek( targetKey );
+        //直接返回下层SameLevelMergeIterator的结果。因为子Iterator都生成的是同一个entity的entry。（entity property都一样）
+        return super.seekFloor( targetKey );
     }
 
     private void checkIfValidKey(InternalKey target) {
         if(!target.getId().equals(id)) throw new IllegalArgumentException("target should has same entity id and same property id");
     }
 
-
-    public int size() {
-        return super.size();
+    @Override
+    public String toString() {
+        return "EPAppendIterator{" +
+                "id=" + id +
+                '}';
     }
-
 }

@@ -4,7 +4,9 @@ import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-01-24.
@@ -12,9 +14,9 @@ import org.act.temporalProperty.util.Slice;
 public class EPEntryIterator extends AbstractSearchableIterator {
 
     private final SearchableIterator iter;
-    private final Slice id;
+    private final EntityPropertyId id;
 
-    public EPEntryIterator(Slice entityPropertyId, SearchableIterator iterator){
+    public EPEntryIterator(EntityPropertyId entityPropertyId, SearchableIterator iterator){
         this.id = entityPropertyId;
         this.iter = iterator;
         this.seekToFirst();
@@ -22,18 +24,22 @@ public class EPEntryIterator extends AbstractSearchableIterator {
 
     @Override
     public void seekToFirst() {
-        InternalKey earliestKey = new InternalKey(id, 0);
-        iter.seek(earliestKey);
+        InternalKey earliestKey = new InternalKey(id, TimePointL.Init);
+        iter.seekFloor(earliestKey);
         super.resetState();
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         if(targetKey.getId().equals( id ))
         {
-            super.resetState();
-            iter.seek( targetKey );
+            this.resetState();
+            if(iter.seekFloor( targetKey ) && this.hasNext()){
+                return (this.peek().getKey().compareTo(targetKey) <= 0);
+            }else{
+                return false;
+            }
         }else{
             throw new TPSRuntimeException( "id not match!" );
         }
@@ -52,5 +58,13 @@ public class EPEntryIterator extends AbstractSearchableIterator {
             }
         }
         return endOfData();
+    }
+
+    @Override
+    public String toString() {
+        return "EPEntryIterator{" +
+                "iter=" + iter +
+                ", id=" + id +
+                '}';
     }
 }

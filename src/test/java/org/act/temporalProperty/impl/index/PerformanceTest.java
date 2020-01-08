@@ -1,7 +1,6 @@
 package org.act.temporalProperty.impl.index;
 
 import org.act.temporalProperty.TemporalPropertyStore;
-import org.act.temporalProperty.impl.index.multival.BuildAndQueryTest;
 import org.act.temporalProperty.util.DataFileImporter;
 import org.act.temporalProperty.util.StoreBuilder;
 import org.act.temporalProperty.util.TrafficDataImporter;

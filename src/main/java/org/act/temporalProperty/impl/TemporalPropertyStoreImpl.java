@@ -3,7 +3,7 @@ package org.act.temporalProperty.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.TemporalPropertyStore;
-import org.act.temporalProperty.exception.TPSException;
+import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.exception.ValueUnknownException;
 import org.act.temporalProperty.helper.StoreInitial;
@@ -19,6 +19,7 @@ import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
@@ -26,6 +27,8 @@ import org.act.temporalProperty.table.TwoLevelMergeIterator;
 import org.act.temporalProperty.table.MergeProcess;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.vo.EntityPropertyId;
+import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -98,10 +101,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public Slice getPointValue( long entityId, int proId, int time )
+    public Slice getPointValue( long entityId, int proId, TimePointL time )
     {
-        Slice idSlice = toSlice( proId, entityId );
-        InternalKey searchKey = new InternalKey( idSlice, time );
+        InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
         this.meta.lock.lockShared();
         try
         {
@@ -119,12 +121,12 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                     }
                     catch ( ValueUnknownException e1 )
                     {
-                        return meta.getStore( proId ).getPointValue( idSlice, time );
+                        return meta.getStore( proId ).getPointValue( searchKey );
                     }
                 }
                 else
                 {
-                    return meta.getStore( proId ).getPointValue( idSlice, time );
+                    return meta.getStore( proId ).getPointValue( searchKey );
                 }
             }
         }
@@ -135,50 +137,50 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public Object getRangeValue( long id, int proId, int startTime, int endTime, InternalEntryRangeQueryCallBack callback )
+    public Object getRangeValue(long id, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback )
     {
         return getRangeValue( id, proId, startTime, endTime, callback, null );
     }
 
-    public Object getRangeValue( long entityId, int proId, int start, int end, InternalEntryRangeQueryCallBack callback, MemTable cache )
+    public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
     {
-        Preconditions.checkArgument( start <= end );
+        Preconditions.checkArgument( start.compareTo(end) <= 0 );
         Preconditions.checkArgument( entityId >= 0 && proId >= 0 );
         Preconditions.checkArgument( callback != null );
         meta.lock.lockShared();
         try
         {
             PropertyMetaData pMeta = meta.getProperties().get( proId );
-            callback.setValueType( pMeta.getType() );
+            callback.setValueType( pMeta.getType().name() );
 
-            Slice idSlice = toSlice( proId, entityId );
-            SearchableIterator memIter = new EPEntryIterator( idSlice, memTable.iterator() );
+            EntityPropertyId id = new EntityPropertyId(entityId, proId);
+            SearchableIterator memIter = new EPEntryIterator( id, memTable.iterator() );
             if ( this.stableMemTable != null )
             {
-                memIter = new EPMergeIterator( idSlice, stableMemTable.iterator(), memIter );
+                memIter = new EPMergeIterator( id, stableMemTable.iterator(), memIter );
             }
-            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( idSlice, start, end );
-            SearchableIterator mergedIterator = new EPMergeIterator( idSlice, diskIter, memIter );
+            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( id, start, end );
+            SearchableIterator mergedIterator = new EPMergeIterator( id, diskIter, memIter );
 
             if(cache!=null)
             {
-                mergedIterator = new EPMergeIterator( idSlice, mergedIterator, cache.iterator() );
+                mergedIterator = new EPMergeIterator( id, mergedIterator, cache.iterator() );
             }
 
             mergedIterator = new UnknownToInvalidIterator( mergedIterator );
 
-            InternalKey searchKey = new InternalKey( idSlice, start );
-            mergedIterator.seek( searchKey );
+            InternalKey searchKey = new InternalKey( id, start );
+            mergedIterator.seekFloor( searchKey );
             boolean firstLoop = true;
             while ( mergedIterator.hasNext() )
             {
                 InternalEntry entry = mergedIterator.next();
                 InternalKey key = entry.getKey();
-                int time = key.getStartTime();
+                TimePointL time = key.getStartTime();
                 if ( firstLoop )
                 {
                     firstLoop = false;
-                    if ( time < start )
+                    if ( time.compareTo(start) < 0 )
                     { callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) ); }
                     else
                     {
@@ -187,8 +189,8 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                 }
                 else
                 {
-                    assert time > start;
-                    if ( time <= end )
+                    assert time.compareTo(start) > 0;
+                    if ( time.compareTo(end) <= 0 )
                     {
                         callback.onNewEntry( entry );
                     }
@@ -223,41 +225,28 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     public boolean createProperty( int propertyId, ValueContentType type )
     {
         meta.lock.lockExclusive();
-        try
-        {
+        try {
             SinglePropertyStore prop = meta.proStores().get( propertyId );
-            if ( prop == null )
-            {
-                try
-                {
+            if ( prop == null ) {
+                try {
                     PropertyMetaData pMeta = new PropertyMetaData( propertyId, type );
                     meta.addStore( propertyId, new SinglePropertyStore( pMeta, dbDir, cache, index ) );
                     meta.addProperty( pMeta );
                     return true;
-                }
-                catch ( Throwable ignore )
-                {
+                } catch ( Throwable ignore ) {
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 PropertyMetaData pMeta = meta.getProperties().get( propertyId );
-                if ( pMeta != null && pMeta.getType() == type )
-                {
+                if ( pMeta != null && pMeta.getType() == type ) {
                     // already exist, maybe in recovery. so just delete all property then create again.
                     deleteProperty( propertyId );
-                    createProperty( propertyId, type );
-                    return true;
-                }
-                else
-                {
-                    throw new TPSRuntimeException( "create temporal property failed, exist property with same id but diff type!" );
+                    return createProperty( propertyId, type );
+                } else {
+                    throw new TPSRuntimeException( "create temporal property failed, exist property (type:"+(pMeta==null?null:pMeta.getType())+") with same id but diff type! (new type: "+type+")" );
                 }
             }
-        }
-        finally
-        {
+        } finally {
             meta.lock.unlockExclusive();
         }
     }
@@ -265,13 +254,12 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public boolean setProperty( TimeIntervalKey key, Slice value )
     {
-        if ( !meta.getProperties().containsKey( key.getKey().getPropertyId() ) )
-        {
-            createProperty( key.getKey().getPropertyId(), key.getKey().getValueType().toValueContentType() );
-//            throw new TPSNHException( "no such property id: " + key.getKey().getPropertyId() + ". should create first!" );
-        }
-
         meta.lock.lockExclusive();
+        if ( !meta.getProperties().containsKey( key.getId().getPropertyId() ) ) {
+            if(!createProperty( key.getId().getPropertyId(), key.getValueType().toValueContentType() )){
+                throw new TPSNHException( "create property failed: " + key.getId().getPropertyId() + " type: "+key.getValueType() );
+            }
+        }
         try
         {
             if ( forbiddenWrite )
@@ -341,7 +329,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public long createAggrDurationIndex( int propertyId, int start, int end, ValueGroupingMap valueGrouping, int every, int timeUnit )
+    public long createAggrDurationIndex(int propertyId, TimePointL start, TimePointL end, ValueGroupingMap valueGrouping, int every, int timeUnit )
     {
         meta.lock.lockExclusive();
         try
@@ -363,7 +351,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public long createAggrMinMaxIndex( int propertyId, int start, int end, int every, int timeUnit, IndexType type )
+    public long createAggrMinMaxIndex(int propertyId, TimePointL start, TimePointL end, int every, int timeUnit, IndexType type )
     {
         meta.lock.lockExclusive();
         try
@@ -385,19 +373,19 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public Object aggregate( long entityId, int proId, int startTime, int endTime, InternalEntryRangeQueryCallBack callback )
+    public Object aggregate( long entityId, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback )
     {
         return getRangeValue( entityId, proId, startTime, endTime, callback );
     }
 
     @Override
-    public AggregationIndexQueryResult getByIndex( long indexId, long entityId, int proId, int startTime, int endTime )
+    public AggregationIndexQueryResult getByIndex(long indexId, long entityId, int proId, TimePointL startTime, TimePointL endTime )
     {
         return getByIndex( indexId, entityId, proId, startTime, endTime, null );
     }
 
     @Override
-    public AggregationIndexQueryResult getByIndex( long indexId, long entityId, int proId, int startTime, int endTime, MemTable cache )
+    public AggregationIndexQueryResult getByIndex(long indexId, long entityId, int proId, TimePointL startTime, TimePointL endTime, MemTable cache )
     {
         meta.lock.lockShared();
         try
@@ -417,7 +405,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public long createValueIndex( int start, int end, List<Integer> proIds )
+    public long createValueIndex(TimePointL start, TimePointL end, List<Integer> proIds )
     {
         meta.lock.lockExclusive();
         try
@@ -437,7 +425,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-    private long createValueIndex( int start, int end, List<Integer> proIds, List<IndexValueType> types )
+    private long createValueIndex( TimePointL start, TimePointL end, List<Integer> proIds, List<IndexValueType> types )
     {
         checkArgument( !proIds.isEmpty(), "should have at least one proId" );
         meta.lock.lockExclusive();
@@ -519,7 +507,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-    public List<Triple<Boolean, FileMetaData, SearchableIterator>> buildIndexIterator( int start, int end, List<Integer> proIds )
+    public List<Triple<Boolean, FileMetaData, SearchableIterator>> buildIndexIterator(TimePointL start, TimePointL end, List<Integer> proIds )
     {
         if ( proIds.size() == 1 )
         {
@@ -534,14 +522,6 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             }
             return merged;
         }
-    }
-
-    private static Slice toSlice( int proId, long id )
-    {
-        Slice result = new Slice( 12 );
-        result.setLong( 0, id );
-        result.setInt( 8, proId );
-        return result;
     }
 
     /**
@@ -576,7 +556,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             while ( iterator.hasNext() )
             {
                 Map.Entry<TimeIntervalKey,Slice> entry = iterator.next();
-                writer.addRecord(MemTable.encode(entry.getKey(), entry.getValue()), false);
+                writer.addRecord(new TimeIntervalValueEntry(entry.getKey(), entry.getValue()).encode(), false);
             }
             writer.close();
         }
@@ -631,9 +611,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-    public boolean cacheOverlap( int proId, long entityId, int startTime, int endTime, MemTable cache )
+    public boolean cacheOverlap(int proId, long entityId, TimePointL startTime, TimePointL endTime, MemTable cache )
     {
-        Slice id = toSlice( proId, entityId );
+        EntityPropertyId id = new EntityPropertyId( entityId, proId );
         if ( cache!=null && cache.overlap( id, startTime, endTime ) )
         {
             return true;
@@ -658,7 +638,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         return false;
     }
 
-    public boolean cacheOverlap( int proId, int startTime, int endTime, MemTable cache )
+    public boolean cacheOverlap(int proId, TimePointL startTime, TimePointL endTime, MemTable cache )
     {
         if ( cache.overlap( proId, startTime, endTime ) )
         {
@@ -684,7 +664,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         return false;
     }
 
-    public TemporalValue<Boolean> coverTime( Set<Integer> proIdSet, int timeMin, int timeMax, MemTable cache )
+    public TemporalValue<Boolean> coverTime(Set<Integer> proIdSet, TimePointL timeMin, TimePointL timeMax, MemTable cache )
     {
         TemporalValue<Boolean> tMap = new TemporalValue<>();
         for ( Integer proId : proIdSet )

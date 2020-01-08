@@ -1,22 +1,21 @@
 package org.act.temporalProperty.helper;
 
-import com.google.common.collect.AbstractIterator;
 import org.act.temporalProperty.exception.TPSNHException;
-import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.impl.InternalEntry;
+import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.table.TwoLevelMergeIterator;
-import org.act.temporalProperty.util.AbstractSeekingIterator;
 import org.act.temporalProperty.util.Slice;
-
-import java.util.Map.Entry;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 /**
  * Created by song on 2018-01-24.
+ * EP开头相关的Iterator用于把其他iterator的数据流中过滤出（仅保留）指定的entityID和PropertyID的数据
  */
 public class EPMergeIterator extends TwoLevelMergeIterator
 {
-    private final Slice id;
+    private final EntityPropertyId id;
 
-    public EPMergeIterator(Slice idSlice, SearchableIterator old, SearchableIterator latest) {
+    public EPMergeIterator(EntityPropertyId idSlice, SearchableIterator old, SearchableIterator latest) {
         super( isEP( latest ) ? latest : new EPEntryIterator( idSlice, latest ), isEP( old ) ? old : new EPEntryIterator( idSlice, old ) );
         this.id = idSlice;
     }
@@ -44,5 +43,12 @@ public class EPMergeIterator extends TwoLevelMergeIterator
         }
         else
         { return endOfData(); }
+    }
+
+    @Override
+    public String toString() {
+        return "EPMergeIterator{" +
+                "id=" + id +
+                '}';
     }
 }

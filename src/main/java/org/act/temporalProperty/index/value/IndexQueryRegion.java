@@ -1,6 +1,6 @@
 package org.act.temporalProperty.index.value;
 
-import org.act.temporalProperty.index.value.rtree.RTreeRange;
+import org.act.temporalProperty.query.TimePointL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,20 +9,20 @@ import java.util.List;
  * Created by song on 2018-01-18.
  */
 public class IndexQueryRegion {
-    private int timeMin;
-    private int timeMax;
+    private TimePointL timeMin;
+    private TimePointL timeMax;
     private List<PropertyValueInterval> pValues = new ArrayList<>();
 
-    public IndexQueryRegion(int timeMin, int timeMax) {
+    public IndexQueryRegion(TimePointL timeMin, TimePointL timeMax) {
         this.timeMin = timeMin;
         this.timeMax = timeMax;
     }
 
-    public int getTimeMin() {
+    public TimePointL getTimeMin() {
         return timeMin;
     }
 
-    public int getTimeMax() {
+    public TimePointL getTimeMax() {
         return timeMax;
     }
 

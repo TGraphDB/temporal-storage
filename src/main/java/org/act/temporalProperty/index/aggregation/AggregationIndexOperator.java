@@ -12,6 +12,7 @@ import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.PropertyFilterIterator;
 import org.act.temporalProperty.index.SimplePoint2IntervalIterator;
 import org.act.temporalProperty.meta.PropertyMetaData;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.*;
 import org.act.temporalProperty.util.Slice;
 import org.apache.commons.lang3.tuple.Triple;
@@ -43,7 +44,7 @@ public class AggregationIndexOperator
         this.sysIndexMeta = meta;
     }
 
-    public long createDuration(PropertyMetaData pMeta, int start, int end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
+    public long createDuration(PropertyMetaData pMeta, TimePointL start, TimePointL end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
         // 获得新索引文件的ID
         long indexId = sysIndexMeta.nextIndexId();
         //创建新的索引文件元信息
@@ -61,7 +62,7 @@ public class AggregationIndexOperator
         return indexId;
     }
 
-    public long createMinMax(PropertyMetaData pMeta, int start, int end, int every, int timeUnit, IndexType type) throws IOException {
+    public long createMinMax(PropertyMetaData pMeta, TimePointL start, TimePointL end, int every, int timeUnit, IndexType type) throws IOException {
         // 获得新索引文件的ID
         long indexId = sysIndexMeta.nextIndexId();
         //创建新的索引文件元信息
@@ -80,7 +81,7 @@ public class AggregationIndexOperator
         return indexId;
     }
 
-    public AggregationIndexQueryResult query( long entityId, int proId, int start, int end, long indexId, MemTable cache ) throws IOException {
+    public AggregationIndexQueryResult query(long entityId, int proId, TimePointL start, TimePointL end, long indexId, MemTable cache ) throws IOException {
         AggregationIndexMeta meta = (AggregationIndexMeta) sysIndexMeta.getByIndexId( indexId );
         if(meta==null || meta.getPropertyIdList().get(0)!=proId){
             throw new TPSRuntimeException("no index with id {}", indexId);
@@ -116,7 +117,7 @@ public class AggregationIndexOperator
 
     private class DurationIndexManager {
 
-        public AggregationIndexQueryResult query( long entityId, AggregationIndexMeta meta, int start, int end, MemTable cache ) throws IOException {
+        public AggregationIndexQueryResult query(long entityId, AggregationIndexMeta meta, TimePointL start, TimePointL end, MemTable cache ) throws IOException {
             Map<Integer,Integer> result = new TreeMap<>();
 
             // 找出可以用索引加速的时间区间
@@ -132,11 +133,11 @@ public class AggregationIndexOperator
                 // 根据索引信息(timeUnit, every, valueGroup)构建一个range查询
                 DurationStatisticAggregationQuery packedQuery = packQuery( meta, start, end );
                 int proId = meta.getPropertyIdList().get(0);
-                for ( Entry<Integer,Integer> time : timeGroups.getQueryIntervals() )
+                for ( Entry<TimePointL, TimePointL> time : timeGroups.getQueryIntervals() )
                 {
                     // 进行range查询并返回结果
-                    int timeRangeStart = time.getKey();
-                    int timeRangeEnd = time.getValue();
+                    TimePointL timeRangeStart = time.getKey();
+                    TimePointL timeRangeEnd = time.getValue();
                     Map<Integer,Integer> rangeQueryResult =
                             (Map<Integer,Integer>) tpStore.getRangeValue( entityId, proId, timeRangeStart, timeRangeEnd, packedQuery, cache );
                     // 合并结果
@@ -148,8 +149,8 @@ public class AggregationIndexOperator
 
         private Map<Integer,Integer> queryIndex( long entityId, AggregationIndexMeta meta, IntervalStatus status ) throws IOException
         {
-            int startTimeGroup = status.getTimeStartGroup();
-            int endTimeGroup = status.getTimeEndGroup();
+            TimePointL startTimeGroup = status.getTimeStartGroup();
+            TimePointL endTimeGroup = status.getTimeEndGroup();
             Map<Integer,Integer> result = new TreeMap<>();
             Collection<IndexFileMeta> fileShouldSearch = meta.getFilesByTime( startTimeGroup, endTimeGroup );
             for ( IndexFileMeta fMeta : fileShouldSearch)
@@ -159,7 +160,7 @@ public class AggregationIndexOperator
             return result;
         }
 
-        private void queryOneFile( Map<Integer,Integer> result, long indexFileId, long entityId, int startTimeGroup, int endTimeGroup, IntervalStatus status ) throws IOException
+        private void queryOneFile(Map<Integer,Integer> result, long indexFileId, long entityId, TimePointL startTimeGroup, TimePointL endTimeGroup, IntervalStatus status ) throws IOException
         {
             String filePath = new File( indexDir, Filename.aggrIndexFileName( indexFileId ) ).getAbsolutePath();
             SeekingIterator<Slice,Slice> iterator = cache.getTable( filePath ).aggrIterator( filePath );
@@ -170,8 +171,8 @@ public class AggregationIndexOperator
                 Entry<Slice,Slice> entry = iterator.next();
                 AggregationIndexKey key = new AggregationIndexKey( entry.getKey() );
                 if ( key.compareTo( searchKey ) < 0 ) {continue;}
-                int timeGroupId = key.getTimeGroupId();
-                if ( key.getEntityId() == entityId && startTimeGroup <= timeGroupId && timeGroupId <= endTimeGroup )
+                TimePointL timeGroupId = key.getTimeGroupId();
+                if ( key.getEntityId() == entityId && startTimeGroup.compareTo(timeGroupId)<=0 && timeGroupId.compareTo(endTimeGroup) <= 0 )
                 {
                     if ( status.isValid( timeGroupId ) )
                     {
@@ -187,12 +188,17 @@ public class AggregationIndexOperator
             }
         }
 
-        private DurationStatisticAggregationQuery packQuery( AggregationIndexMeta meta, int start, int end )
+        private DurationStatisticAggregationQuery packQuery(AggregationIndexMeta meta, TimePointL start, TimePointL end )
         {
             TreeMap<Slice, Integer> vGroup = meta.getValGroupMap();
 
             return new DurationStatisticAggregationQuery<Integer>( start, end )
             {
+                @Override
+                public void setValueType(String valueType) {
+
+                }
+
                 public Integer computeGroupId(TimeIntervalEntry entry) {
                     Entry<Slice, Integer> group = vGroup.floorEntry(entry.value());
                     return group==null ? -1 : group.getValue();
@@ -221,7 +227,7 @@ public class AggregationIndexOperator
 
     private class MinMaxIndexManager {
 
-        public AggregationIndexQueryResult query( long entityId, AggregationIndexMeta meta, int start, int end, MemTable cache ) throws IOException {
+        public AggregationIndexQueryResult query(long entityId, AggregationIndexMeta meta, TimePointL start, TimePointL end, MemTable cache ) throws IOException {
             Map<Integer, Slice> result = new HashMap<>();
             Comparator<? super Slice> cp = ValueGroupingMap.getComparator( meta.getValueTypes().get( 0 ) );
             boolean shouldAddMin = (meta.getType()==AGGR_MIN || meta.getType()==AGGR_MIN_MAX);
@@ -239,11 +245,11 @@ public class AggregationIndexOperator
                 // 根据索引信息(timeUnit, every, valueGroup)构建一个range查询
                 AbstractTimeIntervalAggrQuery packedQuery = packQuery( meta, cp, start, end );
                 int proId = meta.getPropertyIdList().get(0);
-                for ( Entry<Integer,Integer> time : timeGroups.getQueryIntervals() )
+                for ( Entry<TimePointL, TimePointL> time : timeGroups.getQueryIntervals() )
                 {
                     // 进行range查询并返回结果
-                    int timeRangeStart = time.getKey();
-                    int timeRangeEnd = time.getValue();
+                    TimePointL timeRangeStart = time.getKey();
+                    TimePointL timeRangeEnd = time.getValue();
                     Map<Integer,Slice> rangeQueryResult =
                             (Map<Integer,Slice>) tpStore.getRangeValue( entityId, proId, timeRangeStart, timeRangeEnd, packedQuery, cache );
                     // 合并结果
@@ -279,8 +285,8 @@ public class AggregationIndexOperator
 
         private TreeMap<Integer,Slice> queryIndex( long entityId, AggregationIndexMeta meta, Comparator<? super Slice> cp, IntervalStatus status, boolean shouldAddMin, boolean shouldAddMax ) throws IOException
         {
-            int startTimeGroup = status.getTimeStartGroup();
-            int endTimeGroup = status.getTimeEndGroup();
+            TimePointL startTimeGroup = status.getTimeStartGroup();
+            TimePointL endTimeGroup = status.getTimeEndGroup();
             TreeMap<Integer,Slice> result = new TreeMap<>();
             for ( IndexFileMeta fMeta : meta.getFilesByTime( startTimeGroup, endTimeGroup ) )
             {
@@ -289,7 +295,7 @@ public class AggregationIndexOperator
             return result;
         }
 
-        private void queryOneFile( Map<Integer,Slice> result, long indexFileId, long entityId, int startTimeGroup, int endTimeGroup, Comparator<? super Slice> cp, IntervalStatus status, boolean shouldAddMin, boolean shouldAddMax ) throws IOException
+        private void queryOneFile(Map<Integer,Slice> result, long indexFileId, long entityId, TimePointL startTimeGroup, TimePointL endTimeGroup, Comparator<? super Slice> cp, IntervalStatus status, boolean shouldAddMin, boolean shouldAddMax ) throws IOException
         {
             String filePath = new File( indexDir, Filename.aggrIndexFileName( indexFileId ) ).getAbsolutePath();
             SeekingIterator<Slice,Slice> iterator = cache.getTable( filePath ).aggrIterator( filePath );
@@ -299,8 +305,8 @@ public class AggregationIndexOperator
             {
                 Entry<Slice,Slice> entry = iterator.next();
                 AggregationIndexKey key = new AggregationIndexKey( entry.getKey() );
-                int timeGroupId = key.getTimeGroupId();
-                if ( key.getEntityId() == entityId && startTimeGroup <= timeGroupId && timeGroupId <= endTimeGroup )
+                TimePointL timeGroupId = key.getTimeGroupId();
+                if ( key.getEntityId() == entityId && startTimeGroup.compareTo(timeGroupId)<=0 && timeGroupId.compareTo(endTimeGroup)<=0 )
                 {
                     if ( status.isValid( timeGroupId ) )
                     {
@@ -322,11 +328,16 @@ public class AggregationIndexOperator
             }
         }
 
-        private AbstractTimeIntervalAggrQuery packQuery( AggregationIndexMeta meta, Comparator<? super Slice> cp, int start, int end )
+        private AbstractTimeIntervalAggrQuery packQuery(AggregationIndexMeta meta, Comparator<? super Slice> cp, TimePointL start, TimePointL end )
         {
 
             return new AbstractTimeIntervalAggrQuery<Integer,Slice>( start, end )
             {
+                @Override
+                public void setValueType(String valueType) {
+
+                }
+
                 Slice min=null,max=null;
 
                 @Override
@@ -369,37 +380,28 @@ public class AggregationIndexOperator
         }
     }
 
-    private IntervalStatus accelerateGroups( AggregationIndexMeta meta, int start, int end, long entityId, MemTable cache )
+    private IntervalStatus accelerateGroups(AggregationIndexMeta meta, TimePointL start, TimePointL end, long entityId, MemTable cache )
     {
         int proId = meta.getPropertyIdList().get( 0 );
-        List<Integer> time = Lists.newArrayList( meta.getTimeGroupAvailable( start, end + 1 ) );
+        List<TimePointL> time = Lists.newArrayList( meta.getTimeGroupAvailable( start, end.next() ) );
         IntervalStatus status = new IntervalStatus();
-        if ( time.size() > 1 )
-        {
-            for ( int i = 1; i < time.size(); i++ )
-            {
-                int iStart = time.get( i - 1 );
-                int iEnd = time.get( i );
-                if ( !tpStore.cacheOverlap( proId, entityId, iStart, iEnd - 1, cache ) )
-                {
-                    status.addValidTimeGroup( iStart, iStart, iEnd - 1 );
-                }
-                else
-                {
-                    status.addInvalidTimeRange( iStart, iEnd - 1 );
+        if ( time.size() > 1 ) {
+            for ( int i = 1; i < time.size(); i++ ) {
+                TimePointL iStart = time.get( i - 1 );
+                TimePointL iEnd = time.get( i );
+                if ( !tpStore.cacheOverlap( proId, entityId, iStart, iEnd.pre(), cache ) ) {
+                    status.addValidTimeGroup( iStart, iStart, iEnd.pre() );
+                } else {
+                    status.addInvalidTimeRange( iStart, iEnd.pre() );
                 }
             }
-            if ( time.get( 0 ) > start )
-            {
-                status.addInvalidTimeRange( start, time.get( 0 ) - 1 );
+            if ( time.get( 0 ).compareTo(start) > 0 ) {
+                status.addInvalidTimeRange( start, time.get( 0 ).pre() );
             }
-            if ( time.get( time.size() - 1 ) < end )
-            {
+            if ( time.get( time.size() - 1 ).compareTo(end) < 0 ) {
                 status.addInvalidTimeRange( time.get( time.size() - 1 ), end );
             }
-        }
-        else
-        {
+        } else {
             status.addInvalidTimeRange( start, end );
         }
         return status;
@@ -408,16 +410,16 @@ public class AggregationIndexOperator
     private class IntervalStatus
     {
         private int accelerateTime = 0;
-        private Set<Integer> validTimeGroup = new TreeSet<>();
-        private TreeMap<Integer,Integer> queryIntervals = new TreeMap<>();
+        private Set<TimePointL> validTimeGroup = new TreeSet<>();
+        private TreeMap<TimePointL,TimePointL> queryIntervals = new TreeMap<>();
 
-        public void addValidTimeGroup( int timeGroupId, int start, int end )
+        public void addValidTimeGroup(TimePointL timeGroupId, TimePointL start, TimePointL end )
         {
             validTimeGroup.add( timeGroupId );
-            accelerateTime += (end - start + 1);
+            accelerateTime += (end.val() - start.val() + 1);
         }
 
-        public void addInvalidTimeRange( int start, int end )
+        public void addInvalidTimeRange(TimePointL start, TimePointL end )
         {
             if ( queryIntervals.isEmpty() )
             {
@@ -425,8 +427,8 @@ public class AggregationIndexOperator
             }
             else
             {
-                Entry<Integer,Integer> last = queryIntervals.lastEntry();
-                if ( start == last.getValue() + 1 )
+                Entry<TimePointL, TimePointL> last = queryIntervals.lastEntry();
+                if ( start.equals(last.getValue().next()) )
                 {
                     queryIntervals.put( last.getKey(), end );
                 }
@@ -437,17 +439,17 @@ public class AggregationIndexOperator
             }
         }
 
-        public int getTimeStartGroup()
+        public TimePointL getTimeStartGroup()
         {
             return Collections.min( validTimeGroup );
         }
 
-        public int getTimeEndGroup()
+        public TimePointL getTimeEndGroup()
         {
             return Collections.max( validTimeGroup );
         }
 
-        public boolean isValid( int timeGroupId )
+        public boolean isValid( TimePointL timeGroupId )
         {
             return validTimeGroup.contains( timeGroupId );
         }
@@ -462,7 +464,7 @@ public class AggregationIndexOperator
             return !queryIntervals.isEmpty();
         }
 
-        public Set<Entry<Integer,Integer>> getQueryIntervals()
+        public Set<Entry<TimePointL, TimePointL>> getQueryIntervals()
         {
             return queryIntervals.entrySet();
         }
@@ -476,7 +478,7 @@ public class AggregationIndexOperator
     private class CreateDurationIndexTask implements BackgroundTask
     {
         private final AggregationIndexMeta meta;
-        TimeGroupMap timeGroup;
+        TimeGroupBuilder timeGroup;
 
         public CreateDurationIndexTask( AggregationIndexMeta meta )
         {
@@ -498,7 +500,7 @@ public class AggregationIndexOperator
 
                 // 根据时间分块和value分区, 计算得出索引文件的Entry
                 FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<Integer> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
+                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
 
                 Iterator<AggregationIndexEntry> aggrEntries = new Interval2AggrEntryIterator( interval, meta.getValGroupMap(), subTimeGroup );
                 // 将iterator的entry放入数组进行排序
@@ -538,7 +540,7 @@ public class AggregationIndexOperator
     private class CreateMinMaxIndexTask implements BackgroundTask
     {
         private final AggregationIndexMeta meta;
-        private final TimeGroupMap timeGroup;
+        private final TimeGroupBuilder timeGroup;
 
         public CreateMinMaxIndexTask( AggregationIndexMeta meta )
         {
@@ -560,10 +562,10 @@ public class AggregationIndexOperator
 
                 // 根据时间分块和value分区, 计算得出索引文件的Entry(最大最小值)
                 FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<Integer> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
-                Iterator<Triple<Long,Integer,Slice>> minMax = new MinMaxAggrEntryIterator( interval, subTimeGroup );
+                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
+                Iterator<Triple<Long,TimePointL,Slice>> minMax = new MinMaxAggrEntryIterator( interval, subTimeGroup );
                 // 将iterator的entry放入数组进行排序
-                List<Triple<Long,Integer,Slice>> data = Lists.newArrayList( minMax );
+                List<Triple<Long,TimePointL,Slice>> data = Lists.newArrayList( minMax );
                 data.sort( Triple::compareTo );
                 // 排序后写入文件
                 // 索引文件

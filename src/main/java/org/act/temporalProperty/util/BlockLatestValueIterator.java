@@ -70,8 +70,8 @@ public class BlockLatestValueIterator implements SeekingIterator<Slice, Slice>
             nextEntry = readEntry(data, nextEntry);
             if( null != entry )
             {
-                InternalKey nextKey = new InternalKey( nextEntry.getKey() );
-                InternalKey preKey = new InternalKey( entry.getKey() );
+                InternalKey nextKey = InternalKey.decode( nextEntry.getKey() );
+                InternalKey preKey = InternalKey.decode( entry.getKey() );
                 if( nextKey.getId().equals( preKey.getId() ) && hasNext() )
                 {
                     return next();

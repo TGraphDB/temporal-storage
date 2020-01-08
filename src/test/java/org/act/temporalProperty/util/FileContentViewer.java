@@ -2,6 +2,7 @@ package org.act.temporalProperty.util;
 
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.FileChannelTable;
 import org.act.temporalProperty.table.Table;
 import org.act.temporalProperty.table.TableComparator;
@@ -80,19 +81,19 @@ public class FileContentViewer
         }else{
             log.info("File size: {}", humanReadableFileSize(channel.size()));
         }
-        int maxTime = Integer.MIN_VALUE;
-        int minTime = Integer.MAX_VALUE;
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
         long size = 0;
         long entryCount = 0;
         while( iterator.hasNext() ){
             Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
-            InternalKey internalKey = new InternalKey( key );
+            InternalKey internalKey = InternalKey.decode( key );
             if(!callBack.onEntry(entryCount, internalKey, value)) break;
-            int time = internalKey.getStartTime();
-            if( time < minTime ) minTime = time;
-            if( time > maxTime ) maxTime = time;
+            TimePointL time = internalKey.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
             size += (key.length() + value.length());
             entryCount++;
         }

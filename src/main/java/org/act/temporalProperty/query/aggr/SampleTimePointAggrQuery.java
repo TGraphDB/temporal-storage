@@ -3,7 +3,7 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.meta.ValueContentType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.Slice;
 
@@ -16,32 +16,32 @@ import java.util.Map.Entry;
  */
 public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRangeQueryCallBack {
     private final Map<K, V> groupValMap = new HashMap<>();
-    private final Map<K, List<Entry<Integer, Slice>>> groupListMap = new HashMap<>();
+    private final Map<K, List<Entry<TimePointL, Slice>>> groupListMap = new HashMap<>();
 
-    private int time = -1;
+    private TimePointL time = TimePointL.Init;
     private Slice lastValue;
 
-    protected abstract K computeGroupId(int t, Slice value);
+    protected abstract K computeGroupId(TimePointL t, Slice value);
 
-    protected abstract int computeNextTime(int time);
+    protected abstract TimePointL computeNextTime(TimePointL time);
 
-    protected abstract int computeStartTime();
+    protected abstract TimePointL computeStartTime();
 
     protected abstract Object onResult(Map<K, V> result);
 
-    protected abstract V aggregate(K groupId, Collection<Entry<Integer, Slice>> groupItems);
+    protected abstract V aggregate(K groupId, List<Entry<TimePointL, Slice>> groupItems);
 
     @Override
     public void onNewEntry(InternalEntry entry) {
         InternalKey key = entry.getKey();
-        int curT = key.getStartTime();
-        int t;
-        if(time==-1) {
+        TimePointL curT = key.getStartTime();
+        TimePointL t;
+        if(time.isInit()) {
             t = computeStartTime();
         }else{
             t = computeNextTime(time);
         }
-        while(t<curT) {
+        while(t.compareTo(curT)<0) {
             addNewValue(t, lastValue);
             t = computeNextTime(t);
         }
@@ -51,19 +51,19 @@ public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRang
     }
 
     @Override
-    public void setValueType(ValueContentType valueType) {
+    public void setValueType(String valueType) {
         // do nothing.
     }
 
     @Override
     public Object onReturn() {
-        for(Entry<K, List<Entry<Integer, Slice>>> e: groupListMap.entrySet()){
+        for(Entry<K, List<Entry<TimePointL, Slice>>> e: groupListMap.entrySet()){
             groupValMap.put(e.getKey(), aggregate(e.getKey(), e.getValue()));
         }
         return onResult(groupValMap);
     }
 
-    private void addNewValue(int t, Slice value){
+    private void addNewValue(TimePointL t, Slice value){
         K groupId = computeGroupId(t, value);
         groupListMap.computeIfAbsent(groupId, k -> new ArrayList<>());
         groupListMap.get(groupId).add(new TimePointValueEntry(t, value));
@@ -93,18 +93,18 @@ public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRang
         return value.getDouble(0);
     }
 
-    private static class TimePointValueEntry implements Entry<Integer, Slice>{
+    private static class TimePointValueEntry implements Entry<TimePointL, Slice> {
 
-        private int time;
+        private TimePointL time;
         private Slice value;
 
-        private TimePointValueEntry(int time, Slice value) {
+        private TimePointValueEntry(TimePointL time, Slice value) {
             this.time = time;
             this.value = value;
         }
 
         @Override
-        public Integer getKey() {
+        public TimePointL getKey() {
             return time;
         }
 

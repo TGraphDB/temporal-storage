@@ -9,12 +9,12 @@ import java.util.Objects;
  */
 public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
 {
-    private TIME_POINT from;
-    private TIME_POINT to;
+    private TIME_POINT from; // inclusive
+    private TIME_POINT to;  // inclusive
 
     public TInterval( TIME_POINT startTime, TIME_POINT endTime )
     {
-        Preconditions.checkArgument( startTime.compareTo( endTime ) <= 0 );
+        Preconditions.checkArgument( startTime.compareTo( endTime ) <= 0, "invalid time interval! got ["+startTime+", "+ endTime+"]" );
         this.from = startTime;
         this.to = endTime;
     }
@@ -29,6 +29,12 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
         return to;
     }
 
+    /**
+     * time axis: -------------|-----------> time ascend
+     * this interval:   [------]
+     * @param time:            (* ... )
+     * @return true if
+     */
     public boolean lessThan( TIME_POINT time )
     {
         return time.compareTo( to ) > 0;
@@ -52,11 +58,6 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
     public boolean between( TIME_POINT start, TIME_POINT end )
     {
         return start.compareTo( from ) <= 0 && to.compareTo( end ) <= 0;
-    }
-
-    public boolean toNow()
-    {
-        return to.isNow();
     }
 
     public abstract TInterval<TIME_POINT> changeEnd( TIME_POINT newEnd );

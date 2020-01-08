@@ -37,16 +37,16 @@ public class LogWriterAndReaderTest
         LogWriter writer = Logs.createLogWriter( dbDir, true );
         for( long i : added )
         {
-            VersionEdit edit = new VersionEdit();
-            FileMetaData fileMetaData = new FileMetaData( i, (int)i, (int)i, (int)i );
-            edit.addFile( 0, fileMetaData );
-            writer.addRecord( edit.encode(), true );
+//            VersionEdit edit = new VersionEdit();
+//            FileMetaData fileMetaData = new FileMetaData( i, (int)i, (int)i, (int)i );
+//            edit.addFile( 0, fileMetaData );
+//            writer.addRecord( edit.encode(), true );
         }
         for( long i : deleted )
         {
-            VersionEdit edit = new VersionEdit();
-            edit.deleteFile( 0, i );
-            writer.addRecord( edit.encode(), true );
+//            VersionEdit edit = new VersionEdit();
+//            edit.deleteFile( 0, i );
+//            writer.addRecord( edit.encode(), true );
         }
         writer.close();
         File logFile = new File(dbDir + "/unstable.meta");
@@ -55,9 +55,9 @@ public class LogWriterAndReaderTest
         Slice s;
         while( (s = reader.readRecord()) != null )
         {
-            VersionEdit edit = new VersionEdit( s );
-            System.out.println( edit.getNewFiles() );
-            System.out.println( edit.getDeletedFiles() );
+//            VersionEdit edit = new VersionEdit( s );
+//            System.out.println( edit.getNewFiles() );
+//            System.out.println( edit.getDeletedFiles() );
         }
     }
 }

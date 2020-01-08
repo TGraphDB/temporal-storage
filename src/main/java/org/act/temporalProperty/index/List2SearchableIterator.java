@@ -43,8 +43,16 @@ public class List2SearchableIterator extends AbstractIterator<InternalEntry> imp
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         throw new UnsupportedOperationException( new TGraphNotImplementedException() );
+    }
+
+    @Override
+    public String toString() {
+        return "List2SearchableIterator{" +
+                "in=" + in +
+                ", i=" + i +
+                '}';
     }
 }

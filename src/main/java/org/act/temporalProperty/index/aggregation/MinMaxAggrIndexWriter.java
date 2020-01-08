@@ -2,6 +2,7 @@ package org.act.temporalProperty.index.aggregation;
 
 import org.act.temporalProperty.impl.Options;
 import org.act.temporalProperty.index.IndexType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexKey;
 import org.act.temporalProperty.query.aggr.AggregationQuery;
 import org.act.temporalProperty.table.TableBuilder;
@@ -26,18 +27,18 @@ public class MinMaxAggrIndexWriter {
 
     private final File file;
     private final Comparator<Slice> cp;
-    private final Map<Pair<Long,Integer>,Slice> min = new TreeMap<>();
-    private final Map<Pair<Long,Integer>,Slice> max = new TreeMap<>();
+    private final Map<Pair<Long, TimePointL>, Slice> min = new TreeMap<Pair<Long, TimePointL>, Slice>();
+    private final Map<Pair<Long, TimePointL>, Slice> max = new TreeMap<Pair<Long, TimePointL>, Slice>();
     private final boolean buildMin;
     private final boolean buildMax;
 
-    public MinMaxAggrIndexWriter(List<Triple<Long,Integer,Slice>> data, File file, Comparator<Slice> valCp, IndexType type) {
+    public MinMaxAggrIndexWriter(List<Triple<Long, TimePointL, Slice>> data, File file, Comparator<Slice> valCp, IndexType type) {
         this.file = file;
         this.cp = valCp;
         buildMin = (type==AGGR_MIN || type==AGGR_MIN_MAX);
         buildMax = (type==AGGR_MAX || type==AGGR_MIN_MAX);
-        for(Triple<Long,Integer,Slice> entry : data){
-            Pair<Long, Integer> key = Pair.of(entry.getLeft(), entry.getMiddle());
+        for(Triple<Long, TimePointL, Slice> entry : data){
+            Pair<Long, TimePointL> key = Pair.of(entry.getLeft(), entry.getMiddle());
             if(buildMin) min.merge(key, entry.getRight(), this::min);
             if(buildMax) max.merge(key, entry.getRight(), this::max);
         }
@@ -47,8 +48,8 @@ public class MinMaxAggrIndexWriter {
         try(FileOutputStream targetStream = new FileOutputStream(file)) {
             FileChannel targetChannel = targetStream.getChannel();
             TableBuilder builder = new TableBuilder( new Options(), targetChannel, AggregationIndexKey.sliceComparator );
-            for(Map.Entry<Pair<Long,Integer>,Slice> entry : min.entrySet()){
-                Pair<Long,Integer> key = entry.getKey();
+            for(Map.Entry<Pair<Long, TimePointL>, Slice> entry : min.entrySet()){
+                Pair<Long, TimePointL> key = entry.getKey();
                 if ( buildMin )
                 { builder.add( toSlice( key, true ), entry.getValue() ); }
                 if ( buildMax )
@@ -76,10 +77,10 @@ public class MinMaxAggrIndexWriter {
         }
     }
 
-    private Slice toSlice( Pair<Long,Integer> key, boolean isMin )
+    private Slice toSlice(Pair<Long, TimePointL> key, boolean isMin )
     {
         long entityId = key.getLeft();
-        int timeGroupId = key.getRight();
+        TimePointL timeGroupId = key.getRight();
         return new AggregationIndexKey( entityId, timeGroupId, isMin ? AggregationQuery.MIN : AggregationQuery.MAX ).encode();
     }
 }

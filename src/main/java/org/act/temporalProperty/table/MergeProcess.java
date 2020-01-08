@@ -9,13 +9,15 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.Map.Entry;
 
-import org.act.temporalProperty.helper.DebugIterator;
+import org.act.temporalProperty.helper.EqualValFilterIterator;
+import org.act.temporalProperty.helper.InvalidEntityFilterIterator;
 import org.act.temporalProperty.helper.SameLevelMergeIterator;
 import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.IndexStore;
 import org.act.temporalProperty.index.IndexUpdater;
 import org.act.temporalProperty.meta.PropertyMetaData;
 import org.act.temporalProperty.meta.SystemMeta;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.TableLatestValueIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,11 +186,11 @@ public class MergeProcess extends Thread
         private final List<Closeable> channel2close = new LinkedList<>();
         private final List<File> files2delete = new LinkedList<>();
         private final List<String> table2evict = new LinkedList<>();
-        private final int mergeParticipantsMinTime;
+        private final TimePointL mergeParticipantsMinTime;
 
         private int entryCount;
-        private int minTime;
-        private int maxTime;
+        private TimePointL minTime;
+        private TimePointL maxTime;
         private FileChannel targetChannel;
         private IndexStore index;
         private IndexUpdater indexUpdater;
@@ -210,11 +212,11 @@ public class MergeProcess extends Thread
             if(!onlyDumpMemTable()) {
                 this.mergeParticipantsMinTime = calcMergeMinTime();
             }else{
-                this.mergeParticipantsMinTime = -1;
+                this.mergeParticipantsMinTime = TimePointL.Init;
             }
         }
 
-        private int calcMergeMinTime() {
+        private TimePointL calcMergeMinTime() {
             return pMeta.getUnStableFiles().get(Collections.max(mergeParticipants)).getSmallest();
         }
 
@@ -284,7 +286,7 @@ public class MergeProcess extends Thread
                     SearchableIterator mergeIterator;
                     FileBuffer filebuffer = pMeta.getUnstableBuffers(fileNumber);
                     if (null != filebuffer) {
-                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), table.iterator());
+                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), new PackInternalKeyIterator(table.iterator()));
                         channel2close.add(filebuffer);
                         files2delete.add(new File(propStoreDir, Filename.unbufferFileName(fileNumber)));
                     } else {
@@ -302,7 +304,10 @@ public class MergeProcess extends Thread
                 } else {
                     diskDataIter = unstableIter;
                 }
-                return new UnknownToInvalidIterator( TwoLevelMergeIterator.toDisk(this.mem.iterator(), diskDataIter) );
+                return new UnknownToInvalidIterator(
+                        new InvalidEntityFilterIterator(
+                                new EqualValFilterIterator(
+                                        TwoLevelMergeIterator.merge(this.mem.iterator(), diskDataIter) )));
             }
         }
 
@@ -318,8 +323,8 @@ public class MergeProcess extends Thread
         @Override
         public void runTask() throws IOException
         {
-            maxTime = -1;
-            minTime = Integer.MAX_VALUE;
+            maxTime = TimePointL.Init;
+            minTime = TimePointL.Now;
             entryCount = 0;
 
             String targetFileName;
@@ -343,9 +348,14 @@ public class MergeProcess extends Thread
             while( buildIterator.hasNext() ){
                 InternalEntry entry = buildIterator.next();
                 InternalKey key = entry.getKey();
-                if( key.getStartTime() < minTime ) minTime = key.getStartTime();
-                if( key.getStartTime() > maxTime ) maxTime = key.getStartTime();
-                builder.add( entry.getKey().encode(), entry.getValue() );
+                if( key.getStartTime().compareTo(minTime) < 0 ) minTime = key.getStartTime();
+                if( key.getStartTime().compareTo(maxTime) > 0 ) maxTime = key.getStartTime();
+                try {
+                    builder.add(entry.getKey().encode(), entry.getValue());
+                }catch(AssertionError e){
+                    System.err.println(buildIterator);
+                    throw e;
+                }
                 indexUpdater.update( entry );
                 entryCount++;
             }
@@ -374,11 +384,11 @@ public class MergeProcess extends Thread
             FileMetaData targetMeta;
 
             if(onlyDumpMemTable()){
-                int startTime;
+                TimePointL startTime;
                 if(pMeta.hasDiskFile()) {
-                    startTime=pMeta.diskFileMaxTime()+1;
+                    startTime=pMeta.diskFileMaxTime().next();
                 }else{
-                    startTime=0;
+                    startTime=TimePointL.Init;
                 }
                 targetMeta = new FileMetaData( 0, targetChannel.size(), startTime, maxTime );
             }else{
@@ -388,7 +398,7 @@ public class MergeProcess extends Thread
                 }else {
                     fileNumber = mergeParticipants.size();
                 }
-                assert mergeParticipantsMinTime<=minTime:"start time should <= minTime! ("+mergeParticipantsMinTime+", min:"+minTime+")";
+                assert mergeParticipantsMinTime.compareTo(minTime)<=0:"start time should <= minTime! ("+mergeParticipantsMinTime+", min:"+minTime+")";
                 targetMeta = new FileMetaData( fileNumber, targetChannel.size(), mergeParticipantsMinTime, maxTime );
             }
             return targetMeta;
@@ -414,7 +424,7 @@ public class MergeProcess extends Thread
         }
 
         // this should only be called when pMeta.hasStable() is true.
-        private SearchableIterator stableLatestValIter(int mergeResultStartTime) {
+        private SearchableIterator stableLatestValIter(TimePointL mergeResultStartTime) {
             FileMetaData meta = pMeta.latestStableMeta();
             String filePath = Filename.stPath(propStoreDir, meta.getNumber());
             SearchableIterator fileIterator = cache.newIterator(filePath);

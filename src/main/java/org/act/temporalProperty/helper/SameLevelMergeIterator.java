@@ -4,10 +4,8 @@ import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
-import org.act.temporalProperty.table.TwoLevelMergeIterator;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Used in merge process.
@@ -26,11 +24,12 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
             throw new TPSNHException("iterators which ran out should not in heap!");
         }
     };
-    private SearchableIterator in;
-    private int iteratorCount = 0;
+    private PriorityQueue<SearchableIterator> heap = new PriorityQueue<>(cp);
+    private Set<SearchableIterator> iterators = new HashSet<>();
 
     public SameLevelMergeIterator( List<SearchableIterator> iterators )
     {
+        this.iterators.addAll(iterators);
         for(SearchableIterator iterator : iterators) add(iterator);
     }
 
@@ -38,29 +37,20 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     public void add( SearchableIterator append )
     {
-        if ( append.hasNext() )
-        {
-            if ( in == null )
-            {
-                in = append;
-            }
-            else if ( cp.compare( in, append ) <= 0 )
-            {
-                in = TwoLevelMergeIterator.merge( append, in );
-            }
-            else
-            {
-                in = TwoLevelMergeIterator.merge( in, append );
-            }
-            iteratorCount++;
-        }
+        SearchableIterator debug = DebugIterator.wrap(append);
+        this.iterators.add(debug);
+        if(append.hasNext()) heap.add(debug);
     }
 
     @Override
     protected InternalEntry computeNext() {
-        if ( in != null && in.hasNext() )
-        {
-            return in.next();
+        SearchableIterator iter = heap.poll();
+        if(iter!=null){
+            InternalEntry entry = iter.next();
+            if (iter.hasNext()) {
+                heap.add(iter);
+            }
+            return entry;
         }else{
             return endOfData();
         }
@@ -68,18 +58,37 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     public int size()
     {
-        return iteratorCount;
+        return heap.size();
     }
 
     @Override
     public void seekToFirst() {
         super.resetState();
-        in.seekToFirst();
+        heap = new PriorityQueue<>(cp);
+        for(SearchableIterator i: iterators){
+            i.seekToFirst();
+            heap.add(i);
+        }
     }
 
     @Override
-    public void seek(InternalKey targetKey) {
+    public boolean seekFloor(InternalKey targetKey) {
         super.resetState();
-        in.seek( targetKey );
+        heap = new PriorityQueue<>(cp);
+        boolean flag = false;
+        // if any one of the iterators seekFloor is true, then we can confirm there is one entry less or eq to targetKey.
+        for(SearchableIterator i: iterators){
+            if(i.seekFloor( targetKey )) flag = true;
+            heap.add(i);
+        }
+        return flag;
+    }
+
+    @Override
+    public String toString() {
+        return "SameLevelMergeIterator@"+hashCode()+"{" +
+//                "heap=" + heap + ", " +
+                "iterators=" + iterators +
+                '}';
     }
 }

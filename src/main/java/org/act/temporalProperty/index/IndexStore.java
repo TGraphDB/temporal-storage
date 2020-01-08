@@ -1,15 +1,13 @@
 package org.act.temporalProperty.index;
 
-import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.aggregation.*;
 import org.act.temporalProperty.index.value.*;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.meta.PropertyMetaData;
-import org.act.temporalProperty.query.TimeIntervalKey;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
-import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceOutput;
 
 import java.io.File;
@@ -69,15 +67,15 @@ public class IndexStore {
 //        return result;
 //    }
 
-    public long createValueIndex(int start, int end, List<Integer> proIds, List<IndexValueType> types) throws IOException {
+    public long createValueIndex(TimePointL start, TimePointL end, List<Integer> proIds, List<IndexValueType> types) throws IOException {
         return value.create(start, end, proIds, types);
     }
 
-    public long createAggrDurationIndex(PropertyMetaData pMeta, int start, int end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
+    public long createAggrDurationIndex(PropertyMetaData pMeta, TimePointL start, TimePointL end, ValueGroupingMap valueGrouping, int every, int timeUnit) throws IOException {
         return aggr.createDuration(pMeta, start, end, valueGrouping, every, timeUnit);
     }
 
-    public long createAggrMinMaxIndex(PropertyMetaData pMeta, int start, int end, int every, int timeUnit, IndexType type) throws IOException {
+    public long createAggrMinMaxIndex(PropertyMetaData pMeta, TimePointL start, TimePointL end, int every, int timeUnit, IndexType type) throws IOException {
         return aggr.createMinMax(pMeta, start, end, every, timeUnit, type);
     }
 
@@ -85,7 +83,7 @@ public class IndexStore {
         return value.query(condition, cache);
     }
 
-    public AggregationIndexQueryResult queryAggrIndex( long entityId, PropertyMetaData meta, int start, int end, long indexId, MemTable cache ) throws IOException {
+    public AggregationIndexQueryResult queryAggrIndex(long entityId, PropertyMetaData meta, TimePointL start, TimePointL end, long indexId, MemTable cache ) throws IOException {
         return aggr.query(entityId, meta.getPropertyId(), start, end, indexId, cache);
     }
 

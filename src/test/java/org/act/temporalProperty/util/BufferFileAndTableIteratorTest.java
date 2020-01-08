@@ -76,7 +76,7 @@ public class BufferFileAndTableIteratorTest
     public void test()
     {
         SameLevelMergeIterator list = new SameLevelMergeIterator();
-        TwoLevelMergeIterator iterator = TwoLevelMergeIterator.merge( buffer.iterator(), table.iterator());
+        SearchableIterator iterator = TwoLevelMergeIterator.merge( buffer.iterator(), new PackInternalKeyIterator(table.iterator()));
         list.add( iterator );
         list.add( memTable.iterator() );
         int expected = 0;

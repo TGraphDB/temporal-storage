@@ -1,6 +1,7 @@
 package org.act.temporalProperty.yangfan;
 
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.StoreBuilder;
 import org.act.temporalProperty.util.TrafficDataImporter;
@@ -66,8 +67,8 @@ public class srcValueUpdateStat {
                 currEntry = entryList.get(entryId);
                 long entityId = currEntry.getEntityId();
                 Slice propertyValue = currEntry.getValue(propertyId);
-                int startTime = currEntry.getStart();
-                int endTime = currEntry.getEnd();
+                TimePointL startTime = currEntry.getStart();
+                TimePointL endTime = currEntry.getEnd();
 
                 while (true) {
 
@@ -87,7 +88,7 @@ public class srcValueUpdateStat {
                         entryId++;
                     } else {
 
-                        endTime = nextEntry.getStart() - 1;
+                        endTime = nextEntry.getStart().pre();
                         break;
                     }
                 }

@@ -1,8 +1,7 @@
 package org.act.temporalProperty.index.value;
 
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
-
-import java.nio.ByteBuffer;
 
 /**
  * Created by song on 2018-01-19.
@@ -10,10 +9,10 @@ import java.nio.ByteBuffer;
 public class TimePointEntry {
     private int propertyId;
     private long entityId;
-    private int timePoint;
+    private TimePointL timePoint;
     private Slice value;
 
-    public TimePointEntry(int propertyId, long entityId, int timePoint, Slice value) {
+    public TimePointEntry(int propertyId, long entityId, TimePointL timePoint, Slice value) {
         this.propertyId = propertyId;
         this.entityId = entityId;
         this.timePoint = timePoint;
@@ -28,7 +27,7 @@ public class TimePointEntry {
         return entityId;
     }
 
-    public int getTimePoint() {
+    public TimePointL getTimePoint() {
         return timePoint;
     }
 

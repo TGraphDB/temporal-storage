@@ -13,7 +13,7 @@ public interface InternalEntryRangeQueryCallBack
      * This method is called before the range query to tell you the type of values
      * @param valueType see {@link ValueContentType} for details.
      */
-    void setValueType(ValueContentType valueType);
+    void setValueType(String valueType);
     void onNewEntry(InternalEntry entry);
     Object onReturn();
 }

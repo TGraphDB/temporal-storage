@@ -4,6 +4,7 @@ import org.act.temporalProperty.helper.AbstractSearchableIterator;
 
 /**
  * Created by song on 2018-05-09.
+ * 把UNKNOWN的entry转换为Invalid的entry
  */
 public class UnknownToInvalidIterator extends AbstractSearchableIterator
 {
@@ -40,9 +41,16 @@ public class UnknownToInvalidIterator extends AbstractSearchableIterator
     }
 
     @Override
-    public void seek( InternalKey targetKey )
+    public boolean seekFloor(InternalKey targetKey )
     {
         super.resetState();
-        in.seek( targetKey );
+        return in.seekFloor( targetKey );
+    }
+
+    @Override
+    public String toString() {
+        return "UnknownToInvalidIterator{" +
+                "in=" + in +
+                '}';
     }
 }

@@ -4,32 +4,43 @@ import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.util.Slice;
 
 /**
- * Note that after call seek() seekToFirst(), the hasNext() and peek() return value may change.
+ * Note: after call seekFloor(), seekCeil(), or seekToFirst(), the result of hasNext() and peek() may change.
  * Created by song on 2018-03-29.
+ * Edit by sjh @2019-10-11
  */
 public interface SearchableIterator extends PeekingIterator<InternalEntry> {
     /**
-     * Repositions the iterator so the beginning of this block.
+     * Repositions the iterator to the beginning of list of element.
+     * so the next Entry is the first element packed in this list.
      */
     void seekToFirst();
 
     /**
-     * edit description by sjh @2018-01-25
-     * Origin description:
-     * Repositions the iterator so the key of the next BlockElement returned greater than or equal to the specified targetKey.
-     * New description:  (similar to FLOOR operator)
-     * if data key is 1, 3, 5, then
-     * |seek | peek() and next() returns |
-     * |  0  |  1  | ? not for sure
-     * |  1  |  1  |
-     * |  2  |  1  |
-     * |  3  |  3  |
-     * |  4  |  3  |
-     * |  5  |  5  |
-     * |  6  |  5  |
-     * IMPORTANT NOTE:
-     * the behavior of peek() and next() is defined by implementations. For example, a implementation may
-     * only return entries whose key > 2, thus seek(0), seek(1), seek(2), seek(3) have the same effect.
+     * Repositions the iterator inner pointer so the key of the next Entry is the latest key smaller or equal to the specified targetKey. (similar to FLOOR operator)
+     *
+     * @return false if the smallest key is larger than targetKey, thus the effect is same as {@code seekToFirst()}
+     *
+     * Example:
+     * 1.if data list is {3:B, 5:C}, then
+     * after call seekFloor(2)=FALSE, peek() and next() return (3:B)
+     * after call seekFloor(3)=true, peek() and next() return entry (3:B)
+     * after call seekFloor(4)=true, peek() and next() return entry (3:B)
+     * after call seekFloor(5)=true, peek() and next() return entry (5:C)
+     * after call seekFloor(6)=true, peek() and next() return entry (5:C)
+     * 2. if data list is { } (empty), then seekFloor(n) always return false
+     *
      */
-    void seek(InternalKey targetKey);
+    boolean seekFloor(InternalKey targetKey);
+
+    /**
+     * It seems there is no need for this method.
+     * Repositions the iterator inner pointer so the key of the next Entry is the smallest key equal to or larger than the specified targetKey. (similar to Ceil operator)
+     * if data key is {3:B, 5:C}, then
+     * after call seekCeil(0) or seekCeil(1) or seekCeil(2), peek() and next() return (3:B)
+     * after call seekCeil(3), peek() and next() return entry (3:B)
+     * after call seekCeil(4), peek() and next() return entry (5:C)
+     * after call seekCeil(5), peek() and next() return entry (5:C)
+     * after call seekCeil(6), peek() and next() return entry (5:C)
+     */
+//    void seekCeil(InternalKey targetKey);
 }

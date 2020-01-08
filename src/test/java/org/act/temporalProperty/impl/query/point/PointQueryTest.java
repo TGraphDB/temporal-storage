@@ -1,8 +1,8 @@
 package org.act.temporalProperty.impl.query.point;
 
 import org.act.temporalProperty.TemporalPropertyStore;
-import org.act.temporalProperty.impl.query.range.RangeQueryTest;
 import org.act.temporalProperty.meta.ValueContentType;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.StoreBuilder;
 import org.junit.Test;
@@ -16,7 +16,7 @@ import java.util.List;
  * Created by song on 2018-01-24.
  */
 public class PointQueryTest {
-    private static Logger log = LoggerFactory.getLogger(RangeQueryTest.class);
+    private static Logger log = LoggerFactory.getLogger(PointQueryTest.class);
     private static String dbDir = "/tmp/temporal.property.test";
     private TemporalPropertyStore store;
 
@@ -26,7 +26,7 @@ public class PointQueryTest {
         store = stBuilder.store();
         store.createProperty(0, ValueContentType.INT);
         StoreBuilder.setIntProperty(store, 0, 1, 0, 3);
-        Slice val = store.getPointValue(1, 0, 4);
+        Slice val = store.getPointValue(1, 0, new TimePointL(4));
         log.debug("{}", val.getInt(0)==4);
     }
 
@@ -41,7 +41,7 @@ public class PointQueryTest {
             }
             log.debug("version {} write finish", entityId);
         }
-        Slice val = store.getPointValue(1, 0, 4);
+        Slice val = store.getPointValue(1, 0, new TimePointL(4));
         log.debug("{}", val.getInt(0)==4);
     }
 
@@ -55,7 +55,7 @@ public class PointQueryTest {
                 StoreBuilder.setIntProperty(store, time, entityId, 0, time);
             }
         }
-        Slice val = store.getPointValue(1, 0, 9);
+        Slice val = store.getPointValue(1, 0, new TimePointL(9));
         if(val!=null) log.debug("{}", val.getInt(0));
         store.shutDown();
     }
@@ -74,7 +74,7 @@ public class PointQueryTest {
             }
             log.debug("version {} write finish", proId);
         }
-        Slice val = store.getPointValue(0, 3, 4); // bug, throws NoSuchElementException
+        Slice val = store.getPointValue(0, 3, new TimePointL(4)); // bug, throws NoSuchElementException
         log.debug("{}", val.getInt(0)); // should be 0
     }
 
