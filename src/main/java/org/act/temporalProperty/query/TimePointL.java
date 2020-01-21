@@ -12,11 +12,15 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
 
 /**
  * Created by song on 2018-05-09.
+ *
+ * Implementation of TimePoint, valid range [0, 2^61-2] (2^61-2==2305843009213693949==about 73 years' nanoseconds, 1 seconds = 10^9 nanoseconds).
+ * 2^61 is used as NOW. -2 is used as INIT
+ * because when store, we use first 3 bit to represent value type (8 types), check InternalKey.encode for details
  */
 public class TimePointL implements TPoint<TimePointL>
 {
     private static final long INIT_VAL_LONG = -2L;
-    private static final long NOW_VAL_LONG = Long.MAX_VALUE;
+    private static final long NOW_VAL_LONG = Long.MAX_VALUE >> 2; // (Long.MAX_VALUE == 2^63)
     public static final TimePointL Now = new TimePointL(true){
         @Override public boolean isNow() { return true; }
         @Override public boolean isInit(){ return false; }
@@ -37,7 +41,7 @@ public class TimePointL implements TPoint<TimePointL>
     public TimePointL( long time )
     {
         this.time = time;
-        assert (time>=0 && time<NOW_VAL_LONG-1): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW_VAL_LONG -2));
+        assert (0<=time && time<=NOW_VAL_LONG-2): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW_VAL_LONG -2));
     }
 
     // this constructor is used for now and init only.

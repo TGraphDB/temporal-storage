@@ -147,9 +147,9 @@ public class InternalKey implements Comparable<InternalKey>
 
     public Slice encode()
     {
-        DynamicSliceOutput out = new DynamicSliceOutput(SIZE_OF_INT + 2*SIZE_OF_LONG);
+        DynamicSliceOutput out = new DynamicSliceOutput(SIZE_OF_INT + SIZE_OF_LONG + SIZE_OF_LONG ); //int for propertyId, long for entityId and time+type
         getId().encode(out);
-        out.writeLong(SequenceNumber.packTimeAndValueType( startTime.valInt(), valueType ) );
+        out.writeLong(SequenceNumber.packTimeAndValueType( startTime.val(), valueType ) );
         return out.slice();
     }
 
@@ -157,7 +157,7 @@ public class InternalKey implements Comparable<InternalKey>
     {
         EntityPropertyId id = EntityPropertyId.decode(in);
         long tmp = in.readLong();
-        int time = SequenceNumber.unpackTime(tmp);
+        long time = SequenceNumber.unpackTime(tmp);
         ValueType valueType = SequenceNumber.unpackValueType(tmp);
         return new InternalKey(id.getPropertyId(), id.getEntityId(), new TimePointL(time), valueType);
     }

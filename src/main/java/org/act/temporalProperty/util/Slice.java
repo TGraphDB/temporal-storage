@@ -30,6 +30,7 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
+import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SequenceNumber;
 import org.act.temporalProperty.query.TimeIntervalKey;
 
@@ -717,10 +718,7 @@ public final class Slice
         String s = "";
         if( this.length() == 20 )
         {
-            long id = this.getLong( 0 );
-            int proid = this.getInt( 8 );
-            int time = (int)SequenceNumber.unpackTime( this.getLong( 12 ) );
-            s = " Id = " + id + "," + "ProId = " + proid + "," + "Time = " + time + ",";
+            return InternalKey.decode(this).toString();
         }
         return toret + s + ")";
     }

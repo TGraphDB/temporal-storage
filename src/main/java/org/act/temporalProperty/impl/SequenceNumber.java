@@ -53,7 +53,7 @@ public final class SequenceNumber
      * | ValueType | time |
      *      3bit    61bits
      */
-    public static long packTimeAndValueType( int time, ValueType valueType )
+    public static long packTimeAndValueType( long time, ValueType valueType )
     {
         Preconditions.checkNotNull(valueType, "valueType is null");
         long tmp = 0L;
@@ -68,8 +68,8 @@ public final class SequenceNumber
         return ValueType.getValueTypeByPersistentId( (int) (num >>> 61) );
     }
 
-    public static int unpackTime( long num )
+    public static long unpackTime( long num )
     {
-        return (int) (num & 0x1FFF_FFFF_FFFF_FFFFL);
+        return num & 0x1FFF_FFFF_FFFF_FFFFL;
     }
 }

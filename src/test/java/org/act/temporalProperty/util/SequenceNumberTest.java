@@ -41,7 +41,7 @@ public class SequenceNumberTest
     {
         for( int i = 0; i<NUM; i++ )
         {
-            int time = SequenceNumber.unpackTime( sequences[i] );
+            int time = (int) SequenceNumber.unpackTime( sequences[i] );
             ValueType type = SequenceNumber.unpackValueType( sequences[i] );
             Assert.assertEquals( times[i], time );
             Assert.assertEquals( valueTypes[i], type );
