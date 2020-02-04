@@ -1,6 +1,7 @@
 package org.act.temporalProperty.query;
 
 
+import com.google.common.base.Preconditions;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
@@ -14,13 +15,18 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  * Created by song on 2018-05-09.
  *
  * Implementation of TimePoint, valid range [0, 2^61-2] (2^61-2==2305843009213693949==about 73 years' nanoseconds, 1 seconds = 10^9 nanoseconds).
- * 2^61 is used as NOW. -2 is used as INIT
+ * 2^61 is used as NOW. -1 is used as INIT (but is stored as 2^61-1)
  * because when store, we use first 3 bit to represent value type (8 types), check InternalKey.encode for details
+ * thus negative number can not be stored.
  */
 public class TimePointL implements TPoint<TimePointL>
 {
-    private static final long INIT_VAL_LONG = -2L;
-    private static final long NOW_VAL_LONG = Long.MAX_VALUE >> 2; // (Long.MAX_VALUE == 2^63)
+    public static final long INIT_VAL = -1L;
+    public static final long NOW_VAL = Long.MAX_VALUE >> 2; // (Long.MAX_VALUE == 2^63)
+
+    public static final long INIT_STORAGE = (Long.MAX_VALUE >> 2) - 1L;
+    public static final long NOW_STORAGE = NOW_VAL;
+
     public static final TimePointL Now = new TimePointL(true){
         @Override public boolean isNow() { return true; }
         @Override public boolean isInit(){ return false; }
@@ -34,6 +40,7 @@ public class TimePointL implements TPoint<TimePointL>
         @Override public TimePointL pre() { throw new UnsupportedOperationException("should not call pre on TimePoint.INIT"); }
         @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.INIT"); }
         @Override public String toString() { return "INIT"; }
+        @Override public void encode(SliceOutput out) { out.writeLong(INIT_STORAGE); }
     };
 
     protected long time;
@@ -41,14 +48,14 @@ public class TimePointL implements TPoint<TimePointL>
     public TimePointL( long time )
     {
         this.time = time;
-        assert (0<=time && time<=NOW_VAL_LONG-2): new IllegalArgumentException("invalid time value "+ time +", only support 0 to "+(NOW_VAL_LONG -2));
+        Preconditions.checkArgument(0 <= time && time <= NOW_VAL - 2, "invalid time value %d, only support 0 to %d", time, NOW_VAL -2);
     }
 
     // this constructor is used for now and init only.
     protected TimePointL( boolean isNow )
     {
-        if(isNow) this.time = NOW_VAL_LONG;
-        else this.time = INIT_VAL_LONG;
+        if(isNow) this.time = NOW_VAL;
+        else this.time = INIT_VAL;
     }
 
     @Override
@@ -88,13 +95,13 @@ public class TimePointL implements TPoint<TimePointL>
     @Override
     public int compareTo( TimePointL o )
     {
-        return Long.compare( val(), o.val() );
+        return Long.compare( time, o.time );
     }
 
     @Override
     public String toString()
     {
-        return String.valueOf( val() );
+        return String.valueOf( time );
     }
 
     @Override
@@ -122,8 +129,8 @@ public class TimePointL implements TPoint<TimePointL>
 
     public static TimePointL decode(SliceInput in) {
         long t = in.readLong();
-        if(t==NOW_VAL_LONG) return Now;
-        else if(t==INIT_VAL_LONG) return Init;
+        if(t == NOW_STORAGE) return Now;
+        else if(t == INIT_STORAGE) return Init;
         else return new TimePointL(t);
     }
 

@@ -29,7 +29,6 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     public SameLevelMergeIterator( List<SearchableIterator> iterators )
     {
-        this.iterators.addAll(iterators);
         for(SearchableIterator iterator : iterators) add(iterator);
     }
 
