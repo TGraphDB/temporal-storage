@@ -6,118 +6,59 @@ import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.SearchableIterator;
 import org.act.temporalProperty.query.TimePointL;
 
-import java.util.NoSuchElementException;
-
 /**
  * 在生成新的StableFile的时候，需要把上一个tableFile的每个动态属性的最新的值加入到新的文件中，这个类就是提取StableFile中每个动态属性的最近值的工具
  */
-public class TableLatestValueIterator implements SearchableIterator
+public class TableLatestValueIterator extends AbstractSearchableIterator
 {
+    private SearchableIterator in;
+    private InternalEntry first = null;
+    private InternalEntry second = null;
     
-    private SearchableIterator iterator;
-    private InternalEntry next = null;
-    private InternalEntry next_next = null; 
-    
-    public TableLatestValueIterator(SearchableIterator iterator)
-    {
-        this.iterator = iterator;
+    public TableLatestValueIterator(SearchableIterator iterator) {
+        this.in = iterator;
+        if(in.hasNext()) first=in.next();
+        if(in.hasNext()) second=in.next();
     }
-
     @Override
-    public InternalEntry peek()
-    {
-        if( hasNext() )
-            return next;
-        else
-            throw new NoSuchElementException();
-    }
-
-    @Override
-    public InternalEntry next()
-    {
-        if( hasNext() )
-        {
-            InternalEntry toret = this.next;
-            this.next = null;
-            return toret;
-        }
-        else
-            throw new NoSuchElementException();
-    }
-
-    private void getnext()
-    {
-        if( this.next_next == null )
-        {
-            try
-            {
-                this.next = this.iterator.next();
-                this.next_next = this.iterator.next();
-                while( this.next.getKey().getId().equals( this.next_next.getKey().getId() ) )
-                {
-                    this.next = this.next_next;
-                    this.next_next = this.iterator.next();
-                }
-            }
-            catch( NoSuchElementException e )
-            {}
-        }
-        else
-        {
-            this.next = this.next_next;
-            try
-            {
-                this.next_next = this.iterator.next();
-                while( this.next.getKey().getId().equals( this.next_next.getKey().getId() ) )
-                {
-                    this.next = this.next_next;
-                    this.next_next = this.iterator.next();
-                }
-            }
-            catch( NoSuchElementException e )
-            {
-                this.next_next = null;
+    protected InternalEntry computeNext() {
+        while(first !=null && second !=null){
+            if( ! first.getKey().getId().equals(second.getKey().getId())){
+                return shift2next();
+            }else{
+                shift2next();
             }
         }
-    }
-    
-    @Override
-    public void remove()
-    {
-        next();
-    }
-
-    @Override
-    public boolean hasNext()
-    {
-        if( null != next )
-            return true;
-        else
-        {
-            getnext();
-            return (null != next);
+        if(first !=null){ // second==null
+            return shift2next();
+        }else{
+            return endOfData();
         }
-            
+    }
+
+    private InternalEntry shift2next() {
+        InternalEntry tmp = first;
+        first = second;
+        if(in.hasNext()){
+            second = in.next();
+        }else{
+            second = null;
+        }
+        return tmp;
     }
 
     @Override
-    public void seekToFirst()
-    {
-        throw new UnsupportedOperationException();
-    }
+    public void seekToFirst() { throw new UnsupportedOperationException(); }
 
     @Override
-    public boolean seekFloor(InternalKey targetKey )
-    {
-        throw new UnsupportedOperationException();
-    }
+    public boolean seekFloor(InternalKey targetKey ) { throw new UnsupportedOperationException(); }
 
     @Override
     public String toString() {
         return "TableLatestValueIterator{" +
-                "iterator=" + iterator +
-                ", next=" + next +
-                ", next_next=" + next_next +
+                "iterator=" + in +
+                ", first=" + first +
+                ", second=" + second +
                 '}';
     }
 
