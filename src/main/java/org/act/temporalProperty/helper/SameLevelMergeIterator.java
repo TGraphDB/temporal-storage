@@ -43,20 +43,18 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     @Override
     protected InternalEntry computeNext() {
-        SearchableIterator iter = heap.poll();
-        if(iter!=null){
-            InternalEntry entry = iter.next();
+        SearchableIterator iter;
+        while((iter=heap.poll()) != null){
             if (iter.hasNext()) {
+                InternalEntry entry = iter.next();
                 heap.add(iter);
+                return entry;
             }
-            return entry;
-        }else{
-            return endOfData();
         }
+        return endOfData();
     }
 
-    public int size()
-    {
+    public int size() {
         return heap.size();
     }
 
