@@ -43,13 +43,13 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
 
     @Override
     protected InternalEntry computeNext() {
-        SearchableIterator iter;
-        while((iter=heap.poll()) != null){
+        SearchableIterator iter=heap.poll();
+        if(iter!= null){
+            InternalEntry entry = iter.next();
             if (iter.hasNext()) {
-                InternalEntry entry = iter.next();
                 heap.add(iter);
-                return entry;
             }
+            return entry;
         }
         return endOfData();
     }
@@ -64,7 +64,7 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
         heap = new PriorityQueue<>(cp);
         for(SearchableIterator i: iterators){
             i.seekToFirst();
-            heap.add(i);
+            if(i.hasNext()) heap.add(i);
         }
     }
 
@@ -76,7 +76,7 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
         // if any one of the iterators seekFloor is true, then we can confirm there is one entry less or eq to targetKey.
         for(SearchableIterator i: iterators){
             if(i.seekFloor( targetKey )) flag = true;
-            heap.add(i);
+            if(i.hasNext()) heap.add(i);
         }
         return flag;
     }

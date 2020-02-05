@@ -17,8 +17,9 @@ public interface SearchableIterator extends PeekingIterator<InternalEntry> {
 
     /**
      * Repositions the iterator inner pointer so the key of the next Entry is the latest key smaller or equal to the specified targetKey. (similar to FLOOR operator)
-     *
-     * @return false if the smallest key is larger than targetKey, thus the effect is same as {@code seekToFirst()}
+     * if data list is not empty, then after call this method, hasNext() always return true.
+     * @return true if there exists a key smaller than or equal to targetKey,
+     * false if the smallest key is larger than targetKey, thus the effect is same as {@code seekToFirst()}
      *
      * Example:
      * 1.if data list is {3:B, 5:C}, then
