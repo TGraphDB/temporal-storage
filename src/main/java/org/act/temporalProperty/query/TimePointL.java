@@ -48,7 +48,7 @@ public class TimePointL implements TPoint<TimePointL>
     public TimePointL( long time )
     {
         this.time = time;
-        Preconditions.checkArgument(0 <= time && time <= NOW_VAL - 2, "invalid time value %d, only support 0 to %d", time, NOW_VAL -2);
+        Preconditions.checkArgument(0 <= time && time <= NOW_VAL - 2, "invalid time value {}, only support 0 to {}", time, NOW_VAL -2);
     }
 
     // this constructor is used for now and init only.
