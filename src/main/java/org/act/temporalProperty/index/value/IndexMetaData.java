@@ -84,23 +84,23 @@ public class IndexMetaData {
     @Override
     public String toString() {
         return "IndexMetaData{" +
-                "id=" + id +
+                "valueTypes=" + valueTypes +
+                ", id=" + id +
                 ", type=" + type +
                 ", propertyIdList=" + propertyIdList +
                 ", timeStart=" + timeStart +
                 ", timeEnd=" + timeEnd +
+                ", stableFileIds=" + stableFileIds.keySet() +
+                ", unstableFileIds=" + unstableFileIds.keySet() +
+                ", fileByTime=" + fileByTime.keySet() +
+                ", online=" + online +
                 '}';
-    }
-
-    public Slice encode(){
-        DynamicSliceOutput out = new DynamicSliceOutput(128);
-        encode(out);
-        return out.slice();
     }
 
     public void encode(SliceOutput out){
         out.writeInt(this.getType().getId());
         out.writeLong(this.getId());
+        out.writeBoolean(this.isOnline());
         this.getTimeStart().encode(out);
         this.getTimeEnd().encode(out);
         out.writeInt(this.getPropertyIdList().size());
@@ -133,9 +133,10 @@ public class IndexMetaData {
         return Objects.hashCode( id );
     }
 
-    public IndexMetaData( SliceInput in ){
-        this.type = IndexType.decode(in.readInt());
-        this.id = in.readInt();
+    public IndexMetaData(SliceInput in, IndexType type){
+        this.type = type;
+        this.id = in.readLong();
+        this.online = in.readBoolean();
         this.timeStart = TimePointL.decode(in);
         this.timeEnd = TimePointL.decode(in);
         int count = in.readInt();
@@ -152,12 +153,12 @@ public class IndexMetaData {
         this.valueTypes = valueTypes;
     }
 
-    public static IndexMetaData decode(Slice in){
-        IndexType type = IndexType.decode(in.getInt(0));
+    public static IndexMetaData decode(SliceInput in){
+        IndexType type = IndexType.decode(in.readInt());
         if(type==IndexType.SINGLE_VALUE || type==IndexType.MULTI_VALUE){
-            return new IndexMetaData(in.input());
+            return new IndexMetaData(in, type);
         }else{
-            return AggregationIndexMeta.decode(in);
+            return AggregationIndexMeta.decode(in, type);
         }
     }
 

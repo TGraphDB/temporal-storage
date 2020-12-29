@@ -57,21 +57,20 @@ public class AggregationIndexMeta extends IndexMetaData {
     @Override
     public String toString() {
         return "AggregationIndexMeta{" +
-                "fileId=" + getId() +
+                "id=" + getId() +
+                ", valueTypes=" + getValueTypes().get(0) +
                 ", type=" + getType() +
                 ", propertyId=" + getPropertyIdList().get(0) +
                 ", timeStart=" + getTimeStart() +
                 ", timeEnd=" + getTimeEnd() +
+                ", online=" + isOnline() +
+                ", vGroupMap=" + vGroupMap +
+                ", tEvery=" + tEvery +
+                ", timeUnit=" + timeUnit +
                 '}';
     }
 
-
-    public Slice encode(){
-        DynamicSliceOutput out = new DynamicSliceOutput(128);
-        encode(out);
-        return out.slice();
-    }
-
+    @Override
     public void encode(SliceOutput out){
         super.encode(out);
         out.writeInt(tEvery);
@@ -84,37 +83,22 @@ public class AggregationIndexMeta extends IndexMetaData {
         }
     }
 
-    public static AggregationIndexMeta decode(SliceInput in){
-        IndexType type = IndexType.decode(in.readInt());
-        long fileId = in.readLong();
-        TimePointL timeStart = TimePointL.decode(in);
-        TimePointL timeEnd = TimePointL.decode(in);
-        int count = in.readInt();
-        assert count==1:"more then one property!";
-        List<Integer> pidList = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            pidList.add(in.readInt());
-        }
-        List<IndexValueType> valueTypes = new ArrayList<>();
-        for (int i = 0; i < count; i++ )
-        {
-            valueTypes.add(IndexValueType.decode( in.readInt() ));
-        }
+    public static AggregationIndexMeta decode(SliceInput in, IndexType type){
+        IndexMetaData meta = new IndexMetaData(in, type);
         int tEvery = in.readInt();
         int timeUnit = in.readInt();
-        TreeMap<Slice, Integer> valGroupMap = new TreeMap<>(ValueGroupingMap.getComparator(valueTypes.get(0)));
-        count = in.readInt();
+        TreeMap<Slice, Integer> valGroupMap = new TreeMap<>(ValueGroupingMap.getComparator(meta.getValueTypes().get(0)));
+        int count = in.readInt();
         for(int i=0; i<count; i++){
             int len = in.readInt();
             Slice key = in.readBytes(len);
             int groupId = in.readInt();
             valGroupMap.put(key, groupId);
         }
-        return new AggregationIndexMeta(fileId, type, pidList.get(0), valueTypes.get(0), timeStart, timeEnd, tEvery, timeUnit, valGroupMap);
-    }
-
-    public static AggregationIndexMeta decode(Slice in){
-        return decode(in.input());
+        AggregationIndexMeta aggrMeta = new AggregationIndexMeta(meta.getId(), type, meta.getPropertyIdList().get(0), meta.getValueTypes().get(0),
+                meta.getTimeStart(), meta.getTimeEnd(), tEvery, timeUnit, valGroupMap);
+        if(meta.isOnline()) aggrMeta.setOnline();
+        return aggrMeta;
     }
 
     public TreeSet<TimePointL> getTimeGroupAvailable(TimePointL start, TimePointL end )

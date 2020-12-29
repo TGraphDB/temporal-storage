@@ -57,8 +57,7 @@ public class SystemMetaController {
         meta.setIndexNextFileId(in.readLong());
         count = in.readInt();
         for(int i=0; i<count; i++){
-            IndexMetaData iMeta = new IndexMetaData(in);
-            meta.addIndex(iMeta);
+            meta.addIndex(IndexMetaData.decode(in));
         }
         return meta;
     }

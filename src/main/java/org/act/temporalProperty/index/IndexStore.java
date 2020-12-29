@@ -30,12 +30,12 @@ public class IndexStore {
     private ValueIndexOperator value;
     private IndexMetaManager meta;
 
-    public IndexStore(File indexDir, TemporalPropertyStoreImpl store, Set<IndexMetaData> indexes, long nextId, long nextFileId) throws IOException {
+    public IndexStore(File indexDir, TemporalPropertyStoreImpl store, IndexMetaManager indexMetaManager) throws IOException {
         if(!indexDir.exists() && !indexDir.mkdir()) throw new IOException("unable to create index dir");
         this.tpStore = store;
         this.indexDir = indexDir;
         this.cache = new IndexTableCache(indexDir, 4);
-        this.meta = new IndexMetaManager( indexes, nextId, nextFileId );
+        this.meta = indexMetaManager;
         this.aggr = new AggregationIndexOperator( indexDir, store, cache, meta );
         this.value = new ValueIndexOperator( indexDir, store, cache, meta );
     }

@@ -3,14 +3,13 @@ package org.act.temporalProperty.meta;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.helper.StoreLock;
 import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.index.IndexMetaManager;
 import org.act.temporalProperty.index.IndexStore;
 import org.act.temporalProperty.index.value.IndexMetaData;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by song on 2018-01-17.
@@ -22,8 +21,9 @@ public class SystemMeta {
     private final Set<IndexMetaData> indexes = new HashSet<>();
     private long indexNextId;
     private long indexNextFileId;
+
     private final Map<Integer, SinglePropertyStore> propertyStores = new HashMap<>();
-    private TableCache cache;
+    private IndexMetaManager indexMetas;
     private File dbDir;
 
     public SystemMeta(){
@@ -61,12 +61,16 @@ public class SystemMeta {
     }
 
     public void force(File dir) throws IOException {
+        this.setIndexNextFileId(indexMetas.getNextFileId());
+        this.setIndexNextId(indexMetas.getNextIndexId());
+        this.indexes.clear();
+        this.indexes.addAll(indexMetas.allIndexes());
         SystemMetaController.forceToDisk(dir, this);
     }
 
-    public void initStore(File storeDir, TableCache cache, IndexStore indexStore ) throws Throwable {
+    public void initStore(File storeDir, TableCache cache, IndexMetaManager indexMetaManager, IndexStore indexStore) throws Throwable {
         this.dbDir = storeDir;
-        this.cache = cache;
+        this.indexMetas = indexMetaManager;
         for( PropertyMetaData pMeta : properties.values()){
             SinglePropertyStore onePropStore = new SinglePropertyStore(pMeta, storeDir, cache, indexStore);
             propertyStores.put(pMeta.getPropertyId(), onePropStore);

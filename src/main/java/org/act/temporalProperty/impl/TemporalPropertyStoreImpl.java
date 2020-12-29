@@ -67,8 +67,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.dbDir = dbDir;
         this.init();
         this.cache = new TableCache( 25, TableComparator.instance(), false );
-        this.index = new IndexStore( new File( dbDir, "index" ), this, meta.getIndexes(), meta.indexNextId(), meta.indexNextFileId() );
-        this.meta.initStore( dbDir, cache, index);
+        IndexMetaManager indexMetaManager = new IndexMetaManager(meta.getIndexes(), meta.indexNextId(), meta.indexNextFileId());
+        this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
+        this.meta.initStore( dbDir, cache, indexMetaManager, index);
         this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
         this.mergeProcess.start();
     }
@@ -572,7 +573,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     {
         try
         {
-            SystemMetaController.forceToDisk( this.dbDir, this.meta );
+            this.meta.force( this.dbDir );
         }
         catch ( IOException e )
         {

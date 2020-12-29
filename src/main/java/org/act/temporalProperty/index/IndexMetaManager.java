@@ -55,7 +55,15 @@ public class IndexMetaManager
         return nextFileId.getAndIncrement();
     }
 
-    public void addOfflineMeta( IndexMetaData indexMetaData )
+    public long getNextIndexId() {
+        return nextIndexId.get();
+    }
+
+    public long getNextFileId() {
+        return nextFileId.get();
+    }
+
+    public void addOfflineMeta(IndexMetaData indexMetaData )
     {
         offLineIndexes.add( indexMetaData );
     }
