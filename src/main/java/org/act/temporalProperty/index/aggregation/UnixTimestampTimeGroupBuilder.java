@@ -54,11 +54,11 @@ public class UnixTimestampTimeGroupBuilder extends TimeGroupBuilder {
         TreeSet<TimePointL> set = new TreeSet<>();
 
         Calendar intervalStart = (Calendar) startPoint.clone();
-        while( intervalStart.getTimeInMillis() < beginT ) {
+        while( intervalStart.getTimeInMillis() < beginT * 1000 ) {
             intervalStart.add( timeUnit, tEvery );
         }//找到了起点：intervalStart现在是第一个大于等于beginT的valid时间点
-        while( intervalStart.getTimeInMillis() < finishT){//注意这里是小于无等于因为intervalStart是TimeGroup的开始时间而不是结束时间
-            set.add(new TimePointL(intervalStart.getTimeInMillis()));
+        while( intervalStart.getTimeInMillis() < finishT * 1000 ){//注意这里是小于无等于因为intervalStart是TimeGroup的开始时间而不是结束时间
+            set.add(new TimePointL(intervalStart.getTimeInMillis() / 1000));
             intervalStart.add( timeUnit, tEvery );
         }
         return set;
