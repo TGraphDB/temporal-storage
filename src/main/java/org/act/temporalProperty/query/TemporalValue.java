@@ -242,7 +242,7 @@ public class TemporalValue<V>
             this.end = end;
             this.iterator = Iterators.peekingIterator( map.subMap( start, end ).entrySet().iterator() );
             Entry<TimePointL, ValWithFlag> floorEntry = map.floorEntry( start );
-            if ( !floorEntry.getValue().isUnknown && floorEntry.getKey().compareTo( start ) < 0 )
+            if ( floorEntry!=null && !floorEntry.getValue().isUnknown && floorEntry.getKey().compareTo( start ) < 0 )
             {
                 this.start = new TimeIntervalValueEntry( new TimeInterval( start, floorEntry.getKey().pre() ), floorEntry.getValue().value );
             }
