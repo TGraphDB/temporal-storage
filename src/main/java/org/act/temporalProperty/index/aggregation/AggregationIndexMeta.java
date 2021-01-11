@@ -97,7 +97,7 @@ public class AggregationIndexMeta extends IndexMetaData {
         }
         AggregationIndexMeta aggrMeta = new AggregationIndexMeta(meta.getId(), type, meta.getPropertyIdList().get(0), meta.getValueTypes().get(0),
                 meta.getTimeStart(), meta.getTimeEnd(), tEvery, timeUnit, valGroupMap);
-        if(meta.isOnline()) aggrMeta.setOnline();
+        if(meta.isOnline()) aggrMeta.setOnline(true);
         return aggrMeta;
     }
 

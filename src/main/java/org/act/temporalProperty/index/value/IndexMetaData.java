@@ -66,9 +66,9 @@ public class IndexMetaData {
         return propertyIdList;
     }
 
-    public void setOnline()
+    public void setOnline(boolean online)
     {
-        online = true;
+        this.online = online;
     }
 
     public boolean isOnline()

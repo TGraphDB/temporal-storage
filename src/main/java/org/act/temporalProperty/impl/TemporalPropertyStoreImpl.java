@@ -496,6 +496,23 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         return index.list();
     }
 
+
+    @Override
+    public boolean deleteIndex( long indexId )
+    {
+        meta.lock.lockExclusive();
+        try {
+            index.deleteIndexById(indexId);
+            return true;
+        } catch ( IOException e ) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            meta.lock.unlockExclusive();
+        }
+    }
+
+
     private SearchableIterator getMemTableIter( int start, int end )
     {
         if ( this.stableMemTable != null )

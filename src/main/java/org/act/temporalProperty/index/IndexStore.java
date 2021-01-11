@@ -12,6 +12,7 @@ import org.act.temporalProperty.util.SliceOutput;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 import static org.act.temporalProperty.index.IndexType.AGGR_DURATION;
@@ -89,6 +90,16 @@ public class IndexStore {
 
     public void deleteIndex(int propertyId) {
         //Fixme TODO
+    }
+
+    public void deleteIndexById(long indexId) throws IOException {
+        IndexMetaData m = meta.getByIndexId(indexId);
+        m.setOnline(false);
+        for(IndexFileMeta fileMeta : m.allFiles()){
+            long fid = fileMeta.getFileId();
+            String fileName = m.getType().isValueIndex() ? Filename.valIndexFileName(fid) : Filename.aggrIndexFileName(fid);
+            Files.delete(new File(fileName).toPath());
+        }
     }
 
     /**

@@ -83,6 +83,8 @@ public interface TemporalPropertyStore
 	 */
 	boolean deleteEntityProperty(Slice id);
 
+	boolean deleteIndex(long indexId);
+
 	/**
 	 * Aggregation查询是getRangeValue的一种alias而已.
 	 */

@@ -88,7 +88,7 @@ public class IndexMetaManager
 
     public void setOnline( IndexMetaData meta )
     {
-        meta.setOnline();
+        meta.setOnline(true);
         offLineIndexes.remove( meta );
         addMeta( meta );
     }
@@ -151,5 +151,21 @@ public class IndexMetaManager
     public boolean isOnline( long indexId )
     {
         return byId.get( indexId ) != null;
+    }
+
+    public void deleteIndex( long indexId ){
+        IndexMetaData m = byId.get(indexId);
+        if(m!=null){
+            byId.remove(indexId);
+            byProIdTime.forEach((proId, val) -> {
+                Set<TimePointL> toDel = new HashSet<>();
+                val.forEach((t, im)->{
+                    if(im.getId()==indexId) toDel.add(t);
+                });
+                for(TimePointL t: toDel){
+                    val.remove(t);
+                }
+            });
+        }else throw new RuntimeException("index meta not found.");
     }
 }
