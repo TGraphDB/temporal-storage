@@ -53,9 +53,10 @@ public class EPEntryIterator extends AbstractSearchableIterator {
     protected InternalEntry computeNext() {
         while(iter.hasNext()){
             InternalEntry entry = iter.next();
-            if(validId(entry)){
-                return entry;
-            }
+            int r = entry.getKey().getId().compareTo(id);
+            if(r<0) continue;
+            else if(r==0) return entry;
+            else return endOfData();
         }
         return endOfData();
     }
