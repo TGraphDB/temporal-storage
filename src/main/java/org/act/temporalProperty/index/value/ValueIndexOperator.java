@@ -13,13 +13,13 @@ import org.act.temporalProperty.index.IndexTable;
 import org.act.temporalProperty.index.IndexTableCache;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.PropertyFilterIterator;
+import org.act.temporalProperty.index.value.cardinality.HyperLogLog;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.index.value.rtree.IndexEntryOperator;
 import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.TimeIntervalUtil;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.File;
@@ -31,6 +31,7 @@ import java.util.*;
 import static org.act.temporalProperty.index.IndexType.*;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -72,6 +73,17 @@ public class ValueIndexOperator
         return result;
     }
 
+    public long cardinality( IndexQueryRegion condition, MemTable cache ) throws IOException
+    {
+        IndexMetaData meta = valIndexCoverRegion(condition);
+        Iterator<HyperLogLog> iter = this.getCardinality( condition, meta, cache );
+        HyperLogLog result = HyperLogLog.defaultBuilder();
+        while(iter.hasNext()){
+            result.addAll(iter.next());
+        }
+        return result.cardinality();
+    }
+
     private IndexMetaData valIndexCoverRegion(IndexQueryRegion condition) {
         List<PropertyValueInterval> proIntervals = condition.getPropertyValueIntervals();
         List<Integer> pids = proIntervals.stream().map( PropertyValueInterval::getProId ).collect( Collectors.toList() );
@@ -100,6 +112,19 @@ public class ValueIndexOperator
             results.add( file.iterator( subQuery ) );
         }
         return Iterators.concat( results.iterator() );
+    }
+
+    private Iterator<HyperLogLog> getCardinality(IndexQueryRegion condition, IndexMetaData meta, MemTable cache ) throws IOException
+    {
+        String fileName = Filename.valIndexFileName(meta.getId());
+        List<IndexQueryRegion> regionsCanSpeedUp = excludeInvalidTime( condition, cache );
+        IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
+        List<HyperLogLog> results = new ArrayList<>();
+        for ( IndexQueryRegion subQuery : regionsCanSpeedUp )
+        {
+            results.add( file.cardinalityEstimator( subQuery ) );
+        }
+        return results.iterator();
     }
 
     public List<BackgroundTask> createIndexTasks()

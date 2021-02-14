@@ -491,6 +491,25 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
+    public long getCardinality( IndexQueryRegion condition, MemTable cache )
+    {
+        meta.lock.lockShared();
+        try
+        {
+            return index.queryValueIndexCardinality( condition, cache );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            meta.lock.unlockShared();
+        }
+    }
+
+    @Override
     public List<IndexMetaData> listIndex()
     {
         return index.list();

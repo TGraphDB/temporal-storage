@@ -17,6 +17,13 @@ public class RTreeIndexNode extends RTreeNode {
     public RTreeIndexNode(List<RTreeNode> children, IndexEntryOperator op) {
         this.children = children;
         this.updateBound(op);
+        this.updateCardinality();
+    }
+
+    private void updateCardinality() {
+        for(RTreeNode node : children){
+            this.c.addAll(node.c);
+        }
     }
 
     public RTreeIndexNode(List<RTreeNode> data) {

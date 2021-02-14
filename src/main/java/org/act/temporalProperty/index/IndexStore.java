@@ -84,6 +84,10 @@ public class IndexStore {
         return value.query(condition, cache);
     }
 
+    public long queryValueIndexCardinality( IndexQueryRegion condition, MemTable cache ) throws IOException {
+        return value.cardinality(condition, cache);
+    }
+
     public AggregationIndexQueryResult queryAggrIndex(long entityId, PropertyMetaData meta, TimePointL start, TimePointL end, long indexId, MemTable cache ) throws IOException {
         return aggr.query(entityId, meta.getPropertyId(), start, end, indexId, cache);
     }

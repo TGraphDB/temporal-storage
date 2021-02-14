@@ -1,5 +1,6 @@
 package org.act.temporalProperty.index.value;
 
+import org.act.temporalProperty.index.value.cardinality.RTreeCardinality;
 import org.act.temporalProperty.index.value.rtree.*;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 
@@ -61,6 +62,11 @@ public class IndexTableWriter {
 
         RTreeNodeBlock rootBlock = new RTreeNodeBlock(tree.getRoot(), channel.position());
         channel.write(rootBlock.toByteBuffer());
+
+        // write cardinality parts
+        System.out.println(channel.position());
+        ByteBuffer cTree = new RTreeCardinality(tree).encode();
+        channel.write(cTree);
 
 //        System.out.println(tree.getRoot().getPos());
         startPos.clear();

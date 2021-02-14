@@ -156,6 +156,8 @@ public interface TemporalPropertyStore
 	 */
 	List<IndexEntry> getEntries(IndexQueryRegion condition, MemTable cache);
 
+	long getCardinality( IndexQueryRegion condition, MemTable cache );
+
 	List<IndexEntry> getEntries(IndexQueryRegion condition);
 
 	List<IndexMetaData> listIndex();

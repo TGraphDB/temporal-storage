@@ -1,5 +1,6 @@
 package org.act.temporalProperty.index.value.rtree;
 
+import org.act.temporalProperty.index.value.cardinality.HyperLogLog;
 import org.act.temporalProperty.util.SliceOutput;
 
 import java.util.List;
@@ -12,6 +13,13 @@ public abstract class RTreeNode
 {
     protected int pos;
     protected RTreeRange bound;
+    protected HyperLogLog c = HyperLogLog.defaultBuilder();
+
+    public long getCardinality(){
+        return c.cardinality();
+    }
+
+    public HyperLogLog getCardinalityEstimator(){return c;}
 
     // common methods ========================
     public abstract boolean isLeaf();

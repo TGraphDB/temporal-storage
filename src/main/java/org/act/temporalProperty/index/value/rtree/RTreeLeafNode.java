@@ -17,6 +17,13 @@ public class RTreeLeafNode extends RTreeNode {
     public RTreeLeafNode(List<IndexEntry> entry, IndexEntryOperator op) {
         this.entry = entry;
         this.updateBound(op);
+        this.updateCardinality();
+    }
+
+    private void updateCardinality() {
+        for(IndexEntry e : entry){
+            this.c.offer(e.getEntityId());
+        }
     }
 
     public RTreeLeafNode(List<IndexEntry> data) {
