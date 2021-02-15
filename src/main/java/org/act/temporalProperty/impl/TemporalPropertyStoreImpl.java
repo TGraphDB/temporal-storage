@@ -181,22 +181,18 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                 if ( firstLoop )
                 {
                     firstLoop = false;
-                    if ( time.compareTo(start) < 0 )
-                    { callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) ); }
-                    else
-                    {
+                    if ( time.compareTo(start) < 0 ) {
+                        callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) );
+                    } else if(time.compareTo(end) > 0){
+                        break;
+                    }else {
                         callback.onNewEntry( entry );
                     }
-                }
-                else
-                {
+                } else {
                     assert time.compareTo(start) > 0;
-                    if ( time.compareTo(end) <= 0 )
-                    {
+                    if ( time.compareTo(end) <= 0 ) {
                         callback.onNewEntry( entry );
-                    }
-                    else
-                    {
+                    } else {
                         break;
                     }
                 }
