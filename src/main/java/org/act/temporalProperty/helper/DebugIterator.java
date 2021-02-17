@@ -13,7 +13,7 @@ import java.util.NoSuchElementException;
 /**
  * Created by song on 2018-03-28.
  */
-public class DebugIterator extends AbstractSearchableIterator
+public class DebugIterator implements SearchableIterator
 {
     private final SearchableIterator in;
     private final InternalKeyFixedLengthFifoQueue preKeys = new InternalKeyFixedLengthFifoQueue(5);
@@ -29,16 +29,6 @@ public class DebugIterator extends AbstractSearchableIterator
         return iterator;
 //        if(iterator instanceof DebugIterator) return iterator;
 //        else return new DebugIterator(iterator);
-    }
-
-    @Override
-    protected InternalEntry computeNext()
-    {
-        if(in.hasNext()){
-            return check(in.next());
-        }else{
-            return endOfData();
-        }
     }
 
     private InternalEntry check(InternalEntry curEntry)
@@ -90,7 +80,6 @@ public class DebugIterator extends AbstractSearchableIterator
 
     @Override
     public void seekToFirst() {
-        super.resetState();
         preKeys.clear();
         in.seekToFirst();
     }
@@ -98,9 +87,14 @@ public class DebugIterator extends AbstractSearchableIterator
     @Override
     public boolean seekFloor(InternalKey targetKey )
     {
-        super.resetState();
         preKeys.clear();
-        return in.seekFloor(targetKey);
+        boolean f = in.seekFloor(targetKey);
+        if(f){
+            assert in.peek().getKey().compareTo(targetKey)<=0 :"seekFloor error: not correct semantic.";
+        }else {
+            assert !in.hasNext() || in.peek().getKey().compareTo(targetKey) > 0 :"seekFloor error: not correct semantic(2).";
+        }
+        return f;
     }
 
     private String internalKeyInline(InternalKey key){
@@ -173,6 +167,26 @@ public class DebugIterator extends AbstractSearchableIterator
             }
         }
         return "Debug@"+hashCode()+"_"+sb.toString();
+    }
+
+    @Override
+    public InternalEntry peek() {
+        return in.peek();
+    }
+
+    @Override
+    public boolean hasNext() {
+        return in.hasNext();
+    }
+
+    @Override
+    public InternalEntry next() {
+        return in.next();
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
     }
 
 
