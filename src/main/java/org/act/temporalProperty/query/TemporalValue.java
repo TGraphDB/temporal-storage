@@ -6,8 +6,10 @@ import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.apache.commons.lang3.tuple.Triple;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 
@@ -19,7 +21,7 @@ import java.util.TreeMap;
  */
 public class TemporalValue<V>
 {
-    private final TreeMap<TimePointL, ValWithFlag> map = new TreeMap<>();
+    private final NavigableMap<TimePointL, ValWithFlag> map = Collections.synchronizedNavigableMap(new TreeMap<>());
 
     public TemporalValue( V initialValue )
     {

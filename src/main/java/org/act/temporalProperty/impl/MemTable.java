@@ -19,13 +19,15 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Modified MemTable, which only expose time interval API.
  */
 public class MemTable
 {
-    private final TreeMap<EntityPropertyId, TemporalValue<Value>> table = new TreeMap<>(EntityPropertyId::compareTo);
+//    private final TreeMap<EntityPropertyId, TemporalValue<Value>> table = new TreeMap<>(EntityPropertyId::compareTo);
+    private final ConcurrentSkipListMap<EntityPropertyId, TemporalValue<Value>> table = new ConcurrentSkipListMap<>(EntityPropertyId::compareTo);
 
     private long approximateMemoryUsage = 0;
 
@@ -213,12 +215,12 @@ public class MemTable
      */
     public static class MemTableIterator extends AbstractSearchableIterator
     {
-        private final TreeMap<EntityPropertyId, TemporalValue<Value>> table;
+        private final NavigableMap<EntityPropertyId, TemporalValue<Value>> table;
         private PeekingIterator<Entry<EntityPropertyId, TemporalValue<Value>>> tPropIter;
         private PeekingIterator<Triple<TimePointL,Boolean,Value>> tValIter;
         private EntityPropertyId curId;
 
-        MemTableIterator(TreeMap<EntityPropertyId, TemporalValue<Value>> table)
+        MemTableIterator(NavigableMap<EntityPropertyId, TemporalValue<Value>> table)
         {
             this.table = table;
             this.tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
