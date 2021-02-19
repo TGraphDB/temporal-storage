@@ -38,8 +38,7 @@ public class FileBuffer implements Closeable
     public void init(File bufLogFile ) throws IOException{
         this.fName = bufLogFile.getAbsolutePath();
         this.memTable = new MemTable();
-        this.discTable = new UnSortedTable(bufLogFile);
-        this.discTable.initFromFile( this.memTable );
+        this.discTable = new UnSortedTable(bufLogFile, this.memTable);
     }
 
 

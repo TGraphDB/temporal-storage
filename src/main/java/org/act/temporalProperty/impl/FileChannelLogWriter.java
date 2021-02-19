@@ -60,6 +60,13 @@ public class FileChannelLogWriter
         this.fileChannel = new FileOutputStream(file).getChannel();
     }
 
+    public FileChannelLogWriter(File file, boolean appendMode) throws FileNotFoundException {
+        Preconditions.checkNotNull(file, "file is null");
+        this.file = file;
+        this.fileNumber = 0;
+        this.fileChannel = new FileOutputStream(file, appendMode).getChannel();
+    }
+
     @Override
     public boolean isClosed()
     {

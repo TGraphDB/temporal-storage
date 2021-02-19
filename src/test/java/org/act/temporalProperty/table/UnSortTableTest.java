@@ -48,7 +48,8 @@ public class UnSortTableTest
         MemTable memtable = new MemTable();
         try
         {
-            table.initFromFile( memtable );
+            File file = new File( dbDir + fileName );
+            table = new UnSortedTable( file, memtable );
             PeekingIterator<Entry<TimeIntervalKey,Slice>> iterator = memtable.intervalEntryIterator();
             for( int i = 0; i<DATA_SIZE; i++ )
             {

@@ -22,35 +22,31 @@ public class UnSortedTable implements Closeable
     public UnSortedTable( File tableFile ) throws IOException
     {
         this.file = tableFile;
-        this.log = new FileChannelLogWriter(tableFile, 0);
+        this.log = new FileChannelLogWriter(tableFile, false);
     }
 
-    public void initFromFile( MemTable table ) throws IOException
+    public UnSortedTable( File tableFile, MemTable table ) throws IOException
     {
-        FileInputStream inputStream = new FileInputStream(file);
-        FileChannel channel = inputStream.getChannel();
-        LogReader logReader = new LogReader(channel, null, false, 0);
-        Slice record;
-        List<TimeIntervalValueEntry> entries = new LinkedList<>();
-        while ((record = logReader.readRecord()) != null) {
-            SliceInput in = record.input();
-            boolean isCheckPoint = in.readBoolean();
-            if(!isCheckPoint) {
-                int entryLen = in.readInt();
-                Slice entryRaw = in.readBytes(entryLen);
-                TimeIntervalValueEntry entry = TimeIntervalValueEntry.decode( entryRaw.input() );
-                entries.add(entry);
-            }else{
-                Iterator<TimeIntervalValueEntry> iterator = entries.iterator();
-                while(iterator.hasNext()) {
-                    TimeIntervalValueEntry entry = iterator.next();
+        this.file = tableFile;
+        this.initFromFile( table);
+        this.log = new FileChannelLogWriter(tableFile, true);
+    }
+
+    private void initFromFile( MemTable table ) throws IOException
+    {
+        try(    FileInputStream inputStream = new FileInputStream(file);
+                FileChannel channel = inputStream.getChannel()) {
+            LogReader logReader = new LogReader(channel, null, false, 0);
+            Slice record;
+            while ((record = logReader.readRecord()) != null) {
+                SliceInput in = record.input();
+                boolean isCheckPoint = in.readBoolean();
+                if (!isCheckPoint) {
+                    TimeIntervalValueEntry entry = TimeIntervalValueEntry.decode(in);
                     table.addInterval(entry.getKey(), entry.getValue());
                 }
-                entries.clear();
             }
         }
-        channel.close();
-        inputStream.close();
     }
 
     public void add( TimeIntervalKey key, Slice value ) throws IOException
@@ -58,9 +54,7 @@ public class UnSortedTable implements Closeable
         DynamicSliceOutput out = new DynamicSliceOutput(64);
         boolean isCheckPoint = false;
         out.writeBoolean(isCheckPoint);
-        Slice entry = new TimeIntervalValueEntry( key, value ).encode();
-        out.writeInt( entry.length() );
-        out.writeBytes( entry );
+        new TimeIntervalValueEntry( key, value ).encode(out);
         this.log.addRecord(out.slice(), false);
     }
 
