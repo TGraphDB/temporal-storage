@@ -6,7 +6,6 @@ import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.util.Slice;
-import org.act.temporalProperty.vo.TimeIntervalValueEntry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
         this.endTime = endTime;
     }
 
-    public void onNewEntry(InternalEntry entry) {
+    public boolean onNewEntry(InternalEntry entry) {
         hasEntry = true;
         InternalKey key = entry.getKey();
         TimePointL time = key.getStartTime();
@@ -54,6 +53,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
         {
             lastEntry = null;
         }
+        return true;
     }
 
     public Object onReturn() {

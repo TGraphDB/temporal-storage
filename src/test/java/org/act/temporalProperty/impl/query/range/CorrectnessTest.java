@@ -43,8 +43,9 @@ public class CorrectnessTest {
         Assert.assertEquals( sep - 1, val.getInt( 0 ) );
         Object result = store.getRangeValue(1, 0, new TimePointL(sep*2-10), new TimePointL(sep*2), new InternalEntryRangeQueryCallBack(){
             public void setValueType(String valueType) {}
-            public void onNewEntry(InternalEntry entry) {
+            public boolean onNewEntry(InternalEntry entry) {
                 Assert.assertEquals( entry.getValue().getInt( 0 ), entry.getKey().getStartTime() );
+                return true;
             }
             public Object onReturn() {
                 return null;
@@ -69,9 +70,10 @@ public class CorrectnessTest {
                 }
 
                 @Override
-                public void onNewEntry( InternalEntry entry )
+                public boolean onNewEntry(InternalEntry entry )
                 {
                     System.out.println( entry );
+                    return true;
                 }
 
                 @Override

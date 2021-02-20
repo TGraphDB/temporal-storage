@@ -32,7 +32,7 @@ public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRang
     protected abstract V aggregate(K groupId, List<Entry<TimePointL, Slice>> groupItems);
 
     @Override
-    public void onNewEntry(InternalEntry entry) {
+    public boolean onNewEntry(InternalEntry entry) {
         InternalKey key = entry.getKey();
         TimePointL curT = key.getStartTime();
         TimePointL t;
@@ -48,6 +48,7 @@ public abstract class SampleTimePointAggrQuery<K,V> implements InternalEntryRang
         addNewValue(t, entry.getValue());
         time = t;
         lastValue = entry.getValue();
+        return true;
     }
 
     @Override

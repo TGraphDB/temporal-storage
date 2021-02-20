@@ -14,6 +14,7 @@ public interface InternalEntryRangeQueryCallBack
      * @param valueType see {@link ValueContentType} for details.
      */
     void setValueType(String valueType);
-    void onNewEntry(InternalEntry entry);
+    // return true to continue search, false to stop loop.
+    boolean onNewEntry(InternalEntry entry);
     Object onReturn();
 }

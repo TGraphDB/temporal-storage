@@ -29,7 +29,7 @@ public interface AggregationQuery extends TimeRangeQuery
         }
 
         @Override
-        public void onNewEntry( InternalEntry entry )
+        public boolean onNewEntry(InternalEntry entry )
         {
             InternalKey key = entry.getKey();
             if ( key.getValueType().isValue() )
@@ -37,6 +37,7 @@ public interface AggregationQuery extends TimeRangeQuery
                 if ( min == null || cp.compare( entry.getValue(), min ) < 0 )
                 { min = entry.getValue(); }
             }
+            return true;
         }
 
         @Override
@@ -58,7 +59,7 @@ public interface AggregationQuery extends TimeRangeQuery
         }
 
         @Override
-        public void onNewEntry( InternalEntry entry )
+        public boolean onNewEntry(InternalEntry entry )
         {
             InternalKey key = entry.getKey();
             if ( key.getValueType().isValue() )
@@ -68,6 +69,7 @@ public interface AggregationQuery extends TimeRangeQuery
                     max = entry.getValue();
                 }
             }
+            return true;
         }
 
         @Override
@@ -90,7 +92,7 @@ public interface AggregationQuery extends TimeRangeQuery
         }
 
         @Override
-        public void onNewEntry( InternalEntry entry )
+        public boolean onNewEntry(InternalEntry entry )
         {
             InternalKey key = entry.getKey();
             if ( key.getValueType().isValue() )
@@ -103,6 +105,7 @@ public interface AggregationQuery extends TimeRangeQuery
                     max = entry.getValue();
                 }
             }
+            return true;
         }
 
         @Override
