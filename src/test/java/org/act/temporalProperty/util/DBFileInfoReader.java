@@ -22,10 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by song on 16-9-3.
@@ -157,6 +154,7 @@ public class DBFileInfoReader
         long size = 0;
         long recordCount = 0;
         int cnt=0;
+        Set<Long> eIds = new HashSet<>();
         while( iterator.hasNext() )
         {
             InternalEntry entry = iterator.next();
@@ -166,12 +164,13 @@ public class DBFileInfoReader
                 System.out.println(key+" "+value.getInt(0));
                 cnt++;
             }
+            eIds.add(key.getEntityId());
             TimePointL time = key.getStartTime();
             minTime = TimeIntervalUtil.min(minTime, time);
             maxTime = TimeIntervalUtil.max(maxTime, time);
             recordCount++;
         }
-        System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount);
+        System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount+" entity id cnt:"+eIds.size());
     }
 
     @Test

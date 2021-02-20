@@ -413,6 +413,11 @@ public class SinglePropertyStore
         List<Triple<Boolean, FileMetaData, SearchableIterator>> results = new ArrayList<>();
         for(FileMetaData meta : stList){
             SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
+            FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
+            //todo: maybe should not include buffer data at index create time, but merge buffer data when query.
+            if( null != buffer ){
+                fileIterator = TwoLevelMergeIterator.merge(buffer.iterator(), fileIterator);
+            }
             results.add(Triple.of( true, meta, fileIterator));
         }
 //        for( FileMetaData meta : unList ){

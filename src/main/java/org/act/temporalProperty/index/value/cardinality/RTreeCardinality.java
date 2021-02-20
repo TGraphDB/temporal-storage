@@ -17,11 +17,11 @@ import java.util.List;
 
 public class RTreeCardinality {
     RTreeNode root;
-    List<RTreeNode> firstLevel;
+    List<RTreeNode> inLevel;
     // constructor used for write
     public RTreeCardinality(RTree tree) {
         this.root = tree.getRoot();
-        this.firstLevel = tree.getLevels().get(tree.getLevels().size()-1);
+        this.inLevel = tree.getLevels().get(tree.getLevels().size()-1);
     }
 
     public ByteBuffer encode() {
@@ -29,18 +29,18 @@ public class RTreeCardinality {
         out.writeInt(0);//placeholder for size.
         root.getBound().encode(out);
         root.getCardinalityEstimator().encode(out);
-        System.out.println(root.getCardinality());
-        int childCnt = this.firstLevel.size();
+//        System.out.println(root.getCardinality());
+        int childCnt = this.inLevel.size();
         out.writeInt(childCnt);
-        for(RTreeNode node : firstLevel){
+        for(RTreeNode node : inLevel){
             node.getBound().encode(out);
 //            System.out.println(out.size());
             node.getCardinalityEstimator().encode(out);
-            System.out.println(node.getCardinality());
+//            System.out.println(node.getCardinality());
         }
         Slice content = out.slice();
         content.setInt(0, content.length()-4);
-        System.out.println(content.length());
+//        System.out.println(content.length());
         return content.toByteBuffer();
     }
 
@@ -64,18 +64,20 @@ public class RTreeCardinality {
         SliceInput in = new Slice(content).input();
 
         this.root = new RTreeCardinalityNodeBlock(in);
-        this.firstLevel = new ArrayList<>();
+        this.inLevel = new ArrayList<>();
         int size = in.readInt();
         for(int i=0; i<size; i++){
-            firstLevel.add(new RTreeCardinalityNodeBlock(in));
+            inLevel.add(new RTreeCardinalityNodeBlock(in));
         }
     }
 
     public HyperLogLog cardinalityEstimator() {
         HyperLogLog result = HyperLogLog.defaultBuilder();
-        for(RTreeNode node : firstLevel){
-            if(node.getBound().overlap(queryRegion)) {
-                result.addAll(node.getCardinalityEstimator());
+        if(root.getBound().overlap(queryRegion)) {
+            for (RTreeNode node : inLevel) {
+                if (node.getBound().overlap(queryRegion)) {
+                    result.addAll(node.getCardinalityEstimator());
+                }
             }
         }
         return result;

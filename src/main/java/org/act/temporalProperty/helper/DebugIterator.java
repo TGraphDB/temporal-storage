@@ -1,6 +1,7 @@
 package org.act.temporalProperty.helper;
 
 import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.vo.EntityPropertyId;
@@ -245,8 +246,14 @@ public class DebugIterator implements SearchableIterator
 //        }
     }
     public static void checkE(InternalKey key, String msg){
-//        if(key.compareTo(target)==0 || key.compareTo(target1)==0){
-//            System.out.println(msg);
-//        }
+        if(key.getEntityId()==49822){
+            System.out.println(msg+" "+key);
+        }
     }
+    public static void checkE(IndexEntry e, String msg){
+        if(e.getEntityId()==49822){
+            System.out.println(msg+" "+e);
+        }
+    }
+
 }

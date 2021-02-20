@@ -368,7 +368,7 @@ public class MergeProcess extends Thread
             while( buildIterator.hasNext() ){
                 InternalEntry entry = buildIterator.next();
                 InternalKey key = entry.getKey();
-                DebugIterator.checkE(key, "merge to disk file");
+//                DebugIterator.checkE(key, "merge to disk file");
                 if( key.getStartTime().compareTo(minTime) < 0 ) minTime = key.getStartTime();
                 if( key.getStartTime().compareTo(maxTime) > 0 ) maxTime = key.getStartTime();
                 try {

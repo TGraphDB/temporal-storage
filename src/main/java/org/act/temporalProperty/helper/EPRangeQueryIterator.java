@@ -90,8 +90,9 @@ public class EPRangeQueryIterator implements SearchableIterator{
     }
 
     private SearchableIterator debug(SearchableIterator iterator, String name){
-        debugIterName.put(iterator, name);
-        return new DebugIterator(iterator);
+        return iterator;
+//        debugIterName.put(iterator, name);
+//        return new DebugIterator(iterator);
     }
 
 //    public String iteratorTree(){
