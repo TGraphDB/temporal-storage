@@ -1,11 +1,9 @@
 package org.act.temporalProperty.util;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.helper.StoreInitial;
-import org.act.temporalProperty.impl.InternalEntry;
-import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.MemTable;
-import org.act.temporalProperty.impl.SearchableIterator;
+import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.value.rtree.*;
 import org.act.temporalProperty.meta.SystemMeta;
@@ -36,7 +34,7 @@ public class DBFileInfoReader
 {
     private String dbDir(){
         if(SystemUtils.IS_OS_WINDOWS){
-            return "temporal.property.test";
+            return "D:\\tgraph\\testdb\\temporal.relationship.properties";
         }else{
             return "/media/song/test/db-network-only/temporal.relationship.properties";
         }
@@ -45,7 +43,7 @@ public class DBFileInfoReader
     @Test
     public void metaFileInfo() throws IOException {
         readMetaFileContent("meta.info");
-        readMetaFileContent("meta.info.new");
+//        readMetaFileContent("meta.info.new");
     }
 
     @Test
@@ -69,7 +67,7 @@ public class DBFileInfoReader
         SystemMetaFile file = SystemMetaController.readFromDisk(new File(dbDir(), fileName));
         if(file!=null && file.isValid()){
             SystemMeta meta = SystemMetaController.decode(file.getMeta());
-            System.out.println(meta);
+            System.out.println(JSON.toJSONString(meta));
         }else{
             System.out.println("Format Error: not an valid meta file! Unexpected file end.");
         }
@@ -94,8 +92,8 @@ public class DBFileInfoReader
 
 
     @Test
-    public void onePropertyFilesInfo() throws IOException {
-        String propertyId = "3";
+    public void diskFilesInfo() throws IOException {
+        String propertyId = "1/un.000002.table";
         File metaFile = new File( this.dbDir() + "/" + propertyId );
         if(!metaFile.exists()){
             System.out.println("##### Warning: file not exist: "+ metaFile.getAbsolutePath());
@@ -115,13 +113,17 @@ public class DBFileInfoReader
         TimePointL minTime = TimePointL.Now;
         long size = 0;
         long recordCount = 0;
+        int cnt=0;
         while( iterator.hasNext() )
         {
             Map.Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
             InternalKey internalKey = InternalKey.decode( key );
-            System.out.println(internalKey+" "+value);
+            if(internalKey.getEntityId()==49822){
+                System.out.println(internalKey+" "+value.getInt(0));
+                cnt++;
+            }
             TimePointL time = internalKey.getStartTime();
             minTime = TimeIntervalUtil.min(minTime, time);
             maxTime = TimeIntervalUtil.max(maxTime, time);
@@ -130,6 +132,45 @@ public class DBFileInfoReader
         }
         inputStream.close();
         channel.close();
+        System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount);
+    }
+
+    @Test
+    public void bufferFilesInfo() throws IOException {
+        String fileName = "1/st.000004.buffer";
+        File file = new File( this.dbDir() + "/" + fileName );
+        if(!file.exists()){
+            System.out.println("##### Warning: file not exist: "+ file.getAbsolutePath());
+            return;
+        }
+        System.out.println("################## "+fileName+" #################");
+        FileBuffer fb = new FileBuffer(0);
+        fb.init(file);
+        SearchableIterator iterator = fb.iterator();
+        if( !iterator.hasNext() )
+        {
+            System.out.println("Empty file.");
+            return;
+        }
+        TimePointL maxTime = TimePointL.Init;
+        TimePointL minTime = TimePointL.Now;
+        long size = 0;
+        long recordCount = 0;
+        int cnt=0;
+        while( iterator.hasNext() )
+        {
+            InternalEntry entry = iterator.next();
+            InternalKey key = entry.getKey();
+            Slice value = entry.getValue();
+            if(key.getEntityId()==49822){
+                System.out.println(key+" "+value.getInt(0));
+                cnt++;
+            }
+            TimePointL time = key.getStartTime();
+            minTime = TimeIntervalUtil.min(minTime, time);
+            maxTime = TimeIntervalUtil.max(maxTime, time);
+            recordCount++;
+        }
         System.out.println("Size: "+ humanReadableFileSize(size)+" minTime:"+ minTime +" maxTime:"+maxTime +" record count:"+recordCount);
     }
 

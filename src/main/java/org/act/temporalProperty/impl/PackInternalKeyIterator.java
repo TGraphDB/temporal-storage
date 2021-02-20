@@ -1,6 +1,7 @@
 package org.act.temporalProperty.impl;
 
 import org.act.temporalProperty.helper.AbstractSearchableIterator;
+import org.act.temporalProperty.table.TableIterator;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.Map.Entry;
@@ -11,9 +12,9 @@ import java.util.Map.Entry;
 public class PackInternalKeyIterator extends AbstractSearchableIterator
 {
 
-    private final SeekingIterator<Slice, Slice> in;
+    private final TableIterator in;
 
-    public PackInternalKeyIterator(SeekingIterator<Slice, Slice> in){
+    public PackInternalKeyIterator(TableIterator in){
         this.in = in;
     }
 
@@ -21,7 +22,11 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
     protected InternalEntry computeNext() {
         if(in.hasNext()){
             Entry<Slice, Slice> tmp = in.next();
-            return new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
+            InternalEntry r = new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
+//            if(r.getKey().getEntityId()==){
+//                System.out.println(r.getKey()+" "+r.getValue().getInt(0));
+//            }
+            return r;
         }else {
             return endOfData();
         }

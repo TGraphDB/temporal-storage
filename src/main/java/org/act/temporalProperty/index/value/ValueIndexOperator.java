@@ -5,6 +5,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
+import org.act.temporalProperty.helper.EqualValFilterIterator;
 import org.act.temporalProperty.helper.SameLevelMergeIterator;
 import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.IndexFileMeta;
@@ -189,7 +190,7 @@ public class ValueIndexOperator
                     tpStore.buildIndexIterator( iMeta.getTimeStart(), iMeta.getTimeEnd(), iMeta.getPropertyIdList() );
             for ( Triple<Boolean,FileMetaData,SearchableIterator> i : iterators )
             {
-                SearchableIterator iterator = new PropertyFilterIterator( iMeta.getPropertyIdList(), i.getRight() );
+                SearchableIterator iterator = new EqualValFilterIterator(new PropertyFilterIterator( iMeta.getPropertyIdList(), i.getRight() ));
                 IndexBuilderCallback dataCollector = new IndexBuilderCallback( iMeta.getPropertyIdList(), op );
                 while ( iterator.hasNext() )
                 {
@@ -260,7 +261,7 @@ public class ValueIndexOperator
             {
                 iteratorList.add( i.getRight() );
             }
-            SearchableIterator iterator = new PropertyFilterIterator( iMeta.getPropertyIdList(), new SameLevelMergeIterator( iteratorList ) );
+            SearchableIterator iterator = new EqualValFilterIterator(new PropertyFilterIterator( iMeta.getPropertyIdList(), new SameLevelMergeIterator( iteratorList ) ));
             IndexBuilderCallback dataCollector = new IndexBuilderCallback( iMeta.getPropertyIdList(), op );
             while ( iterator.hasNext() )
             {
