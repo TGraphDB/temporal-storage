@@ -126,7 +126,8 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
         this.old.seekToFirst();
     }
 
-    @Override
+    @Override// this method does not implement the semantic defined in SearchableIterator.
+    // after call this method, next() may produce more than one entry whose key smaller-or-equal than targetKey.
     public boolean seekFloor(InternalKey targetKey )
     {
         oldCurrent = null;
