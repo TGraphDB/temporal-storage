@@ -2,6 +2,8 @@ package org.act.temporalProperty.impl;
 
 import com.google.common.base.Preconditions;
 
+import java.lang.ref.SoftReference;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 
 import org.act.temporalProperty.util.Slice;
@@ -83,4 +85,6 @@ public class InternalEntry
         sb.append('}');
         return sb.toString();
     }
+
+    public LinkedList<SearchableIterator> path = new LinkedList<>();
 }

@@ -28,7 +28,7 @@ public class FileMetaData
     /**
      * 文件大小，以byte为单位
      */
-    private final long fileSize;
+    private transient final long fileSize;
 
     /**
      * 负责存储有效时间的起始时间
@@ -40,7 +40,7 @@ public class FileMetaData
      */
     private final TimePointL largest;
     // todo this mutable state should be moved elsewhere
-    private final AtomicInteger allowedSeeks = new AtomicInteger(1 << 30);
+    private transient final AtomicInteger allowedSeeks = new AtomicInteger(1 << 30);
 
     /**
      * 实例化

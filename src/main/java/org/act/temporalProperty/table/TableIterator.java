@@ -127,7 +127,7 @@ public final class TableIterator
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ConcatenatingIterator");
+        sb.append("TableIterator");
         sb.append("{blockIterator=").append(blockIterator);
         sb.append(", current=").append(current);
         sb.append('}');

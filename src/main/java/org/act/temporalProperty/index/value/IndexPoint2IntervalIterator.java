@@ -114,4 +114,78 @@ public class IndexPoint2IntervalIterator extends AbstractIterator<IndexEntry> im
     }
 
 
+//    // may be better implement? not tested.
+//    EditableIndexEntry last = new EditableIndexEntry();
+//    protected IndexEntry computeNext2()
+//    {
+//        while(tpIter.hasNext()) {
+//            TimePointEntry e = tpIter.next();
+//
+//            if(last.entityId==null){
+//                last.setEntityId(e.getEntityId());
+//                last.setStart(e.getTimePoint());
+//                last.setValue(e.getPropertyId(), e.getValue());
+//            }else if(last.entityId != e.getEntityId()){
+//                IndexEntry r = last.outputEntry(endTime);
+//                last.clearValue();
+//                last.setEntityId(e.getEntityId());
+//                last.setStart(e.getTimePoint());
+//                last.setValue(e.getPropertyId(), e.getValue());
+//                return r;
+//            }else{
+//                if(last.start.equals(e.getTimePoint())){
+//                    last.setValue(e.getPropertyId(), e.getValue());
+//                }else if(last.start.compareTo(e.getTimePoint())<0){
+//                    IndexEntry r = last.outputEntry(e.getTimePoint().pre());
+//                    last.setStart(e.getTimePoint());
+//                    last.setValue(e.getPropertyId(), e.getValue());
+//                    return r;
+//                }else{
+//                    throw new RuntimeException("SNH: time not inc!");
+//                }
+//            }
+//        }
+//        if(last.entityId==null){
+//            return endOfData();
+//        }else {
+//            IndexEntry r = last.outputEntry(endTime);
+//            last.setEntityId(null);
+//            return r;
+//        }
+//    }
+//
+//    private class EditableIndexEntry {
+//        private TimePointL start;
+//        private Map<Integer, Slice> value = new HashMap<>();
+//        private Long entityId = null;
+//
+//        public void setStart(TimePointL start) {
+//            if(start.compareTo(startTime)>0){
+//                this.start = start;
+//            }else{
+//                this.start = startTime;
+//            }
+//        }
+//
+//        public void setValue(int propId, Slice value) {
+//            this.value.put(propId, value);
+//        }
+//
+//        public void setEntityId(Long entityId) {
+//            this.entityId = entityId;
+//        }
+//
+//        public IndexEntry outputEntry(TimePointL end){
+//            Slice[] arr = new Slice[proIdList.size()];
+//            for(int i=0; i<proIdList.size(); i++){
+//                Integer propId = proIdList.get(i);
+//                arr[i] = value.get(propId);
+//            }
+//            return new IndexEntry(entityId, start, end, arr);
+//        }
+//
+//        public void clearValue() {
+//            value.clear();
+//        }
+//    }
 }

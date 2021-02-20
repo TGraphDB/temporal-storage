@@ -4,6 +4,7 @@ import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
+import org.act.temporalProperty.util.SliceOutput;
 
 import java.util.Map;
 
@@ -46,9 +47,14 @@ public class TimeIntervalValueEntry implements Map.Entry<TimeIntervalKey, Slice>
     public Slice encode()
     {
         DynamicSliceOutput out = new DynamicSliceOutput( 64 );
+        this.encode(out);
+        return out.slice();
+    }
+
+    public void encode(SliceOutput out)
+    {
         key.encode(out);
         out.writeByte(val.length());
         out.writeBytes( val );
-        return out.slice();
     }
 }

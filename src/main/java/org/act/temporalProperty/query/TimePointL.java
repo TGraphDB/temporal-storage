@@ -1,6 +1,7 @@
 package org.act.temporalProperty.query;
 
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
@@ -21,12 +22,16 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  */
 public class TimePointL implements TPoint<TimePointL>
 {
+    @JSONField(serialize=false)
     public static final long INIT_VAL = -1L;
+    @JSONField(serialize=false)
     public static final long NOW_VAL = Long.MAX_VALUE >> 2; // (Long.MAX_VALUE == 2^63)
-
+    @JSONField(serialize=false)
     public static final long INIT_STORAGE = (Long.MAX_VALUE >> 2) - 1L;
+    @JSONField(serialize=false)
     public static final long NOW_STORAGE = NOW_VAL;
 
+    @JSONField(serialize=false)
     public static final TimePointL Now = new TimePointL(true){
         @Override public boolean isNow() { return true; }
         @Override public boolean isInit(){ return false; }
@@ -34,6 +39,7 @@ public class TimePointL implements TPoint<TimePointL>
         @Override public TimePointL next() { throw new UnsupportedOperationException("should not call next on TimePoint.NOW"); }
         @Override public String toString() { return "NOW"; }
     };
+    @JSONField(serialize=false)
     public static final TimePointL Init = new TimePointL(false){
         @Override public boolean isNow() { return false; }
         @Override public boolean isInit(){ return true; }
@@ -83,6 +89,11 @@ public class TimePointL implements TPoint<TimePointL>
     }
 
     public long val()
+    {
+        return time;
+    }
+
+    public long getTime()
     {
         return time;
     }
