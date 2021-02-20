@@ -3,7 +3,10 @@ package org.act.temporalProperty.impl;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.exception.TPSNHException;
+import org.act.temporalProperty.helper.DebugIterator;
 import org.act.temporalProperty.helper.EPAppendIterator;
+import org.act.temporalProperty.helper.EPEntryIterator;
+import org.act.temporalProperty.helper.EPRangeQueryIterator;
 import org.act.temporalProperty.index.IndexStore;
 import org.act.temporalProperty.index.IndexUpdater;
 import org.act.temporalProperty.meta.PropertyMetaData;
@@ -81,7 +84,7 @@ public class SinglePropertyStore
     {
         TimePointL time = searchKey.getStartTime();
         boolean hasStable = propertyMeta.hasStable();
-        if(propertyMeta.hasUnstable() && (!hasStable || time.compareTo(propertyMeta.stMaxTime()) > 0)){
+        if(propertyMeta.hasUnstable() && !(hasStable && time.compareTo(propertyMeta.stMaxTime()) <= 0)){
             Slice result = this.unPointValue( searchKey );
             if( null == result || result.length() == 0 ) {
                 return null;
@@ -89,64 +92,102 @@ public class SinglePropertyStore
                 return result;
             }
         }else if(hasStable && time.compareTo(propertyMeta.stMaxTime())<=0){
+//            System.out.print("①");
             FileMetaData meta = propertyMeta.getStContainsTime(time);
             return this.stPointValue(meta, searchKey);
+        }else if(hasStable && !propertyMeta.hasUnstable()) {
+//            System.out.print("②");
+            return this.stPointValue(propertyMeta.latestStableMeta(), searchKey);
         }else{
             return null;
         }
     }
 
-    EPAppendIterator getRangeValueIter(EntityPropertyId id, TimePointL startTime, TimePointL endTime)
+//    EPAppendIterator getRangeValueIter(EntityPropertyId id, TimePointL startTime, TimePointL endTime)
+//    {
+//        List<FileMetaData> stList = propertyMeta.overlappedStable(startTime, endTime);
+//        List<FileMetaData> unList = propertyMeta.unFloorTime(endTime);
+//        stList.sort(Comparator.comparing(FileMetaData::getSmallest));
+//        unList.sort(Comparator.comparing(FileMetaData::getSmallest));
+//
+//        EPAppendIterator iterator = new EPAppendIterator(id);
+//        for(FileMetaData meta : stList){
+//            SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
+//            FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
+//            if( null != buffer ){
+//                iterator.append(TwoLevelMergeIterator.merge(buffer.iterator(), fileIterator));
+//            }else {
+//                iterator.append(fileIterator);
+//            }
+//        }
+//        for( FileMetaData meta : unList ){
+//            SearchableIterator fileIterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber()));
+//            FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
+//            if( null != buffer ){
+//                iterator.append(TwoLevelMergeIterator.merge(buffer.iterator(), fileIterator));
+//            }else {
+//                iterator.append(fileIterator);
+//            }
+//        }
+//        return iterator;
+//    }
+
+    void getRangeValueIter(EPRangeQueryIterator iterator, TimePointL startTime, TimePointL endTime)
     {
         List<FileMetaData> stList = propertyMeta.overlappedStable(startTime, endTime);
         List<FileMetaData> unList = propertyMeta.unFloorTime(endTime);
         stList.sort(Comparator.comparing(FileMetaData::getSmallest));
         unList.sort(Comparator.comparing(FileMetaData::getSmallest));
 
-        EPAppendIterator iterator = new EPAppendIterator(id);
         for(FileMetaData meta : stList){
             SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
             if( null != buffer ){
-                iterator.append(TwoLevelMergeIterator.merge(buffer.iterator(), fileIterator));
+                iterator.appendStables(fileIterator, buffer.iterator(), meta);
             }else {
-                iterator.append(fileIterator);
+                iterator.appendStables(fileIterator, meta);
             }
         }
         for( FileMetaData meta : unList ){
             SearchableIterator fileIterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber()));
             FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
             if( null != buffer ){
-                iterator.append(TwoLevelMergeIterator.merge(buffer.iterator(), fileIterator));
+                iterator.appendUnStables(fileIterator, buffer.iterator(), meta);
             }else {
-                iterator.append(fileIterator);
+                iterator.appendUnStables(fileIterator, meta);
             }
         }
-        return iterator;
     }
 
     private Slice unPointValue(InternalKey searchKey) {
-        List<FileMetaData> checkList = propertyMeta.unFloorTime(searchKey.getStartTime());
-        checkList.sort(Comparator.comparing(FileMetaData::getSmallest));
+        List<FileMetaData> checkList = new ArrayList<>(propertyMeta.getUnStableFiles().values());
+        checkList.sort(Comparator.comparing(FileMetaData::getNumber));
         for (FileMetaData meta : checkList) {
-            SearchableIterator iterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber()));
+            SearchableIterator iterator = new EPEntryIterator(searchKey.getId(), this.cache.newIterator(Filename.unPath(proDir, meta.getNumber())));
             FileBuffer buffer = propertyMeta.getUnstableBuffers(meta.getNumber());
             if (null != buffer) {
-                iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
+                iterator = TwoLevelMergeIterator.merge(new EPEntryIterator(searchKey.getId(), buffer.iterator()), iterator);
             }
             if(iterator.seekFloor(searchKey)){
-                Entry<InternalKey, Slice> entry = iterator.next();
-                InternalKey resultKey = entry.getKey();
-                if (    resultKey.getId().equals(searchKey.getId()) && // same entity id && same property id.
-//                        resultKey.getValueType().isValue() && // this is not correct, value can be invalid.-- But it is irrelevant, the result is same.
-                        resultKey.getStartTime().compareTo(searchKey.getStartTime())<=0) {
-                    return entry.getValue();
-                } // else continue search others
+                InternalEntry lastE = null;
+                while(iterator.hasNext()) {
+                    InternalEntry entry = iterator.next();
+                    InternalKey resultKey = entry.getKey();
+                    assert resultKey.getId().equals(searchKey.getId());
+                    if (resultKey.getStartTime().compareTo(searchKey.getStartTime()) <= 0) {
+                        lastE = entry;
+                    }else break;
+                }
+                if(lastE!=null) {
+//                    System.out.print("⑤("+meta.getNumber()+")");
+                    return lastE.getValue();
+                }
             } // else (searchKey smaller than iterator.firstKey) continue
         }
         // search unstable complete but not found. now search latest stable file
         FileMetaData meta = propertyMeta.latestStableMeta();
         if(meta!=null) {
+//            System.out.print("③");
             return stPointValue(meta, searchKey);
         }else {
             return null;
@@ -154,19 +195,26 @@ public class SinglePropertyStore
     }
 
     private Slice stPointValue(FileMetaData meta, InternalKey searchKey){
-        SearchableIterator iterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
+        SearchableIterator iterator = new EPEntryIterator(searchKey.getId(), this.cache.newIterator(Filename.stPath(proDir, meta.getNumber())));
         FileBuffer buffer = propertyMeta.getStableBuffers(meta.getNumber());
         if (null != buffer) {
-            iterator = TwoLevelMergeIterator.merge(buffer.iterator(), iterator);
+            iterator = TwoLevelMergeIterator.merge(new EPEntryIterator(searchKey.getId(), buffer.iterator()), iterator);
         }
         if(iterator.seekFloor(searchKey)){
-            Entry<InternalKey, Slice> entry = iterator.next();
-            InternalKey resultKey = entry.getKey();
-            if (    resultKey.getId().equals(searchKey.getId()) &&
-                    resultKey.getValueType().isValue() && // this is not correct, value can be invalid.
-                    resultKey.getStartTime().compareTo(searchKey.getStartTime())<=0) {
-                return entry.getValue();
-            }else{
+            InternalEntry lastE = null;
+            while(iterator.hasNext()) {
+                InternalEntry entry = iterator.next();
+                InternalKey resultKey = entry.getKey();
+                assert resultKey.getId().equals(searchKey.getId());
+                if (resultKey.getStartTime().compareTo(searchKey.getStartTime()) <= 0) {
+                    lastE = entry;
+                }else break;
+            }
+            if(lastE!=null){
+//                System.out.print("④("+meta.getNumber()+")");
+                return lastE.getValue();
+            }
+            else{
                 return null;
             }
         } else {
@@ -185,6 +233,7 @@ public class SinglePropertyStore
         while( iterator.hasNext() ){
             Entry<TimeIntervalKey,Slice> entry = iterator.next();
             TimeIntervalKey timeInterval = entry.getKey();
+            DebugIterator.checkIntervalE(timeInterval, "find in stableMemTable");
             Slice val = entry.getValue();
             if( !unExist && !stExist ){
                 toMerge.addInterval(timeInterval, val);
@@ -263,6 +312,7 @@ public class SinglePropertyStore
             if(validKey.end().compareTo(meta.getLargest())>=0){
                 validKey = validKey.changeEnd(TimePointL.Now);
             }
+            DebugIterator.checkIntervalE(key, "insert to un."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
             if(buffer.size()>1024*1024*10) {
                 unBufferToFile( meta, buffer );
@@ -287,6 +337,7 @@ public class SinglePropertyStore
             if(validKey.end().compareTo(meta.getLargest())>=0){
                 validKey = validKey.changeEnd(TimePointL.Now);
             }
+            DebugIterator.checkIntervalE(key, "insert to st."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
             if(buffer.size()>1024*1024*10) {
                 stBufferToFile( meta, buffer );

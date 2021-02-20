@@ -1,18 +1,21 @@
 package org.act.temporalProperty.table;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.Map.Entry;
-
+import org.act.temporalProperty.helper.DebugIterator;
 import org.act.temporalProperty.helper.EqualValFilterIterator;
 import org.act.temporalProperty.helper.InvalidEntityFilterIterator;
 import org.act.temporalProperty.helper.SameLevelMergeIterator;
-import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.impl.BackgroundTask;
+import org.act.temporalProperty.impl.FileBuffer;
+import org.act.temporalProperty.impl.FileMetaData;
+import org.act.temporalProperty.impl.Filename;
+import org.act.temporalProperty.impl.InternalEntry;
+import org.act.temporalProperty.impl.InternalKey;
+import org.act.temporalProperty.impl.MemTable;
+import org.act.temporalProperty.impl.Options;
+import org.act.temporalProperty.impl.PackInternalKeyIterator;
+import org.act.temporalProperty.impl.SearchableIterator;
+import org.act.temporalProperty.impl.TableCache;
+import org.act.temporalProperty.impl.UnknownToInvalidIterator;
 import org.act.temporalProperty.index.IndexStore;
 import org.act.temporalProperty.index.IndexUpdater;
 import org.act.temporalProperty.meta.PropertyMetaData;
@@ -21,6 +24,20 @@ import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.util.TableLatestValueIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedMap;
 
 /**
  * 文件合并过程
@@ -55,7 +72,7 @@ public class MergeProcess extends Thread
         StringBuilder sb = new StringBuilder("TPS");
         if(storeDir.endsWith("temporal.node.properties")){
             sb.append("-Node");
-        }else if(storeDir.endsWith("temporal.rel.properties")){
+        }else if(storeDir.endsWith("temporal.relationship.properties")){
             sb.append("-Rel");
         }
         String myName = sb.toString();
@@ -120,6 +137,7 @@ public class MergeProcess extends Thread
      * @param temp 需要写入磁盘的MemTable
      * @throws IOException
      */
+    private static String debugInfo;
     private void startMergeProcess( MemTable temp ) throws IOException
     {
         List<BackgroundTask> taskList = new LinkedList<>();
@@ -153,9 +171,11 @@ public class MergeProcess extends Thread
             {
                 task.updateMeta();
             }
+            systemMeta.setStableMemTable(false);
             systemMeta.force( new File( storeDir ) );
             memTable = null;
             systemMeta.lock.mergeDone();
+//            System.out.println("---------------"+debugInfo);
         }
         finally
         {
@@ -223,7 +243,7 @@ public class MergeProcess extends Thread
         private TableBuilder mergeInit(String targetFileName) throws IOException
         {
             boolean success;
-
+            if(propStoreDir.getName().equals("1")) debugInfo = "[merge "+mergeParticipants+" to: "+targetFileName+"]";
             File targetFile = new File( propStoreDir, targetFileName );
 //            Files.deleteIfExists(targetFile.toPath());
             if( targetFile.exists() ) {
@@ -348,6 +368,7 @@ public class MergeProcess extends Thread
             while( buildIterator.hasNext() ){
                 InternalEntry entry = buildIterator.next();
                 InternalKey key = entry.getKey();
+                DebugIterator.checkE(key, "merge to disk file");
                 if( key.getStartTime().compareTo(minTime) < 0 ) minTime = key.getStartTime();
                 if( key.getStartTime().compareTo(maxTime) > 0 ) maxTime = key.getStartTime();
                 try {

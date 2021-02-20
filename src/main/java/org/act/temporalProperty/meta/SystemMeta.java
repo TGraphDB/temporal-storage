@@ -103,4 +103,13 @@ public class SystemMeta {
     {
         this.indexNextFileId = nextFileId;
     }
+
+    private boolean stableMemTableOnline =false;
+    public boolean hasStableMemTable() {
+        return stableMemTableOnline;
+    }
+
+    public void setStableMemTable(boolean online){
+        stableMemTableOnline = online;
+    }
 }

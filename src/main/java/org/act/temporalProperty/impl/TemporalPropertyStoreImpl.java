@@ -6,16 +6,15 @@ import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.act.temporalProperty.exception.ValueUnknownException;
+import org.act.temporalProperty.helper.EPRangeQueryIterator;
+import org.act.temporalProperty.helper.EqualValFilterIterator;
 import org.act.temporalProperty.helper.StoreInitial;
-import org.act.temporalProperty.helper.EPEntryIterator;
-import org.act.temporalProperty.helper.EPMergeIterator;
 import org.act.temporalProperty.index.*;
 import org.act.temporalProperty.index.value.IndexMetaData;
 import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.meta.PropertyMetaData;
 import org.act.temporalProperty.meta.SystemMeta;
-import org.act.temporalProperty.meta.SystemMetaController;
 import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.TemporalValue;
 import org.act.temporalProperty.query.TimeIntervalKey;
@@ -23,7 +22,6 @@ import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
-import org.act.temporalProperty.table.TwoLevelMergeIterator;
 import org.act.temporalProperty.table.MergeProcess;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.Slice;
@@ -102,46 +100,130 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-    public Slice getPointValue( long entityId, int proId, TimePointL time )
+public Slice getPointValue( long entityId, int proId, TimePointL time )
+{
+    InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
+    this.meta.lock.lockShared();
+    try
     {
-        InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
-        this.meta.lock.lockShared();
         try
         {
-            try
+//            System.out.print("⑥");
+            return memTable.get( searchKey );
+        }
+        catch ( ValueUnknownException e )
+        {
+            if ( this.stableMemTable != null && meta.hasStableMemTable())
             {
-                return memTable.get( searchKey );
-            }
-            catch ( ValueUnknownException e )
-            {
-                if ( this.stableMemTable != null )
+                try
                 {
-                    try
-                    {
-                        return stableMemTable.get( searchKey );
-                    }
-                    catch ( ValueUnknownException e1 )
-                    {
-                        return meta.getStore( proId ).getPointValue( searchKey );
-                    }
+//                    System.out.print("⑦");
+                    return stableMemTable.get( searchKey );
                 }
-                else
+                catch ( ValueUnknownException e1 )
                 {
                     return meta.getStore( proId ).getPointValue( searchKey );
                 }
             }
-        }
-        finally
-        {
-            this.meta.lock.unlockShared();
+            else
+            {
+                return meta.getStore( proId ).getPointValue( searchKey );
+            }
         }
     }
+    finally
+    {
+        this.meta.lock.unlockShared();
+    }
+}
+
+//    @Override
+//    public Slice getPointValue( long entityId, int proId, TimePointL time )
+//    {
+//        this.meta.lock.lockShared();
+//        try {
+//            final Slice[] result = {null};
+//            getRangeValue(entityId, proId, time, TimePointL.Now, new InternalEntryRangeQueryCallBack() {
+//                public Object onReturn() { return null; }
+//                public void setValueType(String valueType) {}
+//                public boolean onNewEntry(InternalEntry entry) {
+//                    result[0] = entry.getValue();
+//                    return false;
+//                }
+//            });
+//            return result[0];
+//        } finally {
+//            this.meta.lock.unlockShared();
+//        }
+//    }
 
     @Override
     public Object getRangeValue(long id, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback )
     {
         return getRangeValue( id, proId, startTime, endTime, callback, null );
     }
+
+//    public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
+//    {
+//        Preconditions.checkArgument( start.compareTo(end) <= 0 );
+//        Preconditions.checkArgument( entityId >= 0 && proId >= 0 );
+//        Preconditions.checkArgument( callback != null );
+//        meta.lock.lockShared();
+//        try
+//        {
+//            PropertyMetaData pMeta = meta.getProperties().get( proId );
+//            callback.setValueType( pMeta.getType().name() );
+//
+//            EntityPropertyId id = new EntityPropertyId(entityId, proId);
+//            SearchableIterator memIter = new EPEntryIterator( id, memTable.iterator() );
+//            if ( this.stableMemTable != null )
+//            {
+//                memIter = new EPMergeIterator( id, stableMemTable.iterator(), memIter );
+//            }
+//            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( id, start, end );
+//            SearchableIterator mergedIterator = new EPMergeIterator( id, diskIter, memIter );
+//
+//            if(cache!=null)
+//            {
+//                mergedIterator = new EPMergeIterator( id, mergedIterator, cache.iterator() );
+//            }
+//
+//            mergedIterator = new UnknownToInvalidIterator( mergedIterator );
+//
+//            InternalKey searchKey = new InternalKey( id, start );
+//            mergedIterator.seekFloor( searchKey );
+//            boolean firstLoop = true;
+//            while ( mergedIterator.hasNext() )
+//            {
+//                InternalEntry entry = mergedIterator.next();
+//                InternalKey key = entry.getKey();
+//                TimePointL time = key.getStartTime();
+//                if ( firstLoop )
+//                {
+//                    firstLoop = false;
+//                    if ( time.compareTo(start) < 0 ) {
+//                        callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) );
+//                    } else if(time.compareTo(end) > 0){
+//                        break;
+//                    }else {
+//                        callback.onNewEntry( entry );
+//                    }
+//                } else {
+//                    assert time.compareTo(start) > 0;
+//                    if ( time.compareTo(end) <= 0 ) {
+//                        callback.onNewEntry( entry );
+//                    } else {
+//                        break;
+//                    }
+//                }
+//            }
+//            return callback.onReturn();
+//        }
+//        finally
+//        {
+//            meta.lock.unlockShared();
+//        }
+//    }
 
     public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
     {
@@ -155,48 +237,49 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             callback.setValueType( pMeta.getType().name() );
 
             EntityPropertyId id = new EntityPropertyId(entityId, proId);
-            SearchableIterator memIter = new EPEntryIterator( id, memTable.iterator() );
-            if ( this.stableMemTable != null )
-            {
-                memIter = new EPMergeIterator( id, stableMemTable.iterator(), memIter );
-            }
-            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( id, start, end );
-            SearchableIterator mergedIterator = new EPMergeIterator( id, diskIter, memIter );
 
-            if(cache!=null)
-            {
-                mergedIterator = new EPMergeIterator( id, mergedIterator, cache.iterator() );
+            EPRangeQueryIterator rangeIter = new EPRangeQueryIterator( id, start, end );
+            rangeIter.addMemTable(memTable);
+            if(meta.hasStableMemTable()){
+                rangeIter.addStableMemTable(stableMemTable);
             }
-
-            mergedIterator = new UnknownToInvalidIterator( mergedIterator );
+            rangeIter.addTransactionMemTable(cache);
+            meta.getStore( proId ).getRangeValueIter( rangeIter, start, end );
+            rangeIter.build();
 
             InternalKey searchKey = new InternalKey( id, start );
-            mergedIterator.seekFloor( searchKey );
-            boolean firstLoop = true;
-            while ( mergedIterator.hasNext() )
+            rangeIter.seekFloor( searchKey );
+
+            SearchableIterator i = new EqualValFilterIterator(rangeIter);
+
+            InternalEntry lastEntry = null;
+            while ( i.hasNext() )
             {
-                InternalEntry entry = mergedIterator.next();
+                InternalEntry entry = i.next();
+//                System.out.println(entry+" "+rangeIter.path(entry));
                 InternalKey key = entry.getKey();
+//                System.out.println(entry);
                 TimePointL time = key.getStartTime();
-                if ( firstLoop )
-                {
-                    firstLoop = false;
-                    if ( time.compareTo(start) < 0 ) {
-                        callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) );
-                    } else if(time.compareTo(end) > 0){
-                        break;
-                    }else {
-                        callback.onNewEntry( entry );
-                    }
-                } else {
-                    assert time.compareTo(start) > 0;
-                    if ( time.compareTo(end) <= 0 ) {
-                        callback.onNewEntry( entry );
-                    } else {
-                        break;
+
+                if ( time.compareTo(start) < 0 ) {
+                    lastEntry = entry;
+                } else if(time.compareTo(end) > 0){
+                    break;
+                }else{
+                    if(time.compareTo(start)==0){
+                        lastEntry = null;
+                        if(!callback.onNewEntry( entry )) return callback.onReturn();
+                    }else{//start<time<=end
+                        if(lastEntry!=null){
+                            if(!callback.onNewEntry( lastEntry )) return callback.onReturn();
+//                            callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) );
+                            lastEntry = null;
+                        }
+                        if(!callback.onNewEntry( entry )) return callback.onReturn();
                     }
                 }
             }
+            if(lastEntry!=null) callback.onNewEntry( lastEntry );
             return callback.onReturn();
         }
         finally
@@ -268,9 +351,12 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             if ( this.memTable.approximateMemUsage() >= 4 * 1024 * 1024 )
             {
                 forbiddenWrite = true;
+//                System.out.println("commit memTable");
                 this.mergeProcess.add( this.memTable ); // may await at current line.
+//                System.out.println("commit memTable done");
                 this.stableMemTable = this.memTable;
                 this.memTable = new MemTable();
+                meta.setStableMemTable(true);
                 forbiddenWrite = false;
             }
             meta.lock.memTableSubmitted();
@@ -527,18 +613,17 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-
-    private SearchableIterator getMemTableIter( int start, int end )
-    {
-        if ( this.stableMemTable != null )
-        {
-            return TwoLevelMergeIterator.merge( memTable.iterator(), stableMemTable.iterator() );
-        }
-        else
-        {
-            return memTable.iterator();
-        }
-    }
+//    private SearchableIterator getMemTableIter( int start, int end )
+//    {
+//        if ( this.stableMemTable != null )
+//        {
+//            return TwoLevelMergeIterator.merge( memTable.iterator(), stableMemTable.iterator() );
+//        }
+//        else
+//        {
+//            return memTable.iterator();
+//        }
+//    }
 
     public List<Triple<Boolean, FileMetaData, SearchableIterator>> buildIndexIterator(TimePointL start, TimePointL end, List<Integer> proIds )
     {

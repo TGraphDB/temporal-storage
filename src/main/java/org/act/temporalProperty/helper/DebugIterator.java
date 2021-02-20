@@ -1,10 +1,9 @@
 package org.act.temporalProperty.helper;
 
-import org.act.temporalProperty.impl.InternalEntry;
-import org.act.temporalProperty.impl.InternalKey;
-import org.act.temporalProperty.impl.SearchableIterator;
-import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.impl.*;
+import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.vo.EntityPropertyId;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,9 +25,9 @@ public class DebugIterator implements SearchableIterator
     }
 
     public static SearchableIterator wrap(SearchableIterator iterator) {
-        return iterator;
-//        if(iterator instanceof DebugIterator) return iterator;
-//        else return new DebugIterator(iterator);
+//        return iterator;
+        if(iterator instanceof DebugIterator) return iterator;
+        else return new DebugIterator(iterator);
     }
 
     private InternalEntry check(InternalEntry curEntry)
@@ -224,5 +223,30 @@ public class DebugIterator implements SearchableIterator
             pool.clear();
             addCount=0;
         }
+    }
+
+
+    private static InternalKey target = new InternalKey(new EntityPropertyId(49822, 1),
+            new TimePointL(1272673500));//2010.5.1 8:25
+    private static InternalKey target1 = new InternalKey(new EntityPropertyId(49822, 1),
+            new TimePointL(1272715500));//2010.5.1 20:05
+    public static void checkEntry(MemTable m){
+//        SearchableIterator i = m.iterator();
+//        while(i.hasNext()){
+//            InternalEntry e = i.next();
+//            if(e.getKey().compareTo(target)==0 || e.getKey().compareTo(target1)==0){
+//                System.out.println(e);
+//            }
+//        }
+    }
+    public static void checkIntervalE(TimeIntervalKey key, String msg){
+//        if(key.getStartKey().compareTo(target)==0 || key.getStartKey().compareTo(target1)==0){
+//            System.out.println(msg);
+//        }
+    }
+    public static void checkE(InternalKey key, String msg){
+//        if(key.compareTo(target)==0 || key.compareTo(target1)==0){
+//            System.out.println(msg);
+//        }
     }
 }
