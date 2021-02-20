@@ -64,7 +64,7 @@ public class IndexTableWriter {
         channel.write(rootBlock.toByteBuffer());
 
         // write cardinality parts
-        System.out.println(channel.position());
+//        System.out.println(channel.position());
         ByteBuffer cTree = new RTreeCardinality(tree).encode();
         channel.write(cTree);
 
