@@ -41,7 +41,7 @@ public class UnixTimestampTimeGroupBuilder extends TimeGroupBuilder {
         this.tEvery = tEvery;
         this.timeUnit = timeUnit;
         Calendar tmp = Calendar.getInstance();
-        tmp.setTimeInMillis( timeStart.val() );
+        tmp.setTimeInMillis( timeStart.val() * 1000 - 1 );//减一是因为对于已经是整点的时间，ceiling会返回下一个整点。
         this.startPoint = DateUtils.ceiling(tmp, timeUnit);//索引的起始时间
     }
 

@@ -492,15 +492,17 @@ public class AggregationIndexOperator
         {
             // 获得构造索引文件需要的, 用于读取存储数据的iterator
             List<Triple<Boolean,FileMetaData,SearchableIterator>> raw = tpStore.buildIndexIterator( meta.getTimeStart(), meta.getTimeEnd(), meta.getPropertyIdList() );
-            for ( Triple<Boolean,FileMetaData,SearchableIterator> i : raw )
+            // 根据时间分块和value分区, 计算得出索引文件的Entry
+            NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( meta.getTimeStart(), meta.getTimeEnd() );
+            for ( int j=0; j<raw.size(); j++ )
             {
+                Triple<Boolean,FileMetaData,SearchableIterator> i = raw.get(j);
+                FileMetaData dataFileMeta = i.getMiddle();
+                //把文件头时间加进来
+                if(j>0) subTimeGroup.add(dataFileMeta.getSmallest());
                 SearchableIterator iterator = new PropertyFilterIterator( meta.getPropertyIdList(), i.getRight() );
                 // 将原始时间点Entry数据转换为时间区间Entry数据
                 Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, meta.getTimeEnd() );
-
-                // 根据时间分块和value分区, 计算得出索引文件的Entry
-                FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
 
                 Iterator<AggregationIndexEntry> aggrEntries = new Interval2AggrEntryIterator( interval, meta.getValGroupMap(), subTimeGroup );
                 // 将iterator的entry放入数组进行排序
@@ -553,16 +555,19 @@ public class AggregationIndexOperator
         {
             // 获得构造索引文件需要的, 用于读取存储数据的iterator
             List<Triple<Boolean,FileMetaData,SearchableIterator>> raw = tpStore.buildIndexIterator( meta.getTimeStart(), meta.getTimeEnd(), meta.getPropertyIdList() );
-            for ( Triple<Boolean,FileMetaData,SearchableIterator> i : raw )
+            // 根据时间分块和value分区, 计算得出索引文件的Entry(最大最小值)
+            NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( meta.getTimeStart(), meta.getTimeEnd() );
+            for (int j=0; j<raw.size(); j++ )
             {
+                Triple<Boolean,FileMetaData,SearchableIterator> i = raw.get(j);
+                FileMetaData dataFileMeta = i.getMiddle();
+                //把文件头时间加进来
+                if( j>0 ) subTimeGroup.add(dataFileMeta.getSmallest());
                 // 获得构造索引文件需要的, 用于读取存储数据的iterator
                 SearchableIterator iterator = new PropertyFilterIterator( meta.getPropertyIdList(), i.getRight() );
                 // 将原始时间点Entry数据转换为时间区间Entry数据
                 Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, meta.getTimeEnd() );
-
-                // 根据时间分块和value分区, 计算得出索引文件的Entry(最大最小值)
-                FileMetaData dataFileMeta = i.getMiddle();
-                NavigableSet<TimePointL> subTimeGroup = timeGroup.calcNewGroup( dataFileMeta.getSmallest(), dataFileMeta.getLargest() );
+                // 给原始entry附加时间分组信息
                 Iterator<Triple<Long,TimePointL,Slice>> minMax = new MinMaxAggrEntryIterator( interval, subTimeGroup );
                 // 将iterator的entry放入数组进行排序
                 List<Triple<Long,TimePointL,Slice>> data = Lists.newArrayList( minMax );
@@ -571,6 +576,7 @@ public class AggregationIndexOperator
                 // 索引文件
                 long fileId = sysIndexMeta.nextFileId();
                 File indexFile = new File( indexDir, Filename.aggrIndexFileName( fileId ) );
+                // 求最大最小值
                 MinMaxAggrIndexWriter w = new MinMaxAggrIndexWriter( data, indexFile, ValueGroupingMap.getComparator( this.meta.getValueTypes().get( 0 ) ), this.meta.getType() );
                 long fileSize = w.write();
                 IndexFileMeta fileMeta = new IndexFileMeta(
