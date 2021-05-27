@@ -48,10 +48,12 @@ public class MinMaxAggrIndexWriter {
         try(FileOutputStream targetStream = new FileOutputStream(file)) {
             FileChannel targetChannel = targetStream.getChannel();
             TableBuilder builder = new TableBuilder( new Options(), targetChannel, AggregationIndexKey.sliceComparator );
-            Set<Pair<Long, TimePointL>> keys = (buildMax ? max.keySet() : min.keySet());
-            for(Pair<Long, TimePointL> key : keys){
-                if ( buildMin ) builder.add( toSlice( key, true ), min.get( key ) );
-                if ( buildMax ) builder.add( toSlice( key, false ), max.get( key ) );
+            for(Map.Entry<Pair<Long, TimePointL>, Slice> entry : min.entrySet()){
+                Pair<Long, TimePointL> key = entry.getKey();
+                if ( buildMin )
+                { builder.add( toSlice( key, true ), entry.getValue() ); }
+                if ( buildMax )
+                { builder.add( toSlice( key, false ), max.get( key ) ); }
             }
             builder.finish();
             targetChannel.force(true);
