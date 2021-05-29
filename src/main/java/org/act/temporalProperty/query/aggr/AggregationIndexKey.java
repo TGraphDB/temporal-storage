@@ -3,6 +3,7 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Objects;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.table.UserComparator;
+import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
@@ -41,12 +42,11 @@ public class AggregationIndexKey implements Comparable<AggregationIndexKey>{
     }
 
     public Slice encode(){
-        Slice raw = new Slice(16);
-        SliceOutput out = raw.output();
+        DynamicSliceOutput out = new DynamicSliceOutput(16);
         out.writeLong( entityId );
         timeGroupId.encode(out);
         out.writeInt( valueGroupId );
-        return raw;
+        return out.slice();
     }
 
     public static UserComparator sliceComparator = new UserComparator() {

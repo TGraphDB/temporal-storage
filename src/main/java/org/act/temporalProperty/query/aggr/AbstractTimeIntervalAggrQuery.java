@@ -5,6 +5,7 @@ import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
+import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.Map.Entry;
  * Users who want custom aggregation query should extend this class
  * Created by song on 2018-04-01.
  */
-public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeIntervalEntryAggrQuery<K,V>, InternalEntryRangeQueryCallBack {
+public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeIntervalEntryAggrQuery<K,V>, TimeRangeQuery {
     private final Map<K, V> groupValMap = new HashMap<>();
     private final Map<K, List<TimeIntervalEntry>> groupListMap = new HashMap<>();
     private final TimePointL endTime;

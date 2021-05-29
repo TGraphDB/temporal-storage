@@ -12,7 +12,7 @@ public class TimeIntervalUtil
 
     public static boolean contains(TimePointL start1, TimePointL end1, TimePointL start2, TimePointL end2 )
     {
-        return start1.compareTo(start2)<=0 && end1.compareTo(end2)>=0;
+        return start1.compareTo(start2)<=0 && end2.compareTo(end1)<=0;
     }
 
     public static TimeInterval overlapInterval(TimePointL min, TimePointL max, TimePointL timeStart, TimePointL timeEnd) {
