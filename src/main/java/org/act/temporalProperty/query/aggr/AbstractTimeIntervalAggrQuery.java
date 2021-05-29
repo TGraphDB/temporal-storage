@@ -3,8 +3,8 @@ package org.act.temporalProperty.query.aggr;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
+import org.act.temporalProperty.impl.ValueType;
 import org.act.temporalProperty.query.TimePointL;
-import org.act.temporalProperty.query.range.InternalEntryRangeQueryCallBack;
 import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
 
@@ -23,8 +23,8 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     private final Map<K, List<TimeIntervalEntry>> groupListMap = new HashMap<>();
     private final TimePointL endTime;
     private final TimePointL startTime;
-    private boolean hasEntry = false;
-    private InternalEntry lastEntry;
+    private Slice lastVal;
+    private TimePointL lastTime;
 
     protected AbstractTimeIntervalAggrQuery( TimePointL startTime, TimePointL endTime )
     {
@@ -33,33 +33,27 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     }
 
     public boolean onNewEntry(InternalEntry entry) {
-        hasEntry = true;
         InternalKey key = entry.getKey();
         TimePointL time = key.getStartTime();
-        if ( lastEntry != null )
-        {
-            TimePointL lastTime = lastEntry.getKey().getStartTime();
-            if ( lastTime.compareTo(startTime) < 0 )
-            {
+        if ( lastTime == null ) {
+            int r = time.compareTo(startTime);
+            if(r>0){
+                lastTime = time;
+                onEntry(startTime, time.pre(), null);
+            } else {
                 lastTime = startTime;
-                assert time.compareTo(startTime) > 0;
             }
-            onEntry( lastTime, time.pre(), lastEntry.getValue() );
-        }//else: do nothing
-        if ( key.getValueType().isValue() )
-        {
-            lastEntry = entry;
+        }else{
+            onEntry( lastTime, time.pre(), lastVal );
+            lastTime = time;
         }
-        else
-        {
-            lastEntry = null;
-        }
+        lastVal = key.getValueType()==ValueType.INVALID ? null : entry.getValue();
         return true;
     }
 
     public Object onReturn() {
-        if(hasEntry && lastEntry!=null && lastEntry.getKey().getStartTime().compareTo(endTime)<=0){
-            onEntry(lastEntry.getKey().getStartTime(), endTime, lastEntry.getValue());
+        if(lastTime !=null && lastTime.compareTo(endTime)<=0){
+            onEntry(lastTime, endTime, lastVal);
         }
         for(Entry<K, List<TimeIntervalEntry>> entry : groupListMap.entrySet()){
             V aggrValue = aggregate(entry.getKey(), entry.getValue());

@@ -6,6 +6,7 @@ import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.index.EntityTimeIntervalEntry;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.AggregationIndexKey;
+import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.TimeIntervalUtil;
 
@@ -16,7 +17,7 @@ import java.util.*;
  */
 public class Interval2AggrEntryIterator extends AbstractIterator<AggregationIndexEntry> implements PeekingIterator<AggregationIndexEntry> {
     private final Iterator<EntityTimeIntervalEntry> tpIter;
-    private final TreeMap<Slice, Integer> valueGrouping;
+    private final ValueGroupingMap valueGrouping;
     private final NavigableSet<TimePointL> intervalStarts;
     private final TimePointL intervalBegin;
     private final TimePointL intervalFinish;
@@ -27,9 +28,10 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
 
     /**
      * @param iterator should only contains one property.
+     * @param valueGrouping
      * @param intervalStarts interval start time point TreeSet
      */
-    public Interval2AggrEntryIterator( Iterator<EntityTimeIntervalEntry> iterator, TreeMap<Slice, Integer> valueGrouping, NavigableSet<TimePointL> intervalStarts ) {
+    public Interval2AggrEntryIterator(Iterator<EntityTimeIntervalEntry> iterator, ValueGroupingMap valueGrouping, NavigableSet<TimePointL> intervalStarts ) {
         this.tpIter = iterator;
         this.valueGrouping = valueGrouping;
         this.intervalStarts = intervalStarts;
@@ -76,14 +78,8 @@ public class Interval2AggrEntryIterator extends AbstractIterator<AggregationInde
     }
 
     private AggregationIndexEntry outputEntry(EntityTimeIntervalEntry entry, TimePointL timeGroupId, long duration) {
-        Slice val = entry.value();
-        Map.Entry<Slice, Integer> valGroup = valueGrouping.floorEntry(val);
-        AggregationIndexKey key;
-        if(valGroup!=null){
-            key = new AggregationIndexKey(entry.entityId(), timeGroupId, valGroup.getValue());
-        }else{
-            key = new AggregationIndexKey(entry.entityId(), timeGroupId, -1);
-        }
+        int valGroup = valueGrouping.group(entry.value());
+        AggregationIndexKey key = new AggregationIndexKey(entry.entityId(), timeGroupId, valGroup);
         return new AggregationIndexEntry(key, duration);
     }
 

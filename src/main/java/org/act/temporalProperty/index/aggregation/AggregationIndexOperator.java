@@ -56,7 +56,7 @@ public class AggregationIndexOperator
                                                               end,
                                                               every,
                                                               timeUnit,
-                                                              valueGrouping.map() );
+                                                              valueGrouping );
         // 添加元信息到meta
         sysIndexMeta.addOfflineMeta( meta );
         return indexId;
@@ -74,7 +74,7 @@ public class AggregationIndexOperator
                                                               end,
                                                               every,
                                                               timeUnit,
-                                                              new TreeMap<>() );
+                                                              new ValueGroupingMap.IntValueGroupMap() );
         // 添加元信息到meta
         sysIndexMeta.addOfflineMeta( meta );
         // 返回索引ID
@@ -130,14 +130,14 @@ public class AggregationIndexOperator
             // 找出不用索引加速的时间区间(列表)
             if ( timeGroups.needQueryStorage() )
             {
-                // 根据索引信息(timeUnit, every, valueGroup)构建一个range查询
-                DurationStatisticAggregationQuery packedQuery = packQuery( meta, start, end );
                 int proId = meta.getPropertyIdList().get(0);
                 for ( Entry<TimePointL, TimePointL> time : timeGroups.getQueryIntervals() )
                 {
                     // 进行range查询并返回结果
                     TimePointL timeRangeStart = time.getKey();
                     TimePointL timeRangeEnd = time.getValue();
+                    // 根据索引信息(timeUnit, every, valueGroup)构建一个range查询
+                    DurationStatisticAggregationQuery<Integer> packedQuery = packQuery( meta, timeRangeStart, timeRangeEnd );
                     Map<Integer,Integer> rangeQueryResult =
                             (Map<Integer,Integer>) tpStore.getRangeValue( entityId, proId, timeRangeStart, timeRangeEnd, packedQuery, cache );
                     // 合并结果
@@ -187,20 +187,17 @@ public class AggregationIndexOperator
             }
         }
 
-        private DurationStatisticAggregationQuery packQuery(AggregationIndexMeta meta, TimePointL start, TimePointL end )
+        private DurationStatisticAggregationQuery<Integer> packQuery(AggregationIndexMeta meta, TimePointL start, TimePointL end )
         {
-            TreeMap<Slice, Integer> vGroup = meta.getValGroupMap();
+            ValueGroupingMap vGroup = meta.getValGroupMap();
 
             return new DurationStatisticAggregationQuery<Integer>( start, end )
             {
                 @Override
-                public void setValueType(String valueType) {
-
-                }
+                public void setValueType(String valueType) {}
 
                 public Integer computeGroupId(TimeIntervalEntry entry) {
-                    Entry<Slice, Integer> group = vGroup.floorEntry(entry.value());
-                    return group==null ? -1 : group.getValue();
+                    return vGroup.group(entry.value());
                 }
                 public Object onResult(Map result) {
                     return result;
@@ -398,7 +395,7 @@ public class AggregationIndexOperator
             if ( time.get( 0 ).compareTo(start) > 0 ) {
                 status.addInvalidTimeRange( start, time.get( 0 ).pre() );
             }
-            if ( time.get( time.size() - 1 ).compareTo(end) < 0 ) {
+            if ( time.get( time.size() - 1 ).compareTo(end) <= 0 ) {
                 status.addInvalidTimeRange( time.get( time.size() - 1 ), end );
             }
         } else {

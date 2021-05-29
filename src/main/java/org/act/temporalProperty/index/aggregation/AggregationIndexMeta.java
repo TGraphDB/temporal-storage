@@ -7,14 +7,11 @@ import org.act.temporalProperty.index.value.IndexMetaData;
 import org.act.temporalProperty.index.IndexType;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
-import org.act.temporalProperty.util.DynamicSliceOutput;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -23,13 +20,13 @@ import java.util.TreeSet;
  * Created by song on 2018-04-06.
  */
 public class AggregationIndexMeta extends IndexMetaData {
-    private final TreeMap<Slice, Integer> vGroupMap;
+    private final ValueGroupingMap vGroupMap;
     private final int tEvery;
     private final int timeUnit;
     private TimeGroupBuilder tGroupMap;
 
     public AggregationIndexMeta(long indexId, IndexType type, int pid, IndexValueType vType, TimePointL start, TimePointL end,
-                                int tEvery, int timeUnit, TreeMap<Slice, Integer> valueGroup) {
+                                int tEvery, int timeUnit, ValueGroupingMap valueGroup) {
         super( indexId, type, Lists.newArrayList( pid ), Lists.newArrayList( vType ), start, end );
         this.vGroupMap = valueGroup;
         this.tEvery = tEvery;
@@ -37,7 +34,7 @@ public class AggregationIndexMeta extends IndexMetaData {
         this.tGroupMap = new UnixTimestampTimeGroupBuilder( getTimeStart(), getTimeEnd(), tEvery, timeUnit );
     }
 
-    public TreeMap<Slice, Integer> getValGroupMap() {
+    public ValueGroupingMap getValGroupMap() {
         return vGroupMap;
     }
 
@@ -75,26 +72,14 @@ public class AggregationIndexMeta extends IndexMetaData {
         super.encode(out);
         out.writeInt(tEvery);
         out.writeInt(timeUnit);
-        out.writeInt(vGroupMap.size());
-        for(Map.Entry<Slice, Integer> entry : vGroupMap.entrySet()){
-            out.writeInt(entry.getKey().length());
-            out.writeBytes(entry.getKey());
-            out.writeInt(entry.getValue());
-        }
+        vGroupMap.encode(out);
     }
 
     public static AggregationIndexMeta decode(SliceInput in, IndexType type){
         IndexMetaData meta = new IndexMetaData(in, type);
         int tEvery = in.readInt();
         int timeUnit = in.readInt();
-        TreeMap<Slice, Integer> valGroupMap = new TreeMap<>(ValueGroupingMap.getComparator(meta.getValueTypes().get(0)));
-        int count = in.readInt();
-        for(int i=0; i<count; i++){
-            int len = in.readInt();
-            Slice key = in.readBytes(len);
-            int groupId = in.readInt();
-            valGroupMap.put(key, groupId);
-        }
+        ValueGroupingMap valGroupMap = ValueGroupingMap.decode(in);
         AggregationIndexMeta aggrMeta = new AggregationIndexMeta(meta.getId(), type, meta.getPropertyIdList().get(0), meta.getValueTypes().get(0),
                 meta.getTimeStart(), meta.getTimeEnd(), tEvery, timeUnit, valGroupMap);
         if(meta.isOnline()) aggrMeta.setOnline(true);
