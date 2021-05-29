@@ -98,6 +98,7 @@ public class AggregationIndexMeta extends IndexMetaData {
         AggregationIndexMeta aggrMeta = new AggregationIndexMeta(meta.getId(), type, meta.getPropertyIdList().get(0), meta.getValueTypes().get(0),
                 meta.getTimeStart(), meta.getTimeEnd(), tEvery, timeUnit, valGroupMap);
         if(meta.isOnline()) aggrMeta.setOnline(true);
+        meta.allFiles().forEach(aggrMeta::addFile);
         return aggrMeta;
     }
 
@@ -107,7 +108,10 @@ public class AggregationIndexMeta extends IndexMetaData {
         Collection<IndexFileMeta> files = this.getFilesByTime( start, end );
         for ( IndexFileMeta f : files )
         {
-            result.addAll( f.getTimeGroups() );
+            f.getTimeGroups().forEach(timeGroup->{
+                if(start.compareTo(timeGroup)<=0 && timeGroup.compareTo(end)<=0)
+                    result.add( timeGroup );
+            });
         }
         return result;
     }

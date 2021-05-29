@@ -11,18 +11,18 @@ import java.util.List;
  */
 public class IndexFileMeta
 {
-    private final long indexId;
-    private final long fileId;
-    private final long fileSize;
-    private final TimePointL startTime;
-    private final TimePointL endTime;
+    private long indexId;
+    private long fileId;
+    private long fileSize;
+    private TimePointL startTime;
+    private TimePointL endTime;
 
     //corresponding storage file properties, for single-property time value index and aggregation index.
     private long corFileId;
     private boolean corIsStable;
 
     //time group start point for aggregation index only. the last point is endTime + 1
-    private final List<TimePointL> timeGroup;
+    private List<TimePointL> timeGroup;
 
     public IndexFileMeta(long indexId, long fileId, long fileSize, TimePointL startTime, TimePointL endTime, long corFileId, Boolean corIsStable, Collection<TimePointL> timeGroup )
     {
@@ -35,7 +35,9 @@ public class IndexFileMeta
         this.corIsStable = corIsStable;
         this.timeGroup = new ArrayList<>();
         this.timeGroup.addAll( timeGroup );
-        this.timeGroup.sort( TimePointL::compareTo );
+    }
+
+    public IndexFileMeta() {
     }
 
     public long getIndexId()
@@ -76,5 +78,41 @@ public class IndexFileMeta
     public List<TimePointL> getTimeGroups()
     {
         return timeGroup;
+    }
+
+    public void setIndexId(long indexId) {
+        this.indexId = indexId;
+    }
+
+    public void setFileId(long fileId) {
+        this.fileId = fileId;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public void setStartTime(TimePointL startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setEndTime(TimePointL endTime) {
+        this.endTime = endTime;
+    }
+
+    public void setCorFileId(long corFileId) {
+        this.corFileId = corFileId;
+    }
+
+    public void setCorIsStable(boolean corIsStable) {
+        this.corIsStable = corIsStable;
+    }
+
+    public List<TimePointL> getTimeGroup() {
+        return timeGroup;
+    }
+
+    public void setTimeGroup(List<TimePointL> timeGroup) {
+        this.timeGroup = timeGroup;
     }
 }

@@ -12,6 +12,7 @@ import org.act.temporalProperty.meta.SystemMetaFile;
 import org.act.temporalProperty.query.TimeInterval;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.query.aggr.AggregationIndexKey;
 import org.act.temporalProperty.table.*;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Test;
@@ -31,7 +32,7 @@ public class DBFileInfoReader
 {
     private String dbDir(){
         if(SystemUtils.IS_OS_WINDOWS){
-            return "D:\\tgraph\\testdb\\temporal.relationship.properties";
+            return "D:\\tgraph\\db\\Tgraph-bj60c-7day\\temporal.relationship.properties";
         }else{
             return "/media/song/test/db-network-only/temporal.relationship.properties";
         }
@@ -174,21 +175,15 @@ public class DBFileInfoReader
     }
 
     @Test
-    public void dbUnstableFileInfo() throws IOException {
-        String fileName = "000000.dbtmp";
-        File metaFile = new File( this.dbDir() + "/" + fileName );
-        if(!metaFile.exists()){
-            System.out.println("##### Warning: file not exist: "+ metaFile.getAbsolutePath());
-            return;
-        }
+    public void dbAggrIndexFileInfo() throws IOException {
+        String fileName = "index/aggr.000001.index";
         System.out.println("################## "+fileName+" #################");
         FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + fileName ) );
         FileChannel channel = inputStream.getChannel();
-        Table table = new MMapTable( fileName, channel, TableComparator.instance(), false );
+        Table table = new MMapTable( fileName, channel, AggregationIndexKey.sliceComparator, false );
         TableIterator iterator = table.iterator();
-        if( !iterator.hasNext() )
-        {
-            System.out.println("Empty 000000.dbtmp file.");
+        if( !iterator.hasNext() ) {
+            System.out.println("Empty file.");
             return;
         }
         TimePointL maxTime = TimePointL.Init;
@@ -200,9 +195,11 @@ public class DBFileInfoReader
             Map.Entry<Slice,Slice> entry = iterator.next();
             Slice key = entry.getKey();
             Slice value = entry.getValue();
-            InternalKey internalKey = InternalKey.decode( key );
-            System.out.println(internalKey+" "+value);
-            TimePointL time = internalKey.getStartTime();
+            AggregationIndexKey indexKey = new AggregationIndexKey(key);
+            if(indexKey.getEntityId()==12){
+                System.out.println(indexKey+" "+value.getInt(0));
+            }
+            TimePointL time = indexKey.getTimeGroupId();
             minTime = TimeIntervalUtil.min(minTime, time);
             maxTime = TimeIntervalUtil.max(maxTime, time);
             size += (key.length() + value.length());

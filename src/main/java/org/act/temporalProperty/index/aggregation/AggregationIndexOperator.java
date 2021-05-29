@@ -170,7 +170,6 @@ public class AggregationIndexOperator
             {
                 Entry<Slice,Slice> entry = iterator.next();
                 AggregationIndexKey key = new AggregationIndexKey( entry.getKey() );
-                if ( key.compareTo( searchKey ) < 0 ) {continue;}
                 TimePointL timeGroupId = key.getTimeGroupId();
                 if ( key.getEntityId() == entityId && startTimeGroup.compareTo(timeGroupId)<=0 && timeGroupId.compareTo(endTimeGroup) <= 0 )
                 {
@@ -181,7 +180,7 @@ public class AggregationIndexOperator
                         result.merge( key.getValueGroupId(), duration, ( oldVal, newVal ) -> oldVal + newVal );
                     }//else: continue
                 }
-                else
+                else if(key.compareTo(searchKey)>0)
                 {
                     return;
                 }
@@ -300,7 +299,8 @@ public class AggregationIndexOperator
             String filePath = new File( indexDir, Filename.aggrIndexFileName( indexFileId ) ).getAbsolutePath();
             SeekingIterator<Slice,Slice> iterator = cache.getTable( filePath ).aggrIterator( filePath );
 
-            iterator.seek( new AggregationIndexKey( entityId, startTimeGroup, AggregationQuery.MIN ).encode() );
+            AggregationIndexKey searchKey = new AggregationIndexKey(entityId, startTimeGroup, AggregationQuery.MIN);
+            iterator.seek( searchKey.encode() );
             while ( iterator.hasNext() )
             {
                 Entry<Slice,Slice> entry = iterator.next();
@@ -321,7 +321,7 @@ public class AggregationIndexOperator
                         }
                     }//else: continue
                 }
-                else
+                else if(key.compareTo(searchKey)>0)
                 {
                     return;
                 }
@@ -502,8 +502,9 @@ public class AggregationIndexOperator
                 if(j>0) subTimeGroup.add(dataFileMeta.getSmallest());
                 SearchableIterator iterator = new PropertyFilterIterator( meta.getPropertyIdList(), i.getRight() );
                 // 将原始时间点Entry数据转换为时间区间Entry数据
-                Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, meta.getTimeEnd() );
-
+                TimePointL timeEnd = dataFileMeta.getLargest().compareTo(meta.getTimeEnd()) < 0 ? dataFileMeta.getLargest() : meta.getTimeEnd();
+                Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, timeEnd );
+                // 给原始entry附加时间分组信息
                 Iterator<AggregationIndexEntry> aggrEntries = new Interval2AggrEntryIterator( interval, meta.getValGroupMap(), subTimeGroup );
                 // 将iterator的entry放入数组进行排序
                 List<AggregationIndexEntry> data = Lists.newArrayList( aggrEntries );
@@ -521,7 +522,7 @@ public class AggregationIndexOperator
                         dataFileMeta.getLargest(),
                         i.getMiddle().getNumber(),
                         i.getLeft(),
-                        subTimeGroup );
+                        subTimeGroup.subSet(dataFileMeta.getSmallest(), true, dataFileMeta.getLargest(), true) );
                 meta.addFile( fileMeta );
             }
         }
@@ -566,7 +567,8 @@ public class AggregationIndexOperator
                 // 获得构造索引文件需要的, 用于读取存储数据的iterator
                 SearchableIterator iterator = new PropertyFilterIterator( meta.getPropertyIdList(), i.getRight() );
                 // 将原始时间点Entry数据转换为时间区间Entry数据
-                Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, meta.getTimeEnd() );
+                TimePointL timeEnd = dataFileMeta.getLargest().compareTo(meta.getTimeEnd()) < 0 ? dataFileMeta.getLargest() : meta.getTimeEnd();
+                Iterator<EntityTimeIntervalEntry> interval = new SimplePoint2IntervalIterator( iterator, timeEnd );
                 // 给原始entry附加时间分组信息
                 Iterator<Triple<Long,TimePointL,Slice>> minMax = new MinMaxAggrEntryIterator( interval, subTimeGroup );
                 // 将iterator的entry放入数组进行排序
@@ -587,7 +589,7 @@ public class AggregationIndexOperator
                         dataFileMeta.getLargest(),
                         i.getMiddle().getNumber(),
                         i.getLeft(),
-                        subTimeGroup );
+                        subTimeGroup.subSet(dataFileMeta.getSmallest(), true, dataFileMeta.getLargest(), true) );
                 meta.addFile( fileMeta );
             }
         }
