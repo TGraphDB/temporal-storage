@@ -35,7 +35,7 @@ public class IndexStore {
         if(!indexDir.exists() && !indexDir.mkdir()) throw new IOException("unable to create index dir");
         this.tpStore = store;
         this.indexDir = indexDir;
-        this.cache = new IndexTableCache(indexDir, 4);
+        this.cache = new IndexTableCache(indexDir, 25);
         this.meta = indexMetaManager;
         this.aggr = new AggregationIndexOperator( indexDir, store, cache, meta );
         this.value = new ValueIndexOperator( indexDir, store, cache, meta );
@@ -97,12 +97,13 @@ public class IndexStore {
     }
 
     public void deleteIndexById(long indexId) throws IOException {
-        IndexMetaData m = meta.getByIndexId(indexId);
-        m.setOnline(false);
-        for(IndexFileMeta fileMeta : m.allFiles()){
-            long fid = fileMeta.getFileId();
-            String fileName = m.getType().isValueIndex() ? Filename.valIndexFileName(fid) : Filename.aggrIndexFileName(fid);
-            Files.delete(new File(fileName).toPath());
+        IndexMetaData m = meta.deleteIndex(indexId);
+        if(m!=null) {
+            for (IndexFileMeta fileMeta : m.allFiles()) {
+                long fid = fileMeta.getFileId();
+                String fileName = m.getType().isValueIndex() ? Filename.valIndexFileName(fid) : Filename.aggrIndexFileName(fid);
+                Files.delete(new File(indexDir, fileName).toPath());
+            }
         }
     }
 

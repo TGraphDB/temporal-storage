@@ -10,7 +10,6 @@ import org.act.temporalProperty.helper.SameLevelMergeIterator;
 import org.act.temporalProperty.impl.*;
 import org.act.temporalProperty.index.IndexFileMeta;
 import org.act.temporalProperty.index.IndexMetaManager;
-import org.act.temporalProperty.index.IndexTable;
 import org.act.temporalProperty.index.IndexTableCache;
 import org.act.temporalProperty.index.IndexValueType;
 import org.act.temporalProperty.index.PropertyFilterIterator;
@@ -32,7 +31,6 @@ import java.util.*;
 import static org.act.temporalProperty.index.IndexType.*;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -93,10 +91,7 @@ public class ValueIndexOperator
             TimePointL s = meta.getTimeStart();
             TimePointL e = meta.getTimeEnd();
             if(TimeIntervalUtil.contains( s, e, condition.getTimeMin(), condition.getTimeMax())){
-                Set<Integer> pSetMeta = new HashSet<>(meta.getPropertyIdList());
-                if(pSetMeta.size()==pids.size() && !pSetMeta.retainAll(pids)) {
-                    return meta;
-                }
+                return meta;
             }
         }
         throw new TPSRuntimeException("no valid index for query!");
@@ -106,7 +101,7 @@ public class ValueIndexOperator
     {
         String fileName = Filename.valIndexFileName(meta.getId());
         List<IndexQueryRegion> regionsCanSpeedUp = excludeInvalidTime( condition, cache );
-        IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
+        IndexTableCache.IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
         List<Iterator<IndexEntry>> results = new ArrayList<>();
         for ( IndexQueryRegion subQuery : regionsCanSpeedUp )
         {
@@ -119,7 +114,7 @@ public class ValueIndexOperator
     {
         String fileName = Filename.valIndexFileName(meta.getId());
         List<IndexQueryRegion> regionsCanSpeedUp = excludeInvalidTime( condition, cache );
-        IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
+        IndexTableCache.IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
         List<HyperLogLog> results = new ArrayList<>();
         for ( IndexQueryRegion subQuery : regionsCanSpeedUp )
         {
