@@ -7,17 +7,9 @@ import com.google.common.collect.TreeBasedTable;
 import org.act.temporalProperty.index.aggregation.AggregationIndexMeta;
 import org.act.temporalProperty.index.value.IndexMetaData;
 import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.util.TimeIntervalUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -129,10 +121,19 @@ public class IndexMetaManager
 
     public List<IndexMetaData> getValueIndex(List<Integer> pids, TimePointL timeMin, TimePointL timeMax )
     {
-        return pids.stream()
-                .map(proId -> byProIdTime.get(proId).subMap(timeMin, true, timeMax, true).values())
-                .flatMap(Collection::stream)
-                .filter(indexMetaData -> containsAll(indexMetaData.getPropertyIdList(), pids)).distinct().collect(Collectors.toList());
+        Set<IndexMetaData> result = new HashSet<>();
+        for(Integer proId : pids){
+            Collection<IndexMetaData> indexOnProps = byProIdTime.get(proId).values();
+            for(IndexMetaData meta : indexOnProps){
+                if(     meta.getType().isValueIndex() &&
+                        containsAll(meta.getPropertyIdList(), pids) &&
+                        TimeIntervalUtil.overlap( meta.getTimeStart(), meta.getTimeEnd(), timeMin, timeMax)) {
+                    result.add(meta);
+                    break;
+                }
+            }
+        }
+        return new ArrayList<>(result);
     }
 
     private boolean containsAll( List<Integer> a, List<Integer> b )
@@ -153,19 +154,22 @@ public class IndexMetaManager
         return byId.get( indexId ) != null;
     }
 
-    public void deleteIndex( long indexId ){
+    public IndexMetaData deleteIndex( long indexId ){
         IndexMetaData m = byId.get(indexId);
         if(m!=null){
+            m.setOnline(false);
             byId.remove(indexId);
-            byProIdTime.forEach((proId, val) -> {
-                Set<TimePointL> toDel = new HashSet<>();
-                val.forEach((t, im)->{
-                    if(im.getId()==indexId) toDel.add(t);
-                });
-                for(TimePointL t: toDel){
-                    val.remove(t);
-                }
+        }
+        offLineIndexes.removeIf(mm -> mm.getId() == indexId);
+        byProIdTime.forEach((proId, val) -> {
+            Set<TimePointL> toDel = new HashSet<>();
+            val.forEach((t, im)->{
+                if(im.getId()==indexId) toDel.add(t);
             });
-        }else throw new RuntimeException("index meta not found.");
+            for(TimePointL t: toDel){
+                val.remove(t);
+            }
+        });
+        return m;
     }
 }
