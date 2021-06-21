@@ -41,8 +41,9 @@ public class UnixTimestampTimeGroupBuilder extends TimeGroupBuilder {
         this.tEvery = tEvery;
         this.timeUnit = timeUnit;
         Calendar tmp = Calendar.getInstance();
-        tmp.setTimeInMillis( timeStart.val() );
+        tmp.setTimeInMillis( timeStart.val() * 1000 - 1 );
         this.startPoint = DateUtils.ceiling(tmp, timeUnit);//索引的起始时间
+//        System.out.println("UnixTimestampTimeGroupBuilder startTime: "+ this.startPoint.getTime());
     }
 
     @Override
