@@ -47,6 +47,7 @@ public abstract class ValueGroupingMap {
     public static ValueGroupingMap decode(SliceInput in){
         int typeId = in.readInt();
         switch(typeId){
+            case -1: return new Empty();
             case 0: return new IntValueGroupMap();
             case 1: return new IntRange(in);
             default:
@@ -87,6 +88,25 @@ public abstract class ValueGroupingMap {
 //    public static ValueGroupingMap getInstance(int id){
 //
 //    }
+
+
+    public static class Empty extends ValueGroupingMap{
+
+        @Override
+        public void encode(SliceOutput out) {
+            out.writeInt(-1);
+        }
+
+        @Override
+        public int group(Slice v) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString() {
+            return "Empty";
+        }
+    }
 
     public static class IntValueGroupMap extends ValueGroupingMap{
         private static final int ID = 0;

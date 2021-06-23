@@ -74,7 +74,7 @@ public class AggregationIndexOperator
                                                               end,
                                                               every,
                                                               timeUnit,
-                                                              new ValueGroupingMap.IntValueGroupMap() );
+                                                              new ValueGroupingMap.Empty() );
         // 添加元信息到meta
         sysIndexMeta.addOfflineMeta( meta );
         // 返回索引ID
@@ -266,10 +266,9 @@ public class AggregationIndexOperator
             for ( Entry<Integer,Slice> entry : smaller.entrySet() )
             {
                 int valGroupId = entry.getKey();//MIN(0) or MAX(1)
+                Slice val0 = entry.getValue();
                 boolean isMin = valGroupId == AggregationQuery.MIN;
-                Slice value = entry.getValue();
-                larger.merge( valGroupId, value, ( old, cur ) ->
-                {
+                if(val0 != null) larger.merge( valGroupId, val0, ( old, cur ) -> {
                     if ( old == null )
                     { return cur; }
                     else if ( isMin && shouldAddMin && cp.compare( cur, old ) < 0 )
@@ -278,7 +277,7 @@ public class AggregationIndexOperator
                     { return cur; }
                     else
                     { return old; }
-                } );
+                });
             }
             return larger;
         }

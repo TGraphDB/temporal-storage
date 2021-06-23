@@ -8,12 +8,14 @@ import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
 
 import java.util.Comparator;
+import java.util.LinkedList;
 
 /**
  * Created by song on 2018-04-05.
  */
 public interface AggregationQuery extends TimeRangeQuery
 {
+    LinkedList<Long> time = new LinkedList<>();
     int MIN = 0;
     int MAX = 1;
 
@@ -116,4 +118,5 @@ public interface AggregationQuery extends TimeRangeQuery
     };
 
 
+    long[] cnt = {0};
 }

@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
+import org.act.temporalProperty.query.aggr.AggregationQuery;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,6 +68,7 @@ public final class Filename
     }
 
     public static String stPath(File proDir, long fileNumber) {
+        AggregationQuery.cnt[0]++;
         return new File(proDir, stableFileName(fileNumber)).getAbsolutePath();
     }
     

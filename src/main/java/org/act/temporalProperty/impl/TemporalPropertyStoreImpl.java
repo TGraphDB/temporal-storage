@@ -91,6 +91,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.meta.lock.shutdown();
         this.mergeProcess.shutdown();
         this.cache.close();
+        this.index.close();
         this.meta.lock.shutdownLockExclusive();// no need to unlock, for state would lose when closed.
         this.flushMemTable2Disk();
         this.closeAllBuffer();

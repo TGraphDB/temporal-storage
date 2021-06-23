@@ -93,10 +93,7 @@ public class AggregationIndexMeta extends IndexMetaData {
         Collection<IndexFileMeta> files = this.getFilesByTime( start, end );
         for ( IndexFileMeta f : files )
         {
-            f.getTimeGroups().forEach(timeGroup->{
-                if(start.compareTo(timeGroup)<=0 && timeGroup.compareTo(end)<=0)
-                    result.add( timeGroup );
-            });
+            result.addAll( f.getTimeGroup().subSet(start, true, end, true) );
         }
         return result;
     }

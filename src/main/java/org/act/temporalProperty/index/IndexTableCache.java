@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
 import org.act.temporalProperty.impl.SeekingIterator;
 import org.act.temporalProperty.index.value.IndexQueryRegion;
 import org.act.temporalProperty.index.value.IndexTableIterator;
@@ -20,9 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -31,15 +30,20 @@ import java.util.concurrent.ExecutionException;
 public class IndexTableCache {
 
     private final LoadingCache<String, IndexTableFile> cache;
+    private final Map<String, Long> loadFreq = new HashMap<>();
 
     public IndexTableCache(final File indexDir, int tableCacheSize)
     {
         Preconditions.checkNotNull(indexDir, "databaseName is null");
         cache = CacheBuilder.newBuilder()
                 .maximumSize(tableCacheSize)
+                .removalListener((RemovalListener<String, IndexTableFile>) notification -> {
+
+                })
                 .build(new CacheLoader<String, IndexTableFile>(){
                     @Override
                     public IndexTableFile load(String fileAbsPath) throws IOException{
+                        loadFreq.compute(fileAbsPath, (s, aLong) -> aLong==null ? 1 : aLong+1);
                         return new IndexTableFile(fileAbsPath);
                     }
                 });
@@ -64,6 +68,7 @@ public class IndexTableCache {
      * 关闭缓存，将缓存在内存中的文件channel关闭
      */
     public void close(){
+        System.out.println("IndexTableCache.close: "+ loadFreq);
         cache.invalidateAll();
     }
 

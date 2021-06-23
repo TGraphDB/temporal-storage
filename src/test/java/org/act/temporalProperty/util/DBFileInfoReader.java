@@ -176,7 +176,7 @@ public class DBFileInfoReader
 
     @Test
     public void dbAggrIndexFileInfo() throws IOException {
-        String fileName = "index/aggr.000001.index";
+        String fileName = "index/aggr.000015.index";
         System.out.println("################## "+fileName+" #################");
         FileInputStream inputStream = new FileInputStream( new File( this.dbDir() + "/" + fileName ) );
         FileChannel channel = inputStream.getChannel();
@@ -196,7 +196,7 @@ public class DBFileInfoReader
             Slice key = entry.getKey();
             Slice value = entry.getValue();
             AggregationIndexKey indexKey = new AggregationIndexKey(key);
-            if(indexKey.getEntityId()==12){
+            if(indexKey.getEntityId()==40){
                 System.out.println(indexKey+" "+value.getInt(0));
             }
             TimePointL time = indexKey.getTimeGroupId();

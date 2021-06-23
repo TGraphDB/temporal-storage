@@ -35,7 +35,7 @@ public class IndexStore {
         if(!indexDir.exists() && !indexDir.mkdir()) throw new IOException("unable to create index dir");
         this.tpStore = store;
         this.indexDir = indexDir;
-        this.cache = new IndexTableCache(indexDir, 25);
+        this.cache = new IndexTableCache(indexDir, 40);
         this.meta = indexMetaManager;
         this.aggr = new AggregationIndexOperator( indexDir, store, cache, meta );
         this.value = new ValueIndexOperator( indexDir, store, cache, meta );

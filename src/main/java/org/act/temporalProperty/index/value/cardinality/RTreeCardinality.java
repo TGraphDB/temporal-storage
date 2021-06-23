@@ -21,7 +21,14 @@ public class RTreeCardinality {
     // constructor used for write
     public RTreeCardinality(RTree tree) {
         this.root = tree.getRoot();
-        this.inLevel = tree.getLevels().get(tree.getLevels().size()-1);
+        System.out.print("RTreeCardinality.RTreeCardinality: tree level count ");
+        System.out.println(tree.getLevels().size());
+        this.inLevel = tree.getLevels().get(0);
+//        if(tree.getLevels().size()>2){
+//            this.inLevel = tree.getLevels().get(tree.getLevels().size()-2);
+//        }else{
+//            this.inLevel = tree.getLevels().get(tree.getLevels().size()-1);
+//        }
     }
 
     public ByteBuffer encode() {
@@ -38,6 +45,7 @@ public class RTreeCardinality {
             node.getCardinalityEstimator().encode(out);
 //            System.out.println(node.getCardinality());
         }
+        System.out.println("[rtree block for cardinality: "+inLevel.size());
         Slice content = out.slice();
         content.setInt(0, content.length()-4);
 //        System.out.println(content.length());

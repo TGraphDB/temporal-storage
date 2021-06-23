@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.cache.RemovalListener;
@@ -28,7 +30,8 @@ import com.google.common.cache.LoadingCache;
 public class TableCache
 {
     private final LoadingCache<String, TableAndFile> cache;
-    private final Finalizer<Table> finalizer = new Finalizer<>(1);;
+    private final Finalizer<Table> finalizer = new Finalizer<>(1);
+    private final Map<String, Long> loadFreq = new HashMap<>();
 
     public TableCache(int tableCacheSize, final UserComparator userComparator, final boolean verifyChecksums)
     {
@@ -41,6 +44,7 @@ public class TableCache
                 .build(new CacheLoader<String, TableAndFile>(){
                     @Override
                     public TableAndFile load(String filePath) throws IOException{
+                        loadFreq.compute(filePath, (s, aLong) -> aLong==null ? 1 : aLong+1);
                         return new TableAndFile(filePath, userComparator, verifyChecksums);
                     }
                 });
@@ -77,6 +81,7 @@ public class TableCache
      */
     public void close()
     {
+        System.out.println("TableCache.close: "+loadFreq);
         cache.invalidateAll();
         finalizer.destroy();
     }

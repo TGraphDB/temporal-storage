@@ -5,6 +5,7 @@ import org.act.temporalProperty.query.TimePointL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Created by song on 2018-05-06.
@@ -22,7 +23,7 @@ public class IndexFileMeta
     private boolean corIsStable;
 
     //time group start point for aggregation index only. the last point is endTime + 1
-    private List<TimePointL> timeGroup;
+    private TreeSet<TimePointL> timeGroup;
 
     public IndexFileMeta(long indexId, long fileId, long fileSize, TimePointL startTime, TimePointL endTime, long corFileId, Boolean corIsStable, Collection<TimePointL> timeGroup )
     {
@@ -33,8 +34,7 @@ public class IndexFileMeta
         this.endTime = endTime;
         this.corFileId = corFileId;
         this.corIsStable = corIsStable;
-        this.timeGroup = new ArrayList<>();
-        this.timeGroup.addAll( timeGroup );
+        this.timeGroup = new TreeSet<>(timeGroup);
     }
 
     public IndexFileMeta() {
@@ -75,11 +75,6 @@ public class IndexFileMeta
         return corIsStable;
     }
 
-    public List<TimePointL> getTimeGroups()
-    {
-        return timeGroup;
-    }
-
     public void setIndexId(long indexId) {
         this.indexId = indexId;
     }
@@ -108,11 +103,11 @@ public class IndexFileMeta
         this.corIsStable = corIsStable;
     }
 
-    public List<TimePointL> getTimeGroup() {
+    public TreeSet<TimePointL> getTimeGroup() {
         return timeGroup;
     }
 
-    public void setTimeGroup(List<TimePointL> timeGroup) {
-        this.timeGroup = timeGroup;
+    public void setTimeGroup(Collection<TimePointL> timeGroup) {
+        this.timeGroup = new TreeSet<>(timeGroup);
     }
 }
