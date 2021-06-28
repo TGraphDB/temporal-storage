@@ -28,8 +28,8 @@ public class UnSortedTable implements Closeable
     public UnSortedTable( File tableFile, MemTable table ) throws IOException
     {
         this.file = tableFile;
-        try{this.initFromFile( table);}catch (IndexOutOfBoundsException e){
-            System.out.println("UnSortedTable.initFromFile: "+tableFile);
+        try{this.initFromFile( table);}catch (RuntimeException e){
+            System.out.println("UnSortedTable.initFromFile: "+tableFile+" "+e.getMessage());
         }
         this.log = new FileChannelLogWriter(tableFile, true);
     }
