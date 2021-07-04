@@ -291,7 +291,7 @@ public abstract class SliceOutput
     @Override
     public void writeFloat(float v)
     {
-        throw new UnsupportedOperationException();
+        writeInt(Float.floatToIntBits(v));
     }
 
     /**

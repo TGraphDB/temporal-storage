@@ -448,7 +448,7 @@ public final class SliceInput
     @Override
     public float readFloat()
     {
-        throw new UnsupportedOperationException();
+        return Float.intBitsToFloat(readInt());
     }
 
     @Override
