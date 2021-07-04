@@ -9,10 +9,8 @@ import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 /**
  * Created by song on 2018-04-06.
@@ -23,6 +21,8 @@ public abstract class ValueGroupingMap {
     public abstract void encode(SliceOutput out);
 
     public abstract int group(Slice v);
+
+    public abstract Object groupStartVal(int grp);
 
     public static Comparator<Slice> INT_CMP = Comparator.comparingInt(o -> o.getInt(0));
     public static Comparator<Slice> LONG_CMP = Comparator.comparingLong(o -> o.getLong(0));;
@@ -50,6 +50,7 @@ public abstract class ValueGroupingMap {
             case -1: return new Empty();
             case 0: return new IntValueGroupMap();
             case 1: return new IntRange(in);
+            case 2: return new FloatRangeGroupMap(in);
             default:
                 throw new UnsupportedOperationException("");
         }
@@ -103,6 +104,9 @@ public abstract class ValueGroupingMap {
         }
 
         @Override
+        public Object groupStartVal(int grp) { throw new UnsupportedOperationException(); }
+
+        @Override
         public String toString() {
             return "Empty";
         }
@@ -117,6 +121,11 @@ public abstract class ValueGroupingMap {
             } else {
                 return v.getInt(0);
             }
+        }
+
+        @Override
+        public Object groupStartVal(int grp) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -161,6 +170,12 @@ public abstract class ValueGroupingMap {
         }
 
         @Override
+        public Object groupStartVal(int grp) {
+            Slice key = groupMap.navigableKeySet().toArray(new Slice[]{})[grp];
+            return key.getInt(0);
+        }
+
+        @Override
         public void encode(SliceOutput out) {
             out.writeInt(ID);
             out.writeInt(groupMap.size());
@@ -179,11 +194,55 @@ public abstract class ValueGroupingMap {
 //        }
 //    }
 //
-//    public static class FloatValueGroupMap extends ValueGroupingMap{
-//        public FloatValueGroupMap() {
-//            super(Comparator.naturalOrder(), IndexValueType.FLOAT);
-//        }
-//    }
+
+    public static class FloatRangeGroupMap extends ValueGroupingMap{
+        private static final int ID = 2;
+        private final TreeMap<Slice, Integer> groupMap;
+
+        public FloatRangeGroupMap(List<Float> groups) {
+            groupMap = new TreeMap<>(FLOAT_CMP);
+            for(int i=0; i<groups.size(); i++){
+                groupMap.put(float2Slice(groups.get(i)), i);
+            }
+        }
+
+        public FloatRangeGroupMap(SliceInput in) {
+            groupMap = new TreeMap<>(FLOAT_CMP);
+            int cnt = in.readInt();
+            for(int i=0; i<cnt; i++){
+                float val = in.readFloat();
+                groupMap.put(float2Slice(val), i);
+            }
+        }
+
+        public int group(Slice v) {
+            if(v==null) return UN_GROUPED_GID;
+            Entry<Slice, Integer> e = groupMap.floorEntry(v);
+            if (e == null) {
+                return UN_GROUPED_GID;
+            } else {
+                return e.getValue();
+            }
+        }
+
+        @Override
+        public Object groupStartVal(int grp) {
+            Slice key = groupMap.navigableKeySet().toArray(new Slice[]{})[grp];
+            return key.getFloat(0);
+        }
+
+        @Override
+        public void encode(SliceOutput out) {
+            out.writeInt(ID);
+            out.writeInt(groupMap.size());
+            groupMap.keySet().forEach(k-> out.writeFloat(k.getFloat(0)));
+        }
+
+        @Override
+        public String toString() {
+            return "FloatRange" + groupMap;
+        }
+    }
 //
 //    public static class DoubleValueGroupMap extends ValueGroupingMap{
 //        public DoubleValueGroupMap() {

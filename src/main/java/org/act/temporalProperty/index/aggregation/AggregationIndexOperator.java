@@ -144,7 +144,7 @@ public class AggregationIndexOperator
                     result = mergeAggrResult(result, rangeQueryResult);
                 }
             }
-            return new AggregationIndexQueryResult( result, timeGroups.getAccelerateTime() );
+            return new AggregationIndexQueryResult( result, timeGroups.getAccelerateTime(), meta.getValGroupMap() );
         }
 
         private Map<Integer,Integer> queryIndex( long entityId, AggregationIndexMeta meta, IntervalStatus status ) throws IOException
