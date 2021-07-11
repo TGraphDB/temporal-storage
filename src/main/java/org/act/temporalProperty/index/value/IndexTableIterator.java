@@ -24,10 +24,9 @@ public class IndexTableIterator extends AbstractIterator<IndexEntry> implements 
     private final RTreeRange rootBound;
     private final RTreeRange queryBound;
 
-    public IndexTableIterator(FileChannel channel, IndexQueryRegion regions, IndexEntryOperator indexEntryOperator) throws IOException {
-        this.map = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-        this.map.order(ByteOrder.LITTLE_ENDIAN);
-//        this.map.flip();
+    public IndexTableIterator(MappedByteBuffer map, IndexQueryRegion regions, IndexEntryOperator indexEntryOperator) throws IOException {
+        this.map = map;
+        this.map.clear();
         this.op = indexEntryOperator;
 
 //        System.out.println(map.limit()+" "+map.position()+" "+map.remaining());

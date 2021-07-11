@@ -302,7 +302,7 @@ public abstract class SliceOutput
     @Override
     public void writeDouble(double v)
     {
-        throw new UnsupportedOperationException();
+        writeLong(Double.doubleToLongBits(v));
     }
 
     /**

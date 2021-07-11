@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -81,7 +82,14 @@ public class TableCache
      */
     public void close()
     {
-        System.out.println("TableCache.close: "+loadFreq);
+        StringBuilder sb = new StringBuilder();
+        sb.append("TableCache.close: ");
+        if(!loadFreq.isEmpty()){
+            String path = new LinkedList<>(loadFreq.keySet()).getFirst();
+            sb.append(new File(path).getParentFile().getAbsolutePath()).append('/');
+        }
+        loadFreq.forEach((fPath, freq)-> sb.append(new File(fPath).getName()).append("=").append(freq).append(','));
+        System.out.println(sb);
         cache.invalidateAll();
         finalizer.destroy();
     }

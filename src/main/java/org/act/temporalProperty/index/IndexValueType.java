@@ -51,44 +51,45 @@ public enum IndexValueType {
         }
     },
     FLOAT(2){
+        private float f(Slice s){
+            assert s.length()>=4;
+            return s.input().readFloat();
+        }
+
         @Override
         public int compare(Slice entry1, Slice entry2) {
-            return Float.compare(entry1.getFloat(0), entry2.getFloat(0));
+            return Float.compare(f(entry1), f(entry2));
         }
 
         @Override
         public int compareRange(Slice min1, Slice max1, Slice min2, Slice max2) {
-            float tmp1 = min1.getFloat(0);
-            tmp1 += max1.getFloat(0);
-            float tmp2 = min2.getFloat(0);
-            tmp2 += max2.getFloat(0);
-            return Float.compare(tmp1, tmp2);
+            return Float.compare(f(min1)+f(max1), f(min2)+f(max2));
         }
 
         @Override
         public String toString(Slice val) {
-            if(val.length()==4) return String.valueOf(val.getFloat(0));
+            if(val.length()==4) return String.valueOf(f(val));
             else return null;
         }
     },
     DOUBLE(3){
+        private double d(Slice s){
+            assert s.length()>=8;
+            return s.input().readDouble();
+        }
         @Override
         public int compare(Slice entry1, Slice entry2) {
-            return Double.compare(entry1.getDouble(0), entry2.getDouble(0));
+            return Double.compare(d(entry1), d(entry2));
         }
 
         @Override
         public int compareRange(Slice min1, Slice max1, Slice min2, Slice max2) {
-            double tmp1 = min1.getDouble(0);
-            tmp1 += max1.getDouble(0);
-            double tmp2 = min2.getDouble(0);
-            tmp2 += max2.getDouble(0);
-            return Double.compare(tmp1, tmp2);
+            return Double.compare(d(min1)+d(max1), d(min2)+d(max2));
         }
 
         @Override
         public String toString(Slice val) {
-            if(val.length()==8) return String.valueOf(val.getDouble(0));
+            if(val.length()==8) return String.valueOf(d(val));
             else return null;
         }
     },

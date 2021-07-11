@@ -26,19 +26,17 @@ public abstract class ValueGroupingMap {
 
     public static Comparator<Slice> INT_CMP = Comparator.comparingInt(o -> o.getInt(0));
     public static Comparator<Slice> LONG_CMP = Comparator.comparingLong(o -> o.getLong(0));;
-    public static Comparator<Slice> FLOAT_CMP = Comparator.comparingDouble(o -> o.getFloat(0));
-    public static Comparator<Slice> DOUBLE_CMP = FLOAT_CMP;
+    public static Comparator<Slice> FLOAT_CMP = Comparator.comparingDouble(o -> o.input().readFloat());
+    public static Comparator<Slice> DOUBLE_CMP = Comparator.comparingDouble(o -> o.input().readDouble());
     public static Comparator<Slice> STR_CMP = Comparator.naturalOrder();
 
     public static Comparator<Slice> getComparator(IndexValueType valueType) {
         switch(valueType){
             case INT: return INT_CMP;
             case LONG: return LONG_CMP;
-            case FLOAT:
-            case DOUBLE:
-                return FLOAT_CMP;
-            case STRING:
-                return STR_CMP;
+            case FLOAT: return FLOAT_CMP;
+            case DOUBLE: return DOUBLE_CMP;
+            case STRING: return STR_CMP;
             default:
                 throw new TPSNHException("invalid value type");
         }
@@ -184,7 +182,11 @@ public abstract class ValueGroupingMap {
 
         @Override
         public String toString() {
-            return "IntRange" + groupMap;
+            StringBuilder sb = new StringBuilder();
+            sb.append("IntRange{");
+            groupMap.forEach((s, i)-> sb.append(s.getInt(0)).append("->").append(i).append(','));
+            sb.append('}');
+            return sb.toString();
         }
     }
 //
@@ -228,19 +230,23 @@ public abstract class ValueGroupingMap {
         @Override
         public Object groupStartVal(int grp) {
             Slice key = groupMap.navigableKeySet().toArray(new Slice[]{})[grp];
-            return key.getFloat(0);
+            return key.input().readFloat();
         }
 
         @Override
         public void encode(SliceOutput out) {
             out.writeInt(ID);
             out.writeInt(groupMap.size());
-            groupMap.keySet().forEach(k-> out.writeFloat(k.getFloat(0)));
+            groupMap.keySet().forEach(k-> out.writeFloat(k.input().readFloat()));
         }
 
         @Override
         public String toString() {
-            return "FloatRange" + groupMap;
+            StringBuilder sb = new StringBuilder();
+            sb.append("FloatRange{");
+            groupMap.forEach((s, i)-> sb.append(s.input().readFloat()).append("->").append(i).append(','));
+            sb.append('}');
+            return sb.toString();
         }
     }
 //

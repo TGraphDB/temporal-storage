@@ -56,12 +56,10 @@ public class RTreeCardinality {
     private RTreeRange queryRegion;
     private IndexEntryOperator op;
     // constructor used for read
-    public RTreeCardinality(FileChannel channel, IndexQueryRegion regions, IndexEntryOperator op) throws IOException {
+    public RTreeCardinality(MappedByteBuffer map, IndexQueryRegion regions, IndexEntryOperator op) throws IOException {
         this.op = op;
         this.queryRegion = op.toRTreeRange(regions);
-
-        MappedByteBuffer map = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
-        map.order(ByteOrder.LITTLE_ENDIAN);
+        map.clear();
         int rootPos = map.getInt();
         map.position(rootPos);
         new RTreeNodeBlock(map, op);

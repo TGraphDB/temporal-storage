@@ -454,7 +454,7 @@ public final class SliceInput
     @Override
     public double readDouble()
     {
-        throw new UnsupportedOperationException();
+        return Double.longBitsToDouble(readLong());
     }
 
     /**

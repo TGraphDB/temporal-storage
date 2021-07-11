@@ -80,7 +80,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     protected float asFloat(Slice value){
         Preconditions.checkNotNull(value);
         Preconditions.checkArgument(value.length()>=4);
-        return value.getFloat(0);
+        return value.input().readFloat();
     }
 
     protected long asLong(Slice value){
@@ -92,7 +92,7 @@ public abstract class AbstractTimeIntervalAggrQuery<K,V> implements TimeInterval
     protected double asDouble(Slice value){
         Preconditions.checkNotNull(value);
         Preconditions.checkArgument(value.length()>=8);
-        return value.getDouble(0);
+        return value.input().readDouble();
     }
 
 }

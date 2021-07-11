@@ -723,13 +723,21 @@ public final class Slice
         return toret + s + ")";
     }
 
+    // this should not use because no corresponding setFloat() available.
+    // use input().readFloat() instead.
+    @Deprecated
     public float getFloat(int index) {
         Preconditions.checkPositionIndexes(index, index + SIZE_OF_FLOAT, this.length);
-        return this.toByteBuffer().getFloat(index);
+        throw new UnsupportedOperationException();
+//        return this.toByteBuffer().getFloat(index);
     }
 
+    // this should not use because no corresponding setDouble() available.
+    // use input().readDouble() instead.
+    @Deprecated
     public double getDouble(int index) {
         Preconditions.checkPositionIndexes(index, index + SIZE_OF_DOUBLE, this.length);
-        return this.toByteBuffer().getDouble(index);
+        throw new UnsupportedOperationException();
+//        return this.toByteBuffer().getDouble(index);
     }
 }

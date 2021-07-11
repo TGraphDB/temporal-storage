@@ -94,18 +94,19 @@ public class ValueIndexOperator
                 return meta;
             }
         }
-        throw new TPSRuntimeException("no valid index for query!");
+        throw new TPSRuntimeException("no valid index for query {pid: "+pids+", time: "+condition.getTimeMin()+"~"+condition.getTimeMax()+"}");
     }
 
     private Iterator<IndexEntry> getQueryIterator( IndexQueryRegion condition, IndexMetaData meta, MemTable cache ) throws IOException
     {
-        String fileName = Filename.valIndexFileName(meta.getId());
-        List<IndexQueryRegion> regionsCanSpeedUp = excludeInvalidTime( condition, cache );
-        IndexTableCache.IndexTable file = this.cache.getTable( new File( this.indexDir, fileName ).getAbsolutePath() );
+        List<IndexQueryRegion> regionsCanSpeedUp = excludeInvalidTime(condition, cache);
         List<Iterator<IndexEntry>> results = new ArrayList<>();
-        for ( IndexQueryRegion subQuery : regionsCanSpeedUp )
-        {
-            results.add( file.iterator( subQuery ) );
+        for(IndexFileMeta fm : meta.getFilesByTime(condition.getTimeMin(), condition.getTimeMax())) {
+            String fileName = Filename.valIndexFileName(fm.getFileId());
+            IndexTableCache.IndexTable file = this.cache.getTable(new File(this.indexDir, fileName).getAbsolutePath());
+            for (IndexQueryRegion subQuery : regionsCanSpeedUp) {
+                results.add(file.iterator(subQuery));
+            }
         }
         return Iterators.concat( results.iterator() );
     }

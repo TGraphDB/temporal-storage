@@ -122,15 +122,11 @@ public class IndexMetaManager
     public List<IndexMetaData> getValueIndex(List<Integer> pids, TimePointL timeMin, TimePointL timeMax )
     {
         Set<IndexMetaData> result = new HashSet<>();
-        for(Integer proId : pids){
-            Collection<IndexMetaData> indexOnProps = byProIdTime.get(proId).values();
-            for(IndexMetaData meta : indexOnProps){
-                if(     meta.getType().isValueIndex() &&
-                        containsAll(meta.getPropertyIdList(), pids) &&
-                        TimeIntervalUtil.overlap( meta.getTimeStart(), meta.getTimeEnd(), timeMin, timeMax)) {
-                    result.add(meta);
-                    break;
-                }
+        for(IndexMetaData meta : byId.values()){
+            if(     meta.getType().isValueIndex() &&
+                    containsAll(meta.getPropertyIdList(), pids) &&
+                    TimeIntervalUtil.overlap( meta.getTimeStart(), meta.getTimeEnd(), timeMin, timeMax)) {
+                result.add(meta);
             }
         }
         return new ArrayList<>(result);

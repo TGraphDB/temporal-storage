@@ -15,11 +15,15 @@ import org.act.temporalProperty.index.value.rtree.IndexEntry;
 import org.act.temporalProperty.index.value.rtree.IndexEntryOperator;
 import org.act.temporalProperty.query.aggr.AggregationIndexKey;
 import org.act.temporalProperty.table.MMapTable;
+import org.act.temporalProperty.util.ByteBufferSupport;
 import org.act.temporalProperty.util.Slice;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -37,8 +41,8 @@ public class IndexTableCache {
         Preconditions.checkNotNull(indexDir, "databaseName is null");
         cache = CacheBuilder.newBuilder()
                 .maximumSize(tableCacheSize)
-                .removalListener((RemovalListener<String, IndexTableFile>) notification -> {
-
+                .removalListener( (RemovalListener<String, IndexTableFile>) notification -> {
+                    notification.getValue().close();
                 })
                 .build(new CacheLoader<String, IndexTableFile>(){
                     @Override
@@ -53,6 +57,7 @@ public class IndexTableCache {
     {
         IndexTable table;
         try {
+            System.out.println(absPath);
             table = cache.get(absPath).getTable();
         } catch (ExecutionException e) {
             Throwable cause = e;
@@ -68,7 +73,14 @@ public class IndexTableCache {
      * 关闭缓存，将缓存在内存中的文件channel关闭
      */
     public void close(){
-        System.out.println("IndexTableCache.close: "+ loadFreq);
+        StringBuilder sb = new StringBuilder();
+        sb.append("IndexTableCache.close: ");
+        if(!loadFreq.isEmpty()){
+            String path = new LinkedList<>(loadFreq.keySet()).getFirst();
+            sb.append(new File(path).getParentFile().getAbsolutePath()).append('/');
+        }
+        loadFreq.forEach((fPath, freq)-> sb.append(new File(fPath).getName()).append("=").append(freq).append(','));
+        System.out.println(sb);
         cache.invalidateAll();
     }
 
@@ -97,29 +109,37 @@ public class IndexTableCache {
         {
             return table;
         }
+
+        public void close() {
+            table.close();
+        }
     }
 
     /**
      * Created by song on 2018-01-19.
      */
-    public interface IndexTable {
+    public interface IndexTable{
 
         Iterator<IndexEntry> iterator(IndexQueryRegion regions) throws IOException;
 
         SeekingIterator<Slice, Slice> iterator() throws IOException;
 
         HyperLogLog cardinalityEstimator(IndexQueryRegion regions) throws IOException;
+
+        void close();
     }
 
     private static class TimeValueIndexTable implements IndexTable{
-        private final FileChannel channel;
-        public TimeValueIndexTable(FileChannel fileChannel) {
-            this.channel = fileChannel;
+        private final MappedByteBuffer map;
+
+        public TimeValueIndexTable(FileChannel fileChannel) throws IOException {
+            this.map = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+            map.order(ByteOrder.LITTLE_ENDIAN);
         }
 
         @Override
         public Iterator<IndexEntry> iterator(IndexQueryRegion regions) throws IOException {
-            return new IndexTableIterator(this.channel, regions, extractOperator(regions));
+            return new IndexTableIterator(this.map, regions, extractOperator(regions));
         }
 
         private IndexEntryOperator extractOperator(IndexQueryRegion regions) {
@@ -137,7 +157,12 @@ public class IndexTableCache {
 
         @Override
         public HyperLogLog cardinalityEstimator(IndexQueryRegion regions) throws IOException {
-            return new RTreeCardinality(this.channel, regions, extractOperator(regions)).cardinalityEstimator();
+            return new RTreeCardinality(map, regions, extractOperator(regions)).cardinalityEstimator();
+        }
+
+        public void close()
+        {
+            ByteBufferSupport.unmap(map);
         }
     }
 
@@ -160,6 +185,11 @@ public class IndexTableCache {
         @Override
         public HyperLogLog cardinalityEstimator(IndexQueryRegion regions) throws IOException {
             throw new UnsupportedOperationException();
+        }
+
+        public void close()
+        {
+            table.close();
         }
     }
 }
