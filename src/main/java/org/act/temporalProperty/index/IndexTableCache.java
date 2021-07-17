@@ -98,6 +98,7 @@ public class IndexTableCache {
 
         private IndexTableFile(String fileAbsPath) throws IOException{
             FileChannel fileChannel = new RandomAccessFile(new File(fileAbsPath), "rw").getChannel();
+            if(Thread.interrupted()) System.out.println("someone had interrupt me. who? strange~");;
             if(fileAbsPath.contains("value.")) {
                 table = new TimeValueIndexTable(fileChannel);
             }else{
