@@ -9,7 +9,7 @@ import org.act.temporalProperty.helper.AbstractSearchableIterator;
 public class UnknownToInvalidIterator extends AbstractSearchableIterator
 {
 
-    private final SearchableIterator in;
+    public final SearchableIterator in;
 
     public UnknownToInvalidIterator( SearchableIterator in ) {this.in = in;}
 

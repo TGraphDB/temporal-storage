@@ -26,9 +26,9 @@ public class DebugIterator implements SearchableIterator
     }
 
     public static SearchableIterator wrap(SearchableIterator iterator) {
-//        return iterator;
-        if(iterator instanceof DebugIterator) return iterator;
-        else return new DebugIterator(iterator);
+        return iterator;
+//        if(iterator instanceof DebugIterator) return iterator;
+//        else return new DebugIterator(iterator);
     }
 
     private InternalEntry check(InternalEntry curEntry)

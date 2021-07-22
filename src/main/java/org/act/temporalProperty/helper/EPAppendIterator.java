@@ -30,7 +30,8 @@ public class EPAppendIterator extends SameLevelMergeIterator {
     private boolean isEP(SearchableIterator iterator) {
         return  (iterator instanceof EPEntryIterator) ||
                 (iterator instanceof EPAppendIterator) ||
-                (iterator instanceof EPMergeIterator);
+                (iterator instanceof EPMergeIterator) ||
+                (iterator instanceof EPRangeQueryIterator.DebugIterator && isEP(((EPRangeQueryIterator.DebugIterator)iterator).in));
     }
 
     @Override

@@ -250,7 +250,7 @@ public Slice getPointValue( long entityId, int proId, TimePointL time )
 
             InternalKey searchKey = new InternalKey( id, start );
             rangeIter.seekFloor( searchKey );
-
+//            System.out.println(rangeIter.iteratorTree());
             SearchableIterator i = new EqualValFilterIterator(rangeIter);
 
             InternalEntry lastEntry = null;

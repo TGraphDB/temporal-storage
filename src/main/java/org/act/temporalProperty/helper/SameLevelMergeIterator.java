@@ -25,7 +25,7 @@ public class SameLevelMergeIterator extends AbstractSearchableIterator
         }
     };
     private PriorityQueue<SearchableIterator> heap = new PriorityQueue<>(cp);
-    private Set<SearchableIterator> iterators = new HashSet<>();
+    public final Set<SearchableIterator> iterators = new HashSet<>();
 
     public SameLevelMergeIterator( List<SearchableIterator> iterators )
     {

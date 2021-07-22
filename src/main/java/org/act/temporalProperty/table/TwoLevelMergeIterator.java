@@ -15,8 +15,8 @@ import org.act.temporalProperty.vo.EntityPropertyId;
  */
 public class TwoLevelMergeIterator extends AbstractSearchableIterator
 {
-    private final SearchableIterator latest;
-    private final SearchableIterator old;
+    public final SearchableIterator latest;
+    public final SearchableIterator old;
     private InternalEntry oldCurrent;
 
     public TwoLevelMergeIterator(SearchableIterator latest, SearchableIterator old)

@@ -13,7 +13,7 @@ import org.act.temporalProperty.vo.EntityPropertyId;
  */
 public class EPEntryIterator extends AbstractSearchableIterator {
 
-    private final SearchableIterator iter;
+    public final SearchableIterator iter;
     private final EntityPropertyId id;
 
     public EPEntryIterator(EntityPropertyId entityPropertyId, SearchableIterator iterator){

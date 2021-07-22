@@ -16,10 +16,11 @@ public class EPRangeQueryIterator implements SearchableIterator{
     private final EntityPropertyId id;
     private final TimePointL end;
     private final TimePointL start;
+    private byte iteratorId = 0;
     private final MemTable[] memTables = new MemTable[]{null, null, null};
     private final List<Triple<String, SearchableIterator, SearchableIterator>> diskIterators = new ArrayList<>();
 
-    private final Map<SearchableIterator, String> debugIterName = new HashMap<>();
+    public static final Map<SearchableIterator, String> debugIterName = new HashMap<>();
 
     private SearchableIterator iterator;
 
@@ -75,7 +76,7 @@ public class EPRangeQueryIterator implements SearchableIterator{
                 diskIter.append(epMerge(fileIter, bufferIter, "f.b"));
             }
         }
-        iterator = debug(new UnknownToInvalidIterator( epMerge(memIter, debug(diskIter, "disk"), "mem/disk") ), "unk2invalid");
+        iterator = debug(new UnknownToInvalidIterator( epMerge(debug(diskIter, "disk"), memIter, "mem/disk") ), "unk2invalid");
     }
 
     private SearchableIterator ep(SearchableIterator in, String name){
@@ -91,13 +92,44 @@ public class EPRangeQueryIterator implements SearchableIterator{
 
     private SearchableIterator debug(SearchableIterator iterator, String name){
         return iterator;
-//        debugIterName.put(iterator, name);
+//        debugIterName.put(iterator, name+"@"+(iteratorId++));
 //        return new DebugIterator(iterator);
     }
 
-//    public String iteratorTree(){
-//
-//    }
+    public String iteratorTree(){
+        StringBuilder sb = new StringBuilder();
+        SearchableIterator root = null;
+        for (Map.Entry<SearchableIterator, String> e : debugIterName.entrySet()){
+            if(e.getValue().startsWith("unk2invalid")) root = e.getKey();
+        }
+        if(root!=null) recursivePrint(sb, root, 0);
+        return sb.toString();
+    }
+
+    private void recursivePrint(StringBuilder sb, SearchableIterator root, int level) {
+        if(root instanceof DebugIterator){
+            recursivePrint(sb, ((DebugIterator) root).in, level);
+        }else{
+            for(int i=0;i<level;i++) sb.append("|---");
+            String name = debugIterName.get(root);
+            sb.append(name)
+//                    .append('<').append(root.getClass().getSimpleName()).append('>')
+                    .append('\n');
+            if(root instanceof TwoLevelMergeIterator){
+                TwoLevelMergeIterator two = (TwoLevelMergeIterator) root;
+                recursivePrint(sb, two.latest, level+1);
+                recursivePrint(sb, two.old, level+1);
+            }else if(root instanceof UnknownToInvalidIterator){
+                recursivePrint(sb, ((UnknownToInvalidIterator)root).in, level+1);
+            }else if(root instanceof EPAppendIterator){
+                for(SearchableIterator i : ((EPAppendIterator)root).iterators) {
+                    recursivePrint(sb, i, level + 1);
+                }
+            }else if(root instanceof EPEntryIterator){
+                recursivePrint(sb, ((EPEntryIterator) root).iter, level+1);
+            }
+        }
+    }
 
     public String path(InternalEntry entry){
         StringBuilder sb = new StringBuilder();
@@ -146,10 +178,16 @@ public class EPRangeQueryIterator implements SearchableIterator{
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String toString() {
+        return "EPRangeQueryIterator{" +
+                "iterator=" + iterator +
+                '}';
+    }
 
     static class DebugIterator implements SearchableIterator{
 
-        private final SearchableIterator in;
+        final SearchableIterator in;
 
         DebugIterator(SearchableIterator in){
             this.in = in;
@@ -188,6 +226,11 @@ public class EPRangeQueryIterator implements SearchableIterator{
         @Override
         public boolean seekFloor(InternalKey targetKey) {
             return in.seekFloor(targetKey);
+        }
+
+        @Override
+        public String toString() {
+            return in + "";
         }
     }
 }
