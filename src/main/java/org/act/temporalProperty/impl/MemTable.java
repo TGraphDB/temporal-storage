@@ -216,14 +216,14 @@ public class MemTable
     public static class MemTableIterator extends AbstractSearchableIterator
     {
         private final NavigableMap<EntityPropertyId, TemporalValue<Value>> table;
-        private PeekingIterator<Entry<EntityPropertyId, TemporalValue<Value>>> tPropIter;
+        private Iterator<Entry<EntityPropertyId, TemporalValue<Value>>> tPropIter;
         private PeekingIterator<Triple<TimePointL,Boolean,Value>> tValIter;
         private EntityPropertyId curId;
 
         MemTableIterator(NavigableMap<EntityPropertyId, TemporalValue<Value>> table)
         {
             this.table = table;
-            this.tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
+            this.tPropIter = table.entrySet().iterator();
         }
 
         @Override
@@ -255,7 +255,7 @@ public class MemTable
         public void seekToFirst()
         {
             super.resetState();
-            tPropIter = Iterators.peekingIterator( table.entrySet().iterator() );
+            tPropIter = table.entrySet().iterator();
             tValIter = null;
             curId = null;
         }
@@ -264,14 +264,22 @@ public class MemTable
         public boolean seekFloor(InternalKey targetKey )
         {
             super.resetState();
-            Entry<EntityPropertyId, TemporalValue<Value>> result = table.floorEntry(targetKey.getId());
+            EntityPropertyId result = table.floorKey(targetKey.getId());
             if(result != null){
-                tPropIter = Iterators.peekingIterator( table.tailMap(result.getKey(), true).entrySet().iterator() );
-                tValIter = result.getValue().pointEntries(targetKey.getStartTime());
-                curId = result.getKey();
+                tPropIter = table.tailMap(result, true).entrySet().iterator();
+                if(tPropIter.hasNext()){
+                    Entry<EntityPropertyId, TemporalValue<Value>> entry = tPropIter.next();
+                    curId = entry.getKey();
+                    tValIter = entry.getValue().pointEntries(targetKey.getStartTime());
+                }else{
+                    tValIter = null;
+                    curId = null;
+                }
                 return super.seekFloor(targetKey);
             }else{
-                tPropIter = Iterators.peekingIterator( table.tailMap(targetKey.getId(), true).entrySet().iterator() );
+                tPropIter = table.tailMap(targetKey.getId(), true).entrySet().iterator();
+                tValIter = null;
+                curId = null;
                 return false;
             }
         }
