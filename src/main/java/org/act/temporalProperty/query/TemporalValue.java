@@ -7,7 +7,6 @@ import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
@@ -130,16 +129,13 @@ public class TemporalValue<V>
 
     public PeekingIterator<Triple<TimePointL,Boolean,V>> pointEntries( TimePointL startTime )
     {
-        Entry<TimePointL, ValWithFlag> floor = map.floorEntry( startTime );
+        TimePointL floor = map.floorKey( startTime );
         if ( floor != null )
         {
-            return Iterators.peekingIterator( Iterators.transform( map.tailMap( floor.getKey(), true ).entrySet().iterator(),
+            return Iterators.peekingIterator( Iterators.transform( map.tailMap( floor, true ).entrySet().iterator(),
                     item -> Triple.of(Objects.requireNonNull(item).getKey(), item.getValue().isUnknown, item.getValue().value)) );
-        } else {
-            return Iterators.peekingIterator(new Iterator<Triple<TimePointL, Boolean, V>>() {
-                @Override public boolean hasNext() { return false; }
-                @Override public Triple<TimePointL, Boolean, V> next() { return null; }
-            });
+        } else { // startTime < minTime in map.
+            return pointEntries();
         }
     }
 
@@ -148,16 +144,16 @@ public class TemporalValue<V>
         return map.isEmpty();
     }
 
-    public TemporalValue<V> slice( TimePointL min, boolean includeMin, V max, boolean includeMax )
-    {
-
-        return null;
-    }
+//    public TemporalValue<V> slice( TimePointL min, boolean includeMin, V max, boolean includeMax )
+//    {
+//
+//        return null;
+//    }
 
     private class ValWithFlag
     {
-        private boolean isUnknown;
-        private V value;
+        private final boolean isUnknown;
+        private final V value;
 
         ValWithFlag(boolean isUnknown, V value )
         {
