@@ -23,7 +23,6 @@ public class IndexMetaManager
     private final AtomicLong nextFileId;
 
     private final HashMap<Long,IndexMetaData> byId = new HashMap<>();
-    private final Map<Integer,TreeMap<TimePointL,IndexMetaData>> byProIdTime = new HashMap<>(); // proId, time
 
     private final LinkedList<IndexMetaData> offLineIndexes = new LinkedList<>();
 
@@ -92,15 +91,14 @@ public class IndexMetaManager
 
     public List<IndexMetaData> getByProId( int propertyId )
     {
-        TreeMap<TimePointL,IndexMetaData> indexTimeMap = byProIdTime.get( propertyId );
-        if ( indexTimeMap != null )
-        {
-            return new ArrayList<>( indexTimeMap.values() );
+        List<IndexMetaData> result = new ArrayList<>();
+        for(IndexMetaData meta : byId.values()){
+            if(     meta.getType().isValueIndex() &&
+                    new HashSet<>(meta.getPropertyIdList()).contains(propertyId)) {
+                result.add(meta);
+            }
         }
-        else
-        {
-            return Collections.emptyList();
-        }
+        return result;
     }
 
     public void addMeta( IndexMetaData indexMeta )
@@ -108,10 +106,6 @@ public class IndexMetaManager
         if ( indexMeta.isOnline() )
         {
             byId.put( indexMeta.getId(), indexMeta );
-            for ( Integer proId : indexMeta.getPropertyIdList() )
-            {
-                byProIdTime.computeIfAbsent( proId, i -> new TreeMap<>() ).put( indexMeta.getTimeStart(), indexMeta );
-            }
         }
         else
         {
@@ -157,15 +151,6 @@ public class IndexMetaManager
             byId.remove(indexId);
         }
         offLineIndexes.removeIf(mm -> mm.getId() == indexId);
-        byProIdTime.forEach((proId, val) -> {
-            Set<TimePointL> toDel = new HashSet<>();
-            val.forEach((t, im)->{
-                if(im.getId()==indexId) toDel.add(t);
-            });
-            for(TimePointL t: toDel){
-                val.remove(t);
-            }
-        });
         return m;
     }
 }

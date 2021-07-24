@@ -1,6 +1,5 @@
 package org.act.temporalProperty.table;
 
-import org.act.temporalProperty.helper.DebugIterator;
 import org.act.temporalProperty.helper.EqualValFilterIterator;
 import org.act.temporalProperty.helper.InvalidEntityFilterIterator;
 import org.act.temporalProperty.helper.SameLevelMergeIterator;
@@ -352,11 +351,11 @@ public class MergeProcess extends Thread
             if(createStableFile()) {
                 long fileId = pMeta.nextStableId();
                 targetFileName = Filename.stableFileName( fileId );
-                indexUpdater = index.onMergeUpdate( pMeta.getPropertyId(), mergedMemTableAndBuffer(), mergeParticipants );
+                indexUpdater = index.onCreateStableFile( pMeta.getPropertyId() );
             }else if(!onlyDumpMemTable()){
                 long fileId = mergeParticipants.size();
                 targetFileName = Filename.unStableFileName( fileId );
-                indexUpdater = index.onMergeUpdate( pMeta.getPropertyId(), mergedMemTableAndBuffer(), mergeParticipants );
+                indexUpdater = index.emptyUpdate();
             }else{
                 long fileId = mergeParticipants.size();
                 targetFileName = Filename.unStableFileName( fileId );
