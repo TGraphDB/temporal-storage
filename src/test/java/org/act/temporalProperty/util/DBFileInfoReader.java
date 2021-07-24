@@ -136,7 +136,8 @@ public class DBFileInfoReader
     @Test
     public void bufferFilesInfo() throws IOException {
         String fileName = "1/st.000004.buffer";
-        File file = new File( this.dbDir() + "/" + fileName );
+//        File file = new File( this.dbDir() + "/" + fileName );
+        File file = new File( "D:\\tgraph\\test\\energy\\st.000061.buffer" );
         if(!file.exists()){
             System.out.println("##### Warning: file not exist: "+ file.getAbsolutePath());
             return;

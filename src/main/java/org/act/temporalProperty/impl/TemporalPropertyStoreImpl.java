@@ -101,42 +101,42 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     }
 
     @Override
-public Slice getPointValue( long entityId, int proId, TimePointL time )
-{
-    InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
-    this.meta.lock.lockShared();
-    try
+    public Slice getPointValue( long entityId, int proId, TimePointL time )
     {
+        InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
+        this.meta.lock.lockShared();
         try
         {
-//            System.out.print("⑥");
-            return memTable.get( searchKey );
-        }
-        catch ( ValueUnknownException e )
-        {
-            if ( this.stableMemTable != null && meta.hasStableMemTable())
+            try
             {
-                try
+    //            System.out.print("⑥");
+                return memTable.get( searchKey );
+            }
+            catch ( ValueUnknownException e )
+            {
+                if ( this.stableMemTable != null && meta.hasStableMemTable())
                 {
-//                    System.out.print("⑦");
-                    return stableMemTable.get( searchKey );
+                    try
+                    {
+    //                    System.out.print("⑦");
+                        return stableMemTable.get( searchKey );
+                    }
+                    catch ( ValueUnknownException e1 )
+                    {
+                        return meta.getStore( proId ).getPointValue( searchKey );
+                    }
                 }
-                catch ( ValueUnknownException e1 )
+                else
                 {
                     return meta.getStore( proId ).getPointValue( searchKey );
                 }
             }
-            else
-            {
-                return meta.getStore( proId ).getPointValue( searchKey );
-            }
+        }
+        finally
+        {
+            this.meta.lock.unlockShared();
         }
     }
-    finally
-    {
-        this.meta.lock.unlockShared();
-    }
-}
 
 //    @Override
 //    public Slice getPointValue( long entityId, int proId, TimePointL time )

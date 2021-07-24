@@ -20,7 +20,7 @@ public class EPRangeQueryIterator implements SearchableIterator{
     private final MemTable[] memTables = new MemTable[]{null, null, null};
     private final List<Triple<String, SearchableIterator, SearchableIterator>> diskIterators = new ArrayList<>();
 
-    public static final Map<SearchableIterator, String> debugIterName = new HashMap<>();
+    public final Map<SearchableIterator, String> debugIterName = new HashMap<>();
 
     private SearchableIterator iterator;
 
@@ -113,7 +113,7 @@ public class EPRangeQueryIterator implements SearchableIterator{
             for(int i=0;i<level;i++) sb.append("|---");
             String name = debugIterName.get(root);
             sb.append(name)
-//                    .append('<').append(root.getClass().getSimpleName()).append('>')
+                    .append("_<").append(root.getClass().getSimpleName()).append('>')
                     .append('\n');
             if(root instanceof TwoLevelMergeIterator){
                 TwoLevelMergeIterator two = (TwoLevelMergeIterator) root;

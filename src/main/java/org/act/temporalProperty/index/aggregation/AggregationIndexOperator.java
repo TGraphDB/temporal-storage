@@ -554,7 +554,7 @@ public class AggregationIndexOperator
         @Override
         public void runTask() throws IOException
         {
-            System.out.println("CreateMinMaxIndexTask.runTask: "+System.currentTimeMillis());
+//            System.out.println("CreateMinMaxIndexTask.runTask: "+System.currentTimeMillis());
             // 获得构造索引文件需要的, 用于读取存储数据的iterator
             List<Triple<Boolean,FileMetaData,SearchableIterator>> raw = tpStore.buildIndexIterator( meta.getTimeStart(), meta.getTimeEnd(), meta.getPropertyIdList() );
             // 根据时间分块和value分区, 计算得出索引文件的Entry(最大最小值)
@@ -593,7 +593,7 @@ public class AggregationIndexOperator
                         subTimeGroup.subSet(dataFileMeta.getSmallest(), true, dataFileMeta.getLargest(), true) );
                 meta.addFile( fileMeta );
             }
-            System.out.println("CreateMinMaxIndexTask.runTask: "+System.currentTimeMillis());
+//            System.out.println("CreateMinMaxIndexTask.runTask: "+System.currentTimeMillis());
         }
 
         @Override
