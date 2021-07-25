@@ -351,7 +351,7 @@ public class MergeProcess extends Thread
             if(createStableFile()) {
                 long fileId = pMeta.nextStableId();
                 targetFileName = Filename.stableFileName( fileId );
-                indexUpdater = index.onCreateStableFile( pMeta.getPropertyId() );
+                indexUpdater = index.onMergeUpdate( pMeta.getPropertyId(), mergedMemTableAndBuffer(), Collections.emptyList() );
             }else if(!onlyDumpMemTable()){
                 long fileId = mergeParticipants.size();
                 targetFileName = Filename.unStableFileName( fileId );

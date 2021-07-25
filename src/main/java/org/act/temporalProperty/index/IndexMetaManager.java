@@ -93,8 +93,7 @@ public class IndexMetaManager
     {
         List<IndexMetaData> result = new ArrayList<>();
         for(IndexMetaData meta : byId.values()){
-            if(     meta.getType().isValueIndex() &&
-                    new HashSet<>(meta.getPropertyIdList()).contains(propertyId)) {
+            if( new HashSet<>(meta.getPropertyIdList()).contains(propertyId)) {
                 result.add(meta);
             }
         }

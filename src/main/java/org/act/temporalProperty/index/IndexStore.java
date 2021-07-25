@@ -15,8 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 
-import static org.act.temporalProperty.index.IndexType.AGGR_DURATION;
-import static org.act.temporalProperty.index.IndexType.SINGLE_VALUE;
+import static org.act.temporalProperty.index.IndexType.*;
 import static org.act.temporalProperty.index.IndexUpdater.*;
 
 /**
@@ -187,20 +186,17 @@ public class IndexStore {
             }
             else
             {
-                if ( i.getByCorFileId( propertyId, true ) != null )
+                if ( i.getType() == SINGLE_VALUE )
                 {
-                    if ( i.getType() == SINGLE_VALUE )
-                    {
-                        indexUpdater.add( new SinglePropertyValueIndexFileUpdater(meta, indexDir, i, mergeParticipants, true ) );
-                    }
-                    else if ( i.getType() == AGGR_DURATION )
-                    {
-                        indexUpdater.add( new DurationMergeUpgradeUpdater( meta, indexDir, i, mergeParticipants, true ) );
-                    }
-                    else
-                    {
-                        indexUpdater.add( new MinMaxFileUpgradeUpdater( meta, indexDir, i, mergeParticipants, true ) );
-                    }
+                    indexUpdater.add( new SinglePropertyValueIndexFileUpdater(meta, indexDir, i, mergeParticipants, true ) );
+                }
+                else if ( i.getType() == AGGR_DURATION )
+                {
+                    indexUpdater.add( new DurationMergeUpgradeUpdater( meta, indexDir, i, mergeParticipants, true ) );
+                }
+                else
+                {
+                    indexUpdater.add( new MinMaxFileUpgradeUpdater( meta, indexDir, i, mergeParticipants, true ) );
                 }
             }
         }
