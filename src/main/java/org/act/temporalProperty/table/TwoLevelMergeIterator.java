@@ -25,6 +25,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
         this.old = DebugIterator.wrap(old);
     }
 
+    //要解决3个问题：1前后问题，2遮罩减除old问题（相同id），3unknown问题（相同id），4某个runout的问题
     @Override
     protected InternalEntry computeNext() { //  注意：不同id没有遮罩问题！
         if (latest.hasNext() && old.hasNext()){
@@ -47,7 +48,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
                 } else {
                     oldCurrent = disk;
                     latest.next();//==mem
-                    old.next();
+                    delOld(memKey.getId());
                     return mem;
                 }
             }else{ // oldCurrent < mem < disk，若id相同则存在遮罩问题
