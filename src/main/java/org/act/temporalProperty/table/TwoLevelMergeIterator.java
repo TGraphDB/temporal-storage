@@ -26,7 +26,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
     }
 
     @Override
-    protected InternalEntry computeNext() {
+    protected InternalEntry computeNext() { //  注意：不同id没有遮罩问题！
         if (latest.hasNext() && old.hasNext()){
             InternalEntry mem = latest.peek();
             InternalEntry disk = old.peek();
@@ -34,11 +34,11 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
             InternalKey diskKey = disk.getKey();
 
             int r = diskKey.compareTo(memKey);
-            if(r<0){
+            if(r<0){ // disk < mem，无论id是否相同，均不存在遮罩问题，直接返回disk
                 oldCurrent = disk;
                 old.next();
                 return disk;
-            }else if(r==0){ // disk==mem
+            }else if(r==0){ // disk==mem，说明id必然相同
                 if(memKey.getValueType()==ValueType.UNKNOWN ){
                     oldCurrent = disk;
                     latest.next();
@@ -50,7 +50,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
                     old.next();
                     return mem;
                 }
-            }else{ // disk > mem > oldCurrent.getKey()
+            }else{ // oldCurrent < mem < disk，若id相同则存在遮罩问题
                 if(memKey.getValueType()==ValueType.UNKNOWN ){
                     //无需delOld因为这个是unknown所以old里是需要被返回的，所以disk也不用next
                     if(oldCurrent!=null && oldCurrent.getKey().getId().equals(memKey.getId())){
@@ -63,8 +63,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
                         latest.next();//==mem
                         return mem;
                     }
-                } else {
-                    oldCurrent = disk;
+                } else { // 返回latest且要删掉其所遮罩的相同id的old项
                     latest.next();//必须先调latest的next再delOld
                     delOld(memKey.getId());
                     return mem;
@@ -83,7 +82,7 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
                     oldCurrent = null;
                     return latest.next();//==mem
                 }
-            } else {//oldCurrent不用管了，也不需要delOld因为old Run out了
+            } else {//oldCurrent保持原状，也不需要delOld因为old Run out了
                 return latest.next();//==mem
             }
         } else if (old.hasNext()){ // memIter run out
@@ -93,7 +92,8 @@ public class TwoLevelMergeIterator extends AbstractSearchableIterator
         }
     }
 
-    //从old中移除项，直到相同ID的项
+    //从old中移除相同ID的项，直到old>=latest，同时更新oldCurrent.
+    //若latest无后续项，则将old中所有id与参数相同的项移除。
     private void delOld(EntityPropertyId id) {
         if(latest.hasNext()){
             InternalKey until = latest.peek().getKey();
