@@ -238,11 +238,15 @@ public class TemporalValue<V>
         public AddIntervalIterator( TimePointL start, TimePointL end )
         {
             this.end = end;
-            this.iterator = Iterators.peekingIterator( map.subMap( start, end ).entrySet().iterator() );
+            this.iterator = Iterators.peekingIterator( map.subMap( start, true, end, true ).entrySet().iterator() );
             Entry<TimePointL, ValWithFlag> floorEntry = map.floorEntry( start );
             if ( floorEntry!=null && !floorEntry.getValue().isUnknown && floorEntry.getKey().compareTo( start ) < 0 )
             {
-                this.start = new TimeIntervalValueEntry( new TimeInterval( start, floorEntry.getKey().pre() ), floorEntry.getValue().value );
+                if(this.iterator.hasNext() && iterator.peek().getKey().compareTo(end)<=0){
+                    this.start = new TimeIntervalValueEntry( new TimeInterval( start, iterator.peek().getKey().pre() ), floorEntry.getValue().value );
+                }else{
+                    this.start = new TimeIntervalValueEntry( new TimeInterval( start, end ), floorEntry.getValue().value );
+                }
             }
         }
 
