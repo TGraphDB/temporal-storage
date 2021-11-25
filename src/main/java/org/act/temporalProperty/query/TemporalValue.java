@@ -262,8 +262,9 @@ public class TemporalValue<V>
 
             while ( iterator.hasNext() )
             {
-                if ( !isUnknown( iterator.peek() ) )
-                {
+                if ( isUnknown( iterator.peek() ) ){
+                    iterator.next();
+                } else {
                     Entry<TimePointL, ValWithFlag> start = iterator.next();
                     if ( iterator.hasNext() )
                     {
