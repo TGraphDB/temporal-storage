@@ -7,6 +7,7 @@ import com.alibaba.fastjson.parser.DefaultJSONParser;
 import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
+import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
@@ -27,9 +28,11 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  * because when store, we use first 3 bit to represent value type (8 types), check InternalKey.encode for details
  * thus negative number can not be stored.
  */
-@JSONType(serializer = TimePointL.TPLEnDecoder.class, deserializer = TimePointL.TPLEnDecoder.class)
 public class TimePointL implements TPoint<TimePointL>
 {
+    static{
+        SerializeConfig.getGlobalInstance().put(TimePointL.class, new TPLEnDecoder());
+    }
     @JSONField(serialize=false)
     public static final long INIT_VAL = -1L;
     @JSONField(serialize=false)
