@@ -31,10 +31,6 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  */
 public class TimePointL implements TPoint<TimePointL>
 {
-    static{
-        SerializeConfig.getGlobalInstance().put(TimePointL.class, new TPLEnDecoder());
-        ParserConfig.getGlobalInstance().putDeserializer(TimePointL.class, new TPLEnDecoder());
-    }
     @JSONField(serialize=false)
     public static final long INIT_VAL = -1L;
     @JSONField(serialize=false)
@@ -162,30 +158,34 @@ public class TimePointL implements TPoint<TimePointL>
         out.writeLong(time);
     }
 
-    public static class TPLEnDecoder implements ObjectDeserializer, ObjectSerializer {
-        @Override
-        public TimePointL deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
-            if(type==String.class){
-                String valStr = parser.parseObject(String.class);
-                if(valStr.equalsIgnoreCase("init")) return TimePointL.Init;
-                else if(valStr.equalsIgnoreCase("now")) return TimePointL.Now;
-                else throw new IllegalStateException("expect init or now, but got "+valStr);
-            }else {
-                return new TimePointL(parser.parseObject(Long.class));
-            }
-        }
-        @Override
-        public int getFastMatchToken() {
-            return 0;
-        }
-        @Override
-        public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
-            if(object instanceof TimePointL){
-                TimePointL v = (TimePointL) object;
-                if(v.isInit()) serializer.write("Init");
-                else if(v.isNow()) serializer.write("Now");
-                else serializer.write(v.time);
-            }
-        }
-    }
+//// unable to use because cannot en/decode subclass without SerializerFeature.WriteClassName
+//// because Init has type: org.act.temporalProperty.query.TimePointL$2
+//    static{
+//        SerializeConfig.getGlobalInstance().put(TimePointL.class, new TPLEnDecoder());
+//        ParserConfig.getGlobalInstance().putDeserializer(TimePointL.class, new TPLEnDecoder());
+//    }
+//    public static class TPLEnDecoder implements ObjectDeserializer, ObjectSerializer {
+//        @Override
+//        public TimePointL deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
+//            assert type==TimePointL.class;
+//            String valStr = parser.parseObject(String.class);
+//            if(valStr.equalsIgnoreCase("init")) return TimePointL.Init;
+//            else if(valStr.equalsIgnoreCase("now")) return TimePointL.Now;
+//            else //throw new IllegalStateException("expect init or now, but got "+valStr);
+//            return new TimePointL(parser.parseObject(Long.class));
+//        }
+//        @Override
+//        public int getFastMatchToken() {
+//            return 0;
+//        }
+//        @Override
+//        public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
+//            if(object instanceof TimePointL){
+//                TimePointL v = (TimePointL) object;
+//                if(v.isInit()) serializer.write("Init");
+//                else if(v.isNow()) serializer.write("Now");
+//                else serializer.write(v.time);
+//            }
+//        }
+//    }
 }

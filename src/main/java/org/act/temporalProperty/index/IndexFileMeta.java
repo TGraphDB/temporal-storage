@@ -1,6 +1,8 @@
 package org.act.temporalProperty.index;
 
 import org.act.temporalProperty.query.TimePointL;
+import org.act.temporalProperty.util.SliceInput;
+import org.act.temporalProperty.util.SliceOutput;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,5 +111,34 @@ public class IndexFileMeta
 
     public void setTimeGroup(Collection<TimePointL> timeGroup) {
         this.timeGroup = new TreeSet<>(timeGroup);
+    }
+
+    public IndexFileMeta(SliceInput in){
+        this.indexId = in.readLong();
+        this.fileId = in.readLong();
+        this.fileSize = in.readLong();
+        this.startTime = TimePointL.decode(in);
+        this.endTime = TimePointL.decode(in);
+        this.corFileId = in.readLong();
+        this.corIsStable = in.readBoolean();
+        this.timeGroup = new TreeSet<>();
+        int cnt = in.readInt();
+        for(int i=0; i<cnt; i++){
+            timeGroup.add(TimePointL.decode(in));
+        }
+    }
+
+    public void encode(SliceOutput out){
+        out.writeLong(indexId);
+        out.writeLong(fileId);
+        out.writeLong(fileSize);
+        startTime.encode(out);
+        endTime.encode(out);
+        out.writeLong(corFileId);
+        out.writeBoolean(corIsStable);
+        out.writeInt(timeGroup.size());
+        for(TimePointL t : timeGroup){
+            t.encode(out);
+        }
     }
 }

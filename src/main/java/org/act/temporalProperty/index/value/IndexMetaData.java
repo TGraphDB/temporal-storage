@@ -1,6 +1,7 @@
 package org.act.temporalProperty.index.value;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.index.IndexFileMeta;
@@ -111,9 +112,10 @@ public class IndexMetaData {
         for(IndexValueType type : this.getValueTypes()){
             out.writeInt(type.getId());
         }
-        String s = JSON.toJSONString(fileByTime.values());
-        out.writeInt(s.length());
-        out.writeBytes(s.getBytes());
+        out.writeInt(fileByTime.size());
+        for(IndexFileMeta meta : fileByTime.values()){
+            meta.encode(out);
+        }
     }
 
     @Override
@@ -156,8 +158,10 @@ public class IndexMetaData {
         this.propertyIdList = pidList;
         this.valueTypes = valueTypes;
         count = in.readInt();
-        List<IndexFileMeta> fList = JSON.parseArray(new String(in.readByteArray(count)), IndexFileMeta.class);
-        fList.forEach(this::addFile);
+        for(int i=0; i<count; i++) {
+            IndexFileMeta fMeta = new IndexFileMeta(in);
+            this.addFile(fMeta);
+        }
     }
 
     public static IndexMetaData decode(SliceInput in){
