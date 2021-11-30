@@ -179,7 +179,7 @@ public class TimePointL implements TPoint<TimePointL>
                 TimePointL v = (TimePointL) object;
                 if(v.isInit()) serializer.write("Init");
                 else if(v.isNow()) serializer.write("Now");
-                else serializer.write(v);
+                else serializer.write(v.time);
             }
         }
     }
