@@ -2,12 +2,19 @@ package org.act.temporalProperty.query;
 
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.alibaba.fastjson.annotation.JSONType;
+import com.alibaba.fastjson.parser.DefaultJSONParser;
+import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
+import com.alibaba.fastjson.serializer.JSONSerializer;
+import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.google.common.base.Preconditions;
 import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 import org.act.temporalProperty.util.Slices;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Objects;
 
 import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
@@ -20,6 +27,7 @@ import static org.act.temporalProperty.util.SizeOf.SIZE_OF_LONG;
  * because when store, we use first 3 bit to represent value type (8 types), check InternalKey.encode for details
  * thus negative number can not be stored.
  */
+@JSONType(serializer = TimePointL.TPLEnDecoder.class, deserializer = TimePointL.TPLEnDecoder.class)
 public class TimePointL implements TPoint<TimePointL>
 {
     @JSONField(serialize=false)
@@ -147,5 +155,32 @@ public class TimePointL implements TPoint<TimePointL>
 
     public void encode(SliceOutput out) {
         out.writeLong(time);
+    }
+
+    public static class TPLEnDecoder implements ObjectDeserializer, ObjectSerializer {
+        @Override
+        public TimePointL deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
+            if(type==String.class){
+                String valStr = parser.parseObject(String.class);
+                if(valStr.equalsIgnoreCase("init")) return TimePointL.Init;
+                else if(valStr.equalsIgnoreCase("now")) return TimePointL.Now;
+                else throw new IllegalStateException("expect init or now, but got "+valStr);
+            }else {
+                return new TimePointL(parser.parseObject(Long.class));
+            }
+        }
+        @Override
+        public int getFastMatchToken() {
+            return 0;
+        }
+        @Override
+        public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
+            if(object instanceof TimePointL){
+                TimePointL v = (TimePointL) object;
+                if(v.isInit()) serializer.write("Init");
+                else if(v.isNow()) serializer.write("Now");
+                else serializer.write(v);
+            }
+        }
     }
 }
