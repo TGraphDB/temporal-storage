@@ -4,6 +4,7 @@ package org.act.temporalProperty.query;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.alibaba.fastjson.annotation.JSONType;
 import com.alibaba.fastjson.parser.DefaultJSONParser;
+import com.alibaba.fastjson.parser.ParserConfig;
 import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
@@ -32,6 +33,7 @@ public class TimePointL implements TPoint<TimePointL>
 {
     static{
         SerializeConfig.getGlobalInstance().put(TimePointL.class, new TPLEnDecoder());
+        ParserConfig.getGlobalInstance().putDeserializer(TimePointL.class, new TPLEnDecoder());
     }
     @JSONField(serialize=false)
     public static final long INIT_VAL = -1L;
