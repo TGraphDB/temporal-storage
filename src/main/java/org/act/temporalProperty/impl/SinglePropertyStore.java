@@ -314,7 +314,7 @@ public class SinglePropertyStore
             }
             DebugIterator.checkIntervalE(key, "insert to un."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
-            if(buffer.size()>1024*1024*10) {
+            if(buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
                 unBufferToFile( meta, buffer );
             }
         }
@@ -339,7 +339,7 @@ public class SinglePropertyStore
             }
             DebugIterator.checkIntervalE(key, "insert to st."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
-            if(buffer.size()>1024*1024*10) {
+            if(buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
                 stBufferToFile( meta, buffer );
             }
         }

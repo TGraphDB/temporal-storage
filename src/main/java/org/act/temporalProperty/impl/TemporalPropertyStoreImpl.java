@@ -57,6 +57,16 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     private boolean forbiddenWrite = false;
     private FileReader lockFile; // keeps opened while system is running to prevent delete of the storage dir;
 
+    public static final boolean debug = System.getenv().containsKey("TP_DEBUG");
+    public static final long MEMTABLE_SIZE = getEnvLong("CONFIG_MEMTABLE_SIZE", 4);
+    public static final long FBUFFER_SIZE = getEnvLong("CONFIG_FBUFFER_SIZE", 10);
+
+    private static long getEnvLong(String key, int defaultVal) {
+        String mSize = System.getenv(key);
+        if(mSize!=null && Long.parseLong(mSize)>=defaultVal) return Long.parseLong(mSize);
+        else return defaultVal;
+    }
+
     /**
      * @param dbDir 存储动态属性数据的目录地址
      */
@@ -250,14 +260,14 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
 
             InternalKey searchKey = new InternalKey( id, start );
             rangeIter.seekFloor( searchKey );
-//            System.out.println(rangeIter.iteratorTree());
+            if(debug) System.out.println(rangeIter.iteratorTree());
             SearchableIterator i = new EqualValFilterIterator(rangeIter);
 
             InternalEntry lastEntry = null;
             while ( i.hasNext() )
             {
                 InternalEntry entry = i.next();
-//                System.out.println(entry+" "+rangeIter.path(entry));
+                if(debug) System.out.println(entry+" "+rangeIter.path(entry));
                 InternalKey key = entry.getKey();
 //                System.out.println(entry);
                 TimePointL time = key.getStartTime();
@@ -349,7 +359,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             }
 
             this.memTable.addInterval( key, value );
-            if ( this.memTable.approximateMemUsage() >= 4 * 1024 * 1024 )
+            if ( this.memTable.approximateMemUsage() >= MEMTABLE_SIZE * 1024 * 1024 )
             {
                 forbiddenWrite = true;
 //                System.out.println("commit memTable");
