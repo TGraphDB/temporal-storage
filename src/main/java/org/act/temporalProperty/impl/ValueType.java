@@ -116,4 +116,13 @@ public enum ValueType
     {
         return getValueTypeByPersistentId( valueContentType.getId() + 2 );
     }
+
+    public static ValueType fromValue(Object obj){
+        if(obj instanceof Integer) return INT;
+        if(obj instanceof Float) return FLOAT;
+        if(obj instanceof Double) return DOUBLE;
+        if(obj instanceof Long) return LONG;
+        if(obj instanceof String) return STRING;
+        else return UNKNOWN;
+    }
 }

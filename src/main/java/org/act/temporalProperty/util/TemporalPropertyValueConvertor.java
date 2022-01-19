@@ -32,36 +32,13 @@ public class TemporalPropertyValueConvertor
     public static Slice toSlice( Object value )
     {
         SliceOutput o = new DynamicSliceOutput( 8 );
-        switch (value.getClass().getSimpleName()) {
-        case INT_NAME:
-            o.writeInt( (Integer) value );
-            return o.slice();
-        case DOUBLE_NAME:
-            o.writeDouble( (Double) value );
-            return o.slice();
-        case FLOAT_NAME:
-            o.writeFloat( (Float) value );
-            return o.slice();
-        case LONG_NAME:
-            o.writeLong( (Long) value );
-            return o.slice();
-        case STRING_NAME:
-            o.writeBytes( ((String) value).getBytes() );
-            return o.slice();
-        case BYTE_NAME:
-        case CHAR_NAME:
-        case INT_ARRAY_NAME:
-        case CHAR_ARRAY_NAME:
-        case DOUBLE_ARRAY_NAME:
-        case FLOAT_ARRAY_NAME:
-        case LONG_ARRAY_NAME:
-        case BYTE_ARRAY_NAME:
-        case STRING_ARRAY_NAME:
-        case SHORT_NAME:
-        case SHORT_ARRAY_NAME:
-        default:
-            throw new UnsupportedOperationException("Unsupported value type");
-        }
+        if(value instanceof Integer) o.writeInt( (Integer) value );
+        else if(value instanceof Double) o.writeDouble( (Double) value );
+        else if(value instanceof Float) o.writeFloat( (Float) value );
+        else if(value instanceof Long) o.writeLong( (Long) value );
+        else if(value instanceof String) o.writeBytes( ((String) value).getBytes() );
+        else throw new UnsupportedOperationException("Unsupported value type");
+        return o.slice();
     }
 
     public static Object fromSlice(String className, Slice value)
@@ -131,9 +108,9 @@ public class TemporalPropertyValueConvertor
         case BYTE_NAME:
         case CHAR_NAME:
         case INT_ARRAY_NAME:
+        case FLOAT_ARRAY_NAME:
         case CHAR_ARRAY_NAME:
         case DOUBLE_ARRAY_NAME:
-        case FLOAT_ARRAY_NAME:
         case LONG_ARRAY_NAME:
         case BYTE_ARRAY_NAME:
         case STRING_ARRAY_NAME:
