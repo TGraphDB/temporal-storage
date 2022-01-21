@@ -366,8 +366,8 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             {
                 forbiddenWrite = true;
                 System.out.println("commit memTable "+memTable.approximateMemUsage());
-                this.mergeProcess.add( this.memTable ); // may await at current line.
-//                System.out.println("commit memTable done");
+                this.mergeProcess.add( this.memTable ); // may await at current line. release wrt lock to allow read op.
+                System.out.println("commit memTable done, allow write");
                 this.stableMemTable = this.memTable;
                 this.memTable = new MemTable();
                 meta.setStableMemTable(true);
