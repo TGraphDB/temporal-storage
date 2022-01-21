@@ -71,4 +71,9 @@ public class TimeInterval extends TInterval<TimePointL>
         return "TimeInterval[" + start() + ", " + end() + ']';
     }
 
+    @Override
+    public int byteCount() {
+        return 24;
+    }
+
 }

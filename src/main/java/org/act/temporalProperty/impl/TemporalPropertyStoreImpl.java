@@ -57,13 +57,16 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     private boolean forbiddenWrite = false;
     private FileReader lockFile; // keeps opened while system is running to prevent delete of the storage dir;
 
-    public static final boolean debug = System.getenv().containsKey("TP_DEBUG");
+    public static final boolean debug = System.getenv().containsKey("CONFIG_TP_DEBUG");
     public static final long MEMTABLE_SIZE = getEnvLong("CONFIG_MEMTABLE_SIZE", 4);
     public static final long FBUFFER_SIZE = getEnvLong("CONFIG_FBUFFER_SIZE", 10);
 
     private static long getEnvLong(String key, int defaultVal) {
         String mSize = System.getenv(key);
-        if(mSize!=null && Long.parseLong(mSize)>=defaultVal) return Long.parseLong(mSize);
+        if(mSize!=null && Long.parseLong(mSize)>=defaultVal) {
+            System.out.println(key+" set to "+ Long.parseLong(mSize));
+            return Long.parseLong(mSize);
+        }
         else return defaultVal;
     }
 
@@ -362,7 +365,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
             if ( this.memTable.approximateMemUsage() >= MEMTABLE_SIZE * 1024 * 1024 )
             {
                 forbiddenWrite = true;
-//                System.out.println("commit memTable");
+                System.out.println("commit memTable "+memTable.approximateMemUsage());
                 this.mergeProcess.add( this.memTable ); // may await at current line.
 //                System.out.println("commit memTable done");
                 this.stableMemTable = this.memTable;

@@ -67,7 +67,7 @@ public class MemTable
     {
 //        System.out.println(interval);
         table.computeIfAbsent( id, ( i ) -> new TemporalValue<>() ).put( interval, value );
-        approximateMemoryUsage += (12 + 8 + value.val.length());
+        approximateMemoryUsage += (id.byteCount() + 16 + value.val.length());
     }
 
     public Slice get( InternalKey key ) throws ValueUnknownException

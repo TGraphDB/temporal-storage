@@ -66,4 +66,8 @@ public class EntityPropertyId implements Comparable<EntityPropertyId>, Serializa
         long entityId = in.readLong();
         return new EntityPropertyId(entityId, propId);
     }
+
+    public int byteCount() {
+        return 16;
+    }
 }

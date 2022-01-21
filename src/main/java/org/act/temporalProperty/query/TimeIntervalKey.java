@@ -103,6 +103,11 @@ public class TimeIntervalKey extends TimeInterval
         return this.between( new TimePointL( min ), new TimePointL( maxTime ) );
     }
 
+    @Override
+    public int byteCount() {
+        return id.byteCount()+8+8+4;
+    }
+
     public void encode(SliceOutput out) {
         id.encode(out);
         start().encode(out);

@@ -91,4 +91,5 @@ public abstract class TInterval<TIME_POINT extends TPoint<TIME_POINT>>
         return "TimeInterval{start=" + from + ", end=" + to + '}';
     }
 
+    public abstract int byteCount();
 }
