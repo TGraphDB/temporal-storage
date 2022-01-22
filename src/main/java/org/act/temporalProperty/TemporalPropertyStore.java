@@ -166,6 +166,6 @@ public interface TemporalPropertyStore
 
     void flushMetaInfo2Disk();
 
-    void shutDown() throws Throwable;
+    void shutDown() throws Exception;
 
 }
