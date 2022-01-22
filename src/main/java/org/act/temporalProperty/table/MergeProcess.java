@@ -174,7 +174,7 @@ public class MergeProcess extends Thread
             systemMeta.force( new File( storeDir ) );
             memTable = null;
             systemMeta.lock.mergeDone();
-//            System.out.println("---------------"+debugInfo);
+
         }
         finally
         {
@@ -242,7 +242,7 @@ public class MergeProcess extends Thread
         private TableBuilder mergeInit(String targetFileName) throws IOException
         {
             boolean success;
-            if(propStoreDir.getName().equals("1")) debugInfo = "[merge "+mergeParticipants+" to: "+targetFileName+"]";
+            debugInfo = "[merge "+mergeParticipants+" to: "+targetFileName+"]";
             File targetFile = new File( propStoreDir, targetFileName );
 //            Files.deleteIfExists(targetFile.toPath());
             if( targetFile.exists() ) {
@@ -363,6 +363,7 @@ public class MergeProcess extends Thread
             }
 
             TableBuilder builder = this.mergeInit(targetFileName);
+            System.out.println("---------------"+debugInfo);
             SearchableIterator buildIterator = getDataIterator();
             while( buildIterator.hasNext() ){
                 InternalEntry entry = buildIterator.next();
@@ -380,6 +381,7 @@ public class MergeProcess extends Thread
                 entryCount++;
             }
             builder.finish();
+            System.out.println("---------------Merge done.");
             this.targetMeta = generateNewFileMeta();
             indexUpdater.finish( targetMeta );
         }
