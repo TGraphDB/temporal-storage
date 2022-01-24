@@ -38,6 +38,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 
+import static org.act.temporalProperty.impl.TemporalPropertyStoreImpl.BULK_MODE;
+
 /**
  * 文件合并过程
  *
@@ -60,11 +62,12 @@ public class MergeProcess extends Thread
 
     // this is called from a writer thread.
     // the caller should get write lock first.
-    public void add(MemTable memTable) throws InterruptedException{
+    public void add(MemTable memTable) throws Exception {
         while(this.memTable!=null){
             systemMeta.lock.waitMergeDone();
         }
         this.memTable = memTable;
+        if(BULK_MODE) startMergeProcess(memTable);
     }
 
     private String getMyName(){
@@ -242,8 +245,8 @@ public class MergeProcess extends Thread
         private TableBuilder mergeInit(String targetFileName) throws IOException
         {
             boolean success;
-            debugInfo = "[merge "+mergeParticipants+" to: "+targetFileName+"]";
             File targetFile = new File( propStoreDir, targetFileName );
+            debugInfo = "[merge "+mergeParticipants+" to: "+targetFile.getAbsolutePath()+"]";
 //            Files.deleteIfExists(targetFile.toPath());
             if( targetFile.exists() ) {
                 success = targetFile.delete();

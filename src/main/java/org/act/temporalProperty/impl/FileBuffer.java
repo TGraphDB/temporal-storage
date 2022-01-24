@@ -52,7 +52,7 @@ public class FileBuffer implements Closeable
         if(discTable==null || memTable==null ){
             throw new IOException("should init first!");
         }
-        discTable.add( key, value );
+        if(!TemporalPropertyStoreImpl.BULK_MODE) discTable.add( key, value );
         this.memTable.addInterval( key, value );
     }
 

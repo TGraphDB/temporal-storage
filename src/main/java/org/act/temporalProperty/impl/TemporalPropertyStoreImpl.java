@@ -38,8 +38,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * TemporalPropertyStore的实现类
@@ -60,6 +62,16 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     public static final boolean debug = System.getenv().containsKey("CONFIG_TP_DEBUG");
     public static final long MEMTABLE_SIZE = getEnvLong("CONFIG_MEMTABLE_SIZE", 4);
     public static final long FBUFFER_SIZE = getEnvLong("CONFIG_FBUFFER_SIZE", 10);
+    /**
+     * if BULK_MODE is true, then:
+     * 1. Memtable merge in writer thread (not background thread)
+     * 2. FileBuffers are merged to their corresponding table file right after Memtable merge.
+     * 3. FileBuffers will not write to disk.
+     * 4. Should call shutdown as well after data import.
+     * 5. Should usually set a larger MEMTABLE_SIZE according to data.
+     * Switch to normal mode need close and restart.
+     */
+    public static boolean BULK_MODE;
 
     private static long getEnvLong(String key, int defaultVal) {
         String mSize = System.getenv(key);
@@ -82,7 +94,13 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
         this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
-        this.mergeProcess.start();
+        if(!BULK_MODE) this.mergeProcess.start();
+    }
+
+    public TemporalPropertyStoreImpl( File dbDir, boolean bulkMode ) throws Throwable
+    {
+        this(dbDir);
+        BULK_MODE = true;
     }
 
     /**
@@ -151,93 +169,11 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         }
     }
 
-//    @Override
-//    public Slice getPointValue( long entityId, int proId, TimePointL time )
-//    {
-//        this.meta.lock.lockShared();
-//        try {
-//            final Slice[] result = {null};
-//            getRangeValue(entityId, proId, time, TimePointL.Now, new InternalEntryRangeQueryCallBack() {
-//                public Object onReturn() { return null; }
-//                public void setValueType(String valueType) {}
-//                public boolean onNewEntry(InternalEntry entry) {
-//                    result[0] = entry.getValue();
-//                    return false;
-//                }
-//            });
-//            return result[0];
-//        } finally {
-//            this.meta.lock.unlockShared();
-//        }
-//    }
-
     @Override
     public Object getRangeValue(long id, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback )
     {
         return getRangeValue( id, proId, startTime, endTime, callback, null );
     }
-
-//    public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
-//    {
-//        Preconditions.checkArgument( start.compareTo(end) <= 0 );
-//        Preconditions.checkArgument( entityId >= 0 && proId >= 0 );
-//        Preconditions.checkArgument( callback != null );
-//        meta.lock.lockShared();
-//        try
-//        {
-//            PropertyMetaData pMeta = meta.getProperties().get( proId );
-//            callback.setValueType( pMeta.getType().name() );
-//
-//            EntityPropertyId id = new EntityPropertyId(entityId, proId);
-//            SearchableIterator memIter = new EPEntryIterator( id, memTable.iterator() );
-//            if ( this.stableMemTable != null )
-//            {
-//                memIter = new EPMergeIterator( id, stableMemTable.iterator(), memIter );
-//            }
-//            SearchableIterator diskIter = meta.getStore( proId ).getRangeValueIter( id, start, end );
-//            SearchableIterator mergedIterator = new EPMergeIterator( id, diskIter, memIter );
-//
-//            if(cache!=null)
-//            {
-//                mergedIterator = new EPMergeIterator( id, mergedIterator, cache.iterator() );
-//            }
-//
-//            mergedIterator = new UnknownToInvalidIterator( mergedIterator );
-//
-//            InternalKey searchKey = new InternalKey( id, start );
-//            mergedIterator.seekFloor( searchKey );
-//            boolean firstLoop = true;
-//            while ( mergedIterator.hasNext() )
-//            {
-//                InternalEntry entry = mergedIterator.next();
-//                InternalKey key = entry.getKey();
-//                TimePointL time = key.getStartTime();
-//                if ( firstLoop )
-//                {
-//                    firstLoop = false;
-//                    if ( time.compareTo(start) < 0 ) {
-//                        callback.onNewEntry( new InternalEntry( new InternalKey( key.getId(), start, key.getValueType() ), entry.getValue() ) );
-//                    } else if(time.compareTo(end) > 0){
-//                        break;
-//                    }else {
-//                        callback.onNewEntry( entry );
-//                    }
-//                } else {
-//                    assert time.compareTo(start) > 0;
-//                    if ( time.compareTo(end) <= 0 ) {
-//                        callback.onNewEntry( entry );
-//                    } else {
-//                        break;
-//                    }
-//                }
-//            }
-//            return callback.onReturn();
-//        }
-//        finally
-//        {
-//            meta.lock.unlockShared();
-//        }
-//    }
 
     public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
     {
@@ -368,14 +304,15 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                 System.out.println("commit memTable "+memTable.approximateMemUsage());
                 this.mergeProcess.add( this.memTable ); // may await at current line. release wrt lock to allow read op.
                 System.out.println("commit memTable done, allow write");
-                this.stableMemTable = this.memTable;
+                if(BULK_MODE) this.mergeAllBuffers();
+                else this.stableMemTable = this.memTable;
                 this.memTable = new MemTable();
-                meta.setStableMemTable(true);
+                if(!BULK_MODE) meta.setStableMemTable(true);
                 forbiddenWrite = false;
             }
             meta.lock.memTableSubmitted();
         }
-        catch ( InterruptedException e )
+        catch ( Exception e )
         {
             e.printStackTrace();
             return false;
@@ -710,6 +647,29 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         {
             e.printStackTrace();
             throw new TPSRuntimeException( "meta flush to disk failed", e );
+        }
+    }
+
+    private void mergeAllBuffers() throws IOException
+    {
+        for ( PropertyMetaData p : this.meta.getProperties().values() )
+        {
+            TreeMap<Long, FileBuffer> bufMap = p.getUnstableBuffers();
+            TreeMap<Long, FileMetaData> tableMap = p.getUnStableFiles();
+            for ( Map.Entry<Long, FileMetaData> entry : tableMap.entrySet() )
+            {
+                FileMetaData fMeta = entry.getValue();
+                FileBuffer fBuf = bufMap.get(entry.getKey());
+                if(fBuf!=null) meta.getStore(p.getPropertyId()).unBufferToFile(fMeta, fBuf);
+            }
+            bufMap = p.getStableBuffers();
+            tableMap = p.getStableFiles();
+            for ( Map.Entry<Long, FileMetaData> entry : tableMap.entrySet() )
+            {
+                FileMetaData fMeta = entry.getValue();
+                FileBuffer fBuf = bufMap.get(entry.getKey());
+                if(fBuf!=null) meta.getStore(p.getPropertyId()).stBufferToFile(fMeta, fBuf);
+            }
         }
     }
 

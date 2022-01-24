@@ -34,6 +34,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 
+import static org.act.temporalProperty.impl.TemporalPropertyStoreImpl.BULK_MODE;
+
 /**
  * Created by song on 2018-03-14.
  */
@@ -314,7 +316,7 @@ public class SinglePropertyStore
             }
             DebugIterator.checkIntervalE(key, "insert to un."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
-            if(buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
+            if(!BULK_MODE && buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
                 unBufferToFile( meta, buffer );
             }
         }
@@ -339,13 +341,13 @@ public class SinglePropertyStore
             }
             DebugIterator.checkIntervalE(key, "insert to st."+meta.getNumber()+".buf");
             buffer.add( validKey, value );
-            if(buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
+            if(!BULK_MODE && buffer.size()>1024*1024*TemporalPropertyStoreImpl.FBUFFER_SIZE) {
                 stBufferToFile( meta, buffer );
             }
         }
     }
 
-    private void unBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
+    public void unBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
         IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), false, meta, buffer.getMemTable());
         String filePath = Filename.unPath(proDir, meta.getNumber());
         String bufferPath = Filename.unbufferFileName(meta.getNumber());
@@ -357,7 +359,7 @@ public class SinglePropertyStore
         if(!tempFile.renameTo(new File(filePath))) throw new IOException("rename failed!");
     }
 
-    private void stBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
+    public void stBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
         IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), true, meta, buffer.getMemTable());
         String filePath = Filename.stPath(proDir, meta.getNumber());
         String bufferFileName = Filename.stbufferFileName(meta.getNumber());
@@ -371,6 +373,7 @@ public class SinglePropertyStore
 
     private File buffer2file( String filePath, String bufferFileName, FileBuffer buffer, IndexUpdater indexUpdater ) throws IOException {
         File tempFile = new File(this.proDir, Filename.tempFileName(6));
+        System.out.println("buffer merge: "+filePath);
         Files.deleteIfExists(tempFile.toPath());
         Files.createFile(tempFile.toPath());
 
@@ -399,6 +402,7 @@ public class SinglePropertyStore
         Files.delete(originFile.toPath());
         buffer.close();
         Files.delete(new File(this.proDir, bufferFileName).toPath());
+        System.out.println("buffer merge done.");
         return tempFile;
     }
 

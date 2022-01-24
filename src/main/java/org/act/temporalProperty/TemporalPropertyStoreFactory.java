@@ -18,4 +18,8 @@ public class TemporalPropertyStoreFactory
     public static TemporalPropertyStore newPropertyStore(File dbDir ) throws Throwable {
         return new TemporalPropertyStoreImpl( dbDir );
     }
+
+	public static TemporalPropertyStore bulkPropertyStore(File dbDir ) throws Throwable {
+		return new TemporalPropertyStoreImpl( dbDir, true );
+	}
 }
