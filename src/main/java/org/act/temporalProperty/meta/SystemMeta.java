@@ -68,7 +68,7 @@ public class SystemMeta {
         SystemMetaController.forceToDisk(dir, this);
     }
 
-    public void initStore(File storeDir, TableCache cache, IndexMetaManager indexMetaManager, IndexStore indexStore) throws Throwable {
+    public void initStore(File storeDir, TableCache cache, IndexMetaManager indexMetaManager, IndexStore indexStore) throws Exception {
         this.dbDir = storeDir;
         this.indexMetas = indexMetaManager;
         for( PropertyMetaData pMeta : properties.values()){

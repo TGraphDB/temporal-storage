@@ -85,7 +85,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     /**
      * @param dbDir 存储动态属性数据的目录地址
      */
-    public TemporalPropertyStoreImpl( File dbDir ) throws Throwable
+    public TemporalPropertyStoreImpl( File dbDir ) throws Exception
     {
         this.dbDir = dbDir;
         this.init();
@@ -97,7 +97,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         if(!BULK_MODE) this.mergeProcess.start();
     }
 
-    public TemporalPropertyStoreImpl( File dbDir, boolean bulkMode ) throws Throwable
+    public TemporalPropertyStoreImpl( File dbDir, boolean bulkMode ) throws Exception
     {
         this(dbDir);
         BULK_MODE = true;
@@ -106,7 +106,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     /**
      * 系统启动时调用，主要作用是将上次系统关闭时写入磁盘的数据读入内存
      */
-    private void init() throws Throwable
+    private void init() throws Exception
     {
         StoreInitial starter = new StoreInitial( dbDir );
         lockFile = starter.init();

@@ -15,11 +15,11 @@ public class TemporalPropertyStoreFactory
 	 * @param dbDir 保存动态属性存储文件的目录
 	 * @return
 	 */
-    public static TemporalPropertyStore newPropertyStore(File dbDir ) throws Throwable {
+    public static TemporalPropertyStore newPropertyStore(File dbDir ) throws Exception {
         return new TemporalPropertyStoreImpl( dbDir );
     }
 
-	public static TemporalPropertyStore bulkPropertyStore(File dbDir ) throws Throwable {
+	public static TemporalPropertyStore bulkPropertyStore(File dbDir ) throws Exception {
 		return new TemporalPropertyStoreImpl( dbDir, true );
 	}
 }

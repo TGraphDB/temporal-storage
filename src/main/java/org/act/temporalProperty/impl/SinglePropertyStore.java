@@ -51,7 +51,7 @@ public class SinglePropertyStore
      * 实例化方法
      * @param dbDir 存储动态属性数据的目录地址
      */
-    public SinglePropertyStore(PropertyMetaData propertyMeta, File dbDir, TableCache cache, IndexStore indexStore ) throws Throwable{
+    public SinglePropertyStore(PropertyMetaData propertyMeta, File dbDir, TableCache cache, IndexStore indexStore ) throws Exception{
         this.propertyMeta = propertyMeta;
         this.index = indexStore;
         this.proDir = new File(dbDir, propertyMeta.getPropertyId().toString());
