@@ -11,6 +11,8 @@ import org.act.temporalProperty.util.Slice;
 import org.act.temporalProperty.util.SliceInput;
 import org.act.temporalProperty.util.SliceOutput;
 
+import static org.act.temporalProperty.impl.TemporalPropertyStoreImpl.BULK_MODE;
+
 /**
  * 是系统处理对StableFile或UnStableFile插入操作的机制，对应设计文档中的Buffer,包括了内存中的结果和对应的备份文件。每一个FileBuffer固定对应一个StableFile或UnStableFile。
  *
@@ -52,8 +54,8 @@ public class FileBuffer implements Closeable
         if(discTable==null || memTable==null ){
             throw new IOException("should init first!");
         }
-        if(!TemporalPropertyStoreImpl.BULK_MODE) discTable.add( key, value );
-        this.memTable.addInterval( key, value );
+        this.discTable.add( key, value );
+        if(!BULK_MODE) this.memTable.addInterval( key, value );
     }
 
     public void force() throws IOException{
@@ -66,6 +68,10 @@ public class FileBuffer implements Closeable
      */
     public SearchableIterator iterator()
     {
+        if(BULK_MODE) {
+            this.memTable = new MemTable();
+            this.discTable.bulkLoadFromFile(this.memTable);
+        }
         return this.memTable.iterator();
     }
 

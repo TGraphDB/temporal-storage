@@ -28,10 +28,16 @@ public class UnSortedTable implements Closeable
     public UnSortedTable( File tableFile, MemTable table ) throws IOException
     {
         this.file = tableFile;
-        try{this.initFromFile( table);}catch (RuntimeException e){
-            System.out.println("UnSortedTable.initFromFile: "+tableFile+" "+e.getMessage());
-        }
+        this.initFromFile( table);
         this.log = new FileChannelLogWriter(tableFile, true);
+    }
+
+    public void bulkLoadFromFile(MemTable table){ // used in bulk mode.
+        try {
+            this.initFromFile(table);
+        }catch (IOException e){
+            throw new IllegalStateException(e);
+        }
     }
 
     private void initFromFile( MemTable table ) throws IOException

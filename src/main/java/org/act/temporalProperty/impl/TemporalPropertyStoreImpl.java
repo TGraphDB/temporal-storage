@@ -119,6 +119,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
      */
     public void shutDown() throws IOException, InterruptedException
     {
+        if(BULK_MODE) this.mergeAllBuffers();
         this.meta.lock.shutdown();
         this.mergeProcess.shutdown();
         this.cache.close();
@@ -134,6 +135,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public Slice getPointValue( long entityId, int proId, TimePointL time )
     {
+        if(BULK_MODE) throw new UnsupportedOperationException();
         InternalKey searchKey = new InternalKey( new EntityPropertyId(entityId, proId), time );
         this.meta.lock.lockShared();
         try
@@ -172,11 +174,13 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     @Override
     public Object getRangeValue(long id, int proId, TimePointL startTime, TimePointL endTime, InternalEntryRangeQueryCallBack callback )
     {
+        if(BULK_MODE) throw new UnsupportedOperationException();
         return getRangeValue( id, proId, startTime, endTime, callback, null );
     }
 
     public Object getRangeValue(long entityId, int proId, TimePointL start, TimePointL end, InternalEntryRangeQueryCallBack callback, MemTable cache )
     {
+        if(BULK_MODE) throw new UnsupportedOperationException();
         Preconditions.checkArgument( start.compareTo(end) <= 0 );
         Preconditions.checkArgument( entityId >= 0 && proId >= 0 );
         Preconditions.checkArgument( callback != null );
@@ -304,8 +308,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
                 System.out.println("commit memTable "+memTable.approximateMemUsage());
                 this.mergeProcess.add( this.memTable ); // may await at current line. release wrt lock to allow read op.
                 System.out.println("commit memTable done, allow write");
-                if(BULK_MODE) this.mergeAllBuffers();
-                else this.stableMemTable = this.memTable;
+                if(!BULK_MODE) this.stableMemTable = this.memTable;
                 this.memTable = new MemTable();
                 if(!BULK_MODE) meta.setStableMemTable(true);
                 forbiddenWrite = false;
