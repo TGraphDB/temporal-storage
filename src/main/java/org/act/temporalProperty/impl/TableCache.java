@@ -31,7 +31,7 @@ import com.google.common.cache.LoadingCache;
 public class TableCache
 {
     private final LoadingCache<String, TableAndFile> cache;
-    private final Finalizer<Table> finalizer = new Finalizer<>(1);
+//    private final Finalizer<Table> finalizer = new Finalizer<>(1);
     private final Map<String, Long> loadFreq = new HashMap<>();
 
     public TableCache(int tableCacheSize, final UserComparator userComparator, final boolean verifyChecksums)
@@ -40,7 +40,12 @@ public class TableCache
                 .maximumSize(tableCacheSize)
                 .removalListener((RemovalListener<String, TableAndFile>) notification -> {
                     Table table = notification.getValue().getTable();
-                    finalizer.addCleanup(table, table.closer());
+                    try {
+                        table.close();
+                    } catch (IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+//                    finalizer.addCleanup(table, table.closer());
                 })
                 .build(new CacheLoader<String, TableAndFile>(){
                     @Override
@@ -91,7 +96,7 @@ public class TableCache
         loadFreq.forEach((fPath, freq)-> sb.append(new File(fPath).getName()).append("=").append(freq).append(','));
         System.out.println(sb);
         cache.invalidateAll();
-        finalizer.destroy();
+//        finalizer.destroy();
     }
 
     /**
