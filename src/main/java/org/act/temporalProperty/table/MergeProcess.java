@@ -94,6 +94,7 @@ public class MergeProcess extends Thread
 
     @Override
     public void run(){
+        if(BULK_MODE) return;
         Thread.currentThread().setName(getMyName());
         try{
             while(!Thread.interrupted()) {

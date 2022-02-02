@@ -95,7 +95,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
         this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
-        if(!BULK_MODE) this.mergeProcess.start();
+        this.mergeProcess.start();
     }
 
     /**
