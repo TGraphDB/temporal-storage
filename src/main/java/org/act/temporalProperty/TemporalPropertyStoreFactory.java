@@ -16,7 +16,7 @@ public class TemporalPropertyStoreFactory
 	 * @return
 	 */
     public static TemporalPropertyStore newPropertyStore(File dbDir ) throws Exception {
-        return new TemporalPropertyStoreImpl( dbDir );
+        return new TemporalPropertyStoreImpl( dbDir, false );
     }
 
 	public static TemporalPropertyStore bulkPropertyStore(File dbDir ) throws Exception {

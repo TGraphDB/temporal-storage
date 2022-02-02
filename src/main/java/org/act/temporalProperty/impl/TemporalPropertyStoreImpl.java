@@ -85,8 +85,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     /**
      * @param dbDir 存储动态属性数据的目录地址
      */
-    public TemporalPropertyStoreImpl( File dbDir ) throws Exception
+    public TemporalPropertyStoreImpl( File dbDir, boolean bulkMode ) throws Exception
     {
+        BULK_MODE = bulkMode;
         this.dbDir = dbDir;
         this.init();
         this.cache = new TableCache( 25, TableComparator.instance(), false );
@@ -95,12 +96,6 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
         this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
         if(!BULK_MODE) this.mergeProcess.start();
-    }
-
-    public TemporalPropertyStoreImpl( File dbDir, boolean bulkMode ) throws Exception
-    {
-        this(dbDir);
-        BULK_MODE = true;
     }
 
     /**
