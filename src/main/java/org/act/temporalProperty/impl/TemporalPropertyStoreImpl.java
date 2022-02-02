@@ -95,7 +95,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
         this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
-        this.mergeProcess.start();
+        if(!BULK_MODE) this.mergeProcess.start();
     }
 
     /**
@@ -116,7 +116,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     {
         if(BULK_MODE) this.mergeAllBuffers();
         this.meta.lock.shutdown();
-        this.mergeProcess.shutdown();
+        if(!BULK_MODE) this.mergeProcess.shutdown();
         this.cache.close();
         this.index.close();
         this.meta.lock.shutdownLockExclusive();// no need to unlock, for state would lose when closed.

@@ -94,7 +94,6 @@ public class MergeProcess extends Thread
 
     @Override
     public void run(){
-        if(BULK_MODE) return;
         Thread.currentThread().setName(getMyName());
         try{
             while(!Thread.interrupted()) {
@@ -385,7 +384,7 @@ public class MergeProcess extends Thread
                 entryCount++;
             }
             builder.finish();
-            System.out.println("---------------Merge done.");
+            System.out.println("---------------Merge done. write "+entryCount+" entries.");
             this.targetMeta = generateNewFileMeta();
             indexUpdater.finish( targetMeta );
         }
