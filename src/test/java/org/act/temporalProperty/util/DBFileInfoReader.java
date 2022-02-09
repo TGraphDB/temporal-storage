@@ -1,6 +1,7 @@
 package org.act.temporalProperty.util;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.helper.StoreInitial;
 import org.act.temporalProperty.impl.*;
@@ -32,7 +33,7 @@ public class DBFileInfoReader
 {
     private String dbDir(){
         if(SystemUtils.IS_OS_WINDOWS){
-            return "D:\\tgraph\\db\\Tgraph-bj60c-7day\\temporal.relationship.properties";
+            return "G:\\jenkins-workspace\\m_traffic_tgk_01\\temporal.relationship.properties";
         }else{
             return "/media/song/test/db-network-only/temporal.relationship.properties";
         }
@@ -65,7 +66,7 @@ public class DBFileInfoReader
         SystemMetaFile file = SystemMetaController.readFromDisk(new File(dbDir(), fileName));
         if(file!=null && file.isValid()){
             SystemMeta meta = SystemMetaController.decode(file.getMeta());
-            System.out.println(JSON.toJSONString(meta));
+            System.out.println(JSON.toJSONString(meta, SerializerFeature.PrettyFormat));
         }else{
             System.out.println("Format Error: not an valid meta file! Unexpected file end.");
         }

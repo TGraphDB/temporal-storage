@@ -64,9 +64,9 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     public static final long FBUFFER_SIZE = getEnvLong("CONFIG_FBUFFER_SIZE", 10);
     /**
      * if BULK_MODE is true, then:
-     * 1. Memtable merge in writer thread (not background thread)
-     * 2. FileBuffers are merged to their corresponding table file right after Memtable merge.
-     * 3. FileBuffers will not write to disk.
+     * 1. Memtable merge in writer thread (no background thread will start)
+     * 2. FileBuffers are merged to their corresponding table file only once before shutdown or when upgrade merge happen (for unstable fBuffer).
+     * 3. FileBuffers will directly write to disk, no copy to memtable.
      * 4. Should call shutdown as well after data import.
      * 5. Should usually set a larger MEMTABLE_SIZE according to data.
      * Switch to normal mode need close and restart.
