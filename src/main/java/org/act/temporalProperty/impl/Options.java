@@ -7,6 +7,14 @@ package org.act.temporalProperty.impl;
  */
 public class Options
 {
+    private static CompressionType CTP = CompressionType.NONE;
+
+    static {
+        if(System.getenv("CONF_TGRAPH_COMPRESS")!=null) {
+            CTP = CompressionType.SNAPPY;
+            System.out.println(Options.class.getSimpleName()+": use snappy compress.");
+        }
+    }
     private boolean createIfMissing = true;
     private boolean errorIfExists;
     private int writeBufferSize = 4 << 20;
@@ -15,7 +23,7 @@ public class Options
 
     private int blockRestartInterval = 16;
     private int blockSize = 4 * 1024;
-    private CompressionType compressionType = CompressionType.SNAPPY;
+    private CompressionType compressionType = CTP;
     private boolean verifyChecksums = true;
     private boolean paranoidChecks;
     private long cacheSize;
