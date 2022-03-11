@@ -7,13 +7,13 @@ package org.act.temporalProperty.impl;
  */
 public class Options
 {
-    private static CompressionType CTP = CompressionType.NONE;
+    public static CompressionType CTP = CompressionType.NONE;
 
     static {
         if(System.getenv("CONF_TGRAPH_COMPRESS")!=null) {
             CTP = CompressionType.SNAPPY;
-            System.out.println(Options.class.getSimpleName()+": use snappy compress.");
         }
+        System.out.println(Options.class.getSimpleName() + ": use "+CTP+" compress.");
     }
     private boolean createIfMissing = true;
     private boolean errorIfExists;
