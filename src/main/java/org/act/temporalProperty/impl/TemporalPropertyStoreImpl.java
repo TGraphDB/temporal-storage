@@ -639,6 +639,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     {
         try
         {
+            Thread.interrupted();
             this.meta.force( this.dbDir );
         }
         catch ( IOException e )
