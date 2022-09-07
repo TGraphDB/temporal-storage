@@ -11,8 +11,7 @@ public class TemporalPropertyValueConvertor
     private static final String DOUBLE_NAME = "Double";
     private static final String FLOAT_NAME = "Float";
     private static final String LONG_NAME = "Long";
-    private static final String STRING_NAME = "String";
-//    private static final String BYTE_ARRAY_NAME = "byte[]";
+    private static final String SLICE_NAME = "Slice";
 
     public static Slice toSlice( Object value )
     {
@@ -21,13 +20,8 @@ public class TemporalPropertyValueConvertor
         else if(value instanceof Double) o.writeDouble( (Double) value );
         else if(value instanceof Float) o.writeFloat( (Float) value );
         else if(value instanceof Long) o.writeLong( (Long) value );
-        else if(value instanceof String) {
-            o.writeInt(((String) value).length());
-            o.writeBytes( ((String) value).getBytes() );
-//        } else if(value instanceof byte[]){
-//            o.writeInt(((byte[]) value).length);
-//            o.writeBytes( (byte[]) value );
-        } else throw new UnsupportedOperationException("Unsupported value type");
+        else if(value instanceof Slice) return ((Slice) value).copySlice();
+        else throw new UnsupportedOperationException("Unsupported value type");
         return o.slice();
     }
 
@@ -44,15 +38,8 @@ public class TemporalPropertyValueConvertor
             return in.readFloat();
         case LONG_NAME:
             return in.readLong();
-        case STRING_NAME:
-            int len = in.readInt();
-            byte[] content = in.readByteArray(len);
-            return new String(content);
-//        case BYTE_ARRAY_NAME:
-//            len = in.readInt();
-//            content = new byte[len];
-//            in.readBytes(content);
-//            return content;
+        case SLICE_NAME:
+            return value.copySlice();
         default:
             throw new UnsupportedOperationException("Unsupported value type");
         }
@@ -71,10 +58,8 @@ public class TemporalPropertyValueConvertor
             return in.readFloat();
         case LONG:
             return in.readLong();
-        case STRING:
-            int len = in.readInt();
-            byte[] content = in.readByteArray(len);
-            return new String(content);
+        case SLICE:
+            return value.copySlice();
         default:
             throw new UnsupportedOperationException("Unsupported value type");
         }
@@ -91,9 +76,8 @@ public class TemporalPropertyValueConvertor
             return ValueContentType.FLOAT;
         case LONG_NAME:
             return ValueContentType.LONG;
-        case STRING_NAME:
-            return ValueContentType.STRING;
-//        case BYTE_ARRAY_NAME:
+        case SLICE_NAME:
+            return ValueContentType.SLICE;
         default:
             throw new UnsupportedOperationException("Unsupported value type");
         }

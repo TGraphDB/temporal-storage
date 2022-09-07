@@ -19,6 +19,7 @@ package org.act.temporalProperty.impl;
 
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.meta.ValueContentType;
+import org.act.temporalProperty.util.Slice;
 
 /**
  * Types that a time point entry value can be.
@@ -50,7 +51,7 @@ public enum ValueType
     LONG( 4 ),
     FLOAT( 5 ),
     DOUBLE( 6 ),
-    STRING( 7 );
+    SLICE( 7 );
 
     public static ValueType getValueTypeByPersistentId( int persistentId )
     {
@@ -72,7 +73,7 @@ public enum ValueType
         case 6:
             return DOUBLE;
         case 7:
-            return STRING;
+            return SLICE;
         default:
             throw new IllegalArgumentException( "invalid persistentId!" );
         }
@@ -122,7 +123,7 @@ public enum ValueType
         if(obj instanceof Float) return FLOAT;
         if(obj instanceof Double) return DOUBLE;
         if(obj instanceof Long) return LONG;
-        if(obj instanceof String) return STRING;
+        if(obj instanceof Slice) return SLICE;
         else return UNKNOWN;
     }
 }
