@@ -308,11 +308,11 @@ public class MergeProcess extends Thread
                     SearchableIterator mergeIterator;
                     FileBuffer filebuffer = pMeta.getUnstableBuffers(fileNumber);
                     if (null != filebuffer) {
-                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), new PackInternalKeyIterator(table.iterator()));
+                        mergeIterator = TwoLevelMergeIterator.merge(filebuffer.iterator(), new PackInternalKeyIterator(table.iterator(), mergeSource.getAbsolutePath()));
                         channel2close.add(filebuffer);
                         files2delete.add(new File(propStoreDir, Filename.unbufferFileName(fileNumber)));
                     } else {
-                        mergeIterator = new PackInternalKeyIterator(table.iterator());
+                        mergeIterator = new PackInternalKeyIterator(table.iterator(), mergeSource.getAbsolutePath());
                     }
                     unstableIter.add(mergeIterator);
 

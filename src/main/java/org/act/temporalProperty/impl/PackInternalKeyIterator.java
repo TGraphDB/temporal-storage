@@ -4,6 +4,7 @@ import org.act.temporalProperty.helper.AbstractSearchableIterator;
 import org.act.temporalProperty.table.TableIterator;
 import org.act.temporalProperty.util.Slice;
 
+import java.io.IOException;
 import java.util.Map.Entry;
 
 /**
@@ -13,22 +14,29 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
 {
 
     private final TableIterator in;
+    private final String filePath;
 
-    public PackInternalKeyIterator(TableIterator in){
+    public PackInternalKeyIterator(TableIterator in, String filePath){
         this.in = in;
+        this.filePath = filePath;
     }
 
     @Override
     protected InternalEntry computeNext() {
-        if(in.hasNext()){
-            Entry<Slice, Slice> tmp = in.next();
-            InternalEntry r = new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
+        try {
+            if (in.hasNext()) {
+                Entry<Slice, Slice> tmp = in.next();
+                InternalEntry r = new InternalEntry(InternalKey.decode(tmp.getKey()), tmp.getValue());
 //            if(r.getKey().getEntityId()==){
 //                System.out.println(r.getKey()+" "+r.getValue().getInt(0));
 //            }
-            return r;
-        }else {
-            return endOfData();
+                return r;
+            } else {
+                return endOfData();
+            }
+        }catch (Throwable e){
+            e.initCause(new IOException("Error occurs when read "+filePath));
+            throw e;
         }
     }
 
@@ -46,7 +54,7 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
 
     @Override
     public String toString() {
-        return "PackInternalKeyIterator{" +
+        return "PackInternalKeyIterator{file=" + filePath+", "+
                 "in=" + in +
                 '}';
     }

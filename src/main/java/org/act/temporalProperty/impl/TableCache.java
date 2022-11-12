@@ -63,7 +63,7 @@ public class TableCache
      */
     public SearchableIterator newIterator(String filePath)
     {
-        return new PackInternalKeyIterator(getTable(filePath).iterator());
+        return new PackInternalKeyIterator(getTable(filePath).iterator(), filePath);
     }
 
     public Table getTable(String filePath)

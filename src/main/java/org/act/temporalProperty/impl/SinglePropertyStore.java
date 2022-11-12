@@ -4,7 +4,6 @@ import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.helper.DebugIterator;
-import org.act.temporalProperty.helper.EPAppendIterator;
 import org.act.temporalProperty.helper.EPEntryIterator;
 import org.act.temporalProperty.helper.EPRangeQueryIterator;
 import org.act.temporalProperty.index.IndexStore;
@@ -19,7 +18,6 @@ import org.act.temporalProperty.table.TableBuilder;
 import org.act.temporalProperty.table.TableComparator;
 import org.act.temporalProperty.util.FileUtils;
 import org.act.temporalProperty.util.Slice;
-import org.act.temporalProperty.vo.EntityPropertyId;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -387,7 +385,7 @@ public class SinglePropertyStore
           会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
           使用bufferFileName做判断，若"st"开头则是合并stable file
          */
-        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), new PackInternalKeyIterator(table.iterator()));
+        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), new PackInternalKeyIterator(table.iterator(), filePath));
         while (iterator.hasNext()) {
             InternalEntry entry = iterator.next();
             builder.add(entry.getKey().encode(), entry.getValue());
