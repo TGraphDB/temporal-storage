@@ -1,5 +1,6 @@
 package org.act.temporalProperty.impl;
 
+import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.helper.AbstractSearchableIterator;
 import org.act.temporalProperty.table.TableIterator;
 import org.act.temporalProperty.util.Slice;
@@ -35,8 +36,7 @@ public class PackInternalKeyIterator extends AbstractSearchableIterator
                 return endOfData();
             }
         }catch (Throwable e){
-            e.initCause(new IOException("Error occurs when read "+filePath));
-            throw e;
+            throw new TPSNHException("Error occurs when read "+filePath, e);
         }
     }
 
