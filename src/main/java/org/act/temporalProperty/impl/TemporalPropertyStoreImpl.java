@@ -90,7 +90,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         BULK_MODE = bulkMode;
         this.dbDir = dbDir;
         this.init();
-        this.cache = new TableCache( 25, TableComparator.instance(), false );
+        this.cache = new TableCache( BULK_MODE ? 125 : 25, TableComparator.instance(), false );
         IndexMetaManager indexMetaManager = new IndexMetaManager(meta.getIndexes(), meta.indexNextId(), meta.indexNextFileId());
         this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
@@ -604,6 +604,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
     {
         try
         {
+            Thread.interrupted();
             buffer2disk();
             File tempFile = new File( this.dbDir + "/" + Filename.tempFileName( 0 ) );
             if ( !tempFile.exists() )
