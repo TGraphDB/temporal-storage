@@ -13,4 +13,8 @@ public class TPSNHException extends TPSRuntimeException {
     public TPSNHException(String msg) {
         super(msg);
     }
+
+    public TPSNHException(String msg, Throwable e) {
+        super(msg, e);
+    }
 }
