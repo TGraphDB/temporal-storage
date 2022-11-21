@@ -1,6 +1,19 @@
 
 package org.act.temporalProperty.impl;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+import org.act.temporalProperty.table.FileChannelTable;
+import org.act.temporalProperty.table.MMapTable;
+import org.act.temporalProperty.table.Table;
+import org.act.temporalProperty.table.UserComparator;
+import org.act.temporalProperty.util.Closeables;
+import org.act.temporalProperty.util.Finalizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -10,28 +23,15 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.cache.RemovalListener;
-import org.act.temporalProperty.table.FileChannelTable;
-import org.act.temporalProperty.table.MMapTable;
-import org.act.temporalProperty.table.Table;
-import org.act.temporalProperty.table.UserComparator;
-import org.act.temporalProperty.util.Closeables;
-import org.act.temporalProperty.util.Finalizer;
-import org.act.temporalProperty.util.Slice;
-
-import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 /**
  * 对所有存储文件的缓存机制，使用FIFO的方式进行，如果需要对某个文件进行访问，可以直接从TableCache这里对文件的Iterator进行查询
  *
  */
 public class TableCache
 {
+    private static Logger log = LoggerFactory.getLogger(TableCache.class);
     private final LoadingCache<String, TableAndFile> cache;
-//    private final Finalizer<Table> finalizer = new Finalizer<>(1);
+    private final Finalizer<Table> finalizer = new Finalizer<>(1);
     private final Map<String, Long> loadFreq = new HashMap<>();
 
     public TableCache(int tableCacheSize, final UserComparator userComparator, final boolean verifyChecksums)
@@ -40,16 +40,19 @@ public class TableCache
                 .maximumSize(tableCacheSize)
                 .removalListener((RemovalListener<String, TableAndFile>) notification -> {
                     Table table = notification.getValue().getTable();
-                    try {
-                        table.close();
-                    } catch (IOException e) {
-                        throw new IllegalStateException(e);
-                    }
-//                    finalizer.addCleanup(table, table.closer());
+//                    try {
+//                        table.close();
+//                        System.out.println("CLOSE "+notification.getKey());
+//                    } catch (IOException e) {
+//                        throw new IllegalStateException(e);
+//                    }
+                    log.trace("RM "+notification.getKey());
+                    finalizer.addCleanup(table, table.closer());
                 })
                 .build(new CacheLoader<String, TableAndFile>(){
                     @Override
                     public TableAndFile load(String filePath) throws IOException{
+                        log.trace("LOAD "+filePath);
                         loadFreq.compute(filePath, (s, aLong) -> aLong==null ? 1 : aLong+1);
                         return new TableAndFile(filePath, userComparator, verifyChecksums);
                     }
@@ -71,6 +74,7 @@ public class TableCache
         Table table;
         try {
             table = cache.get(filePath).getTable();
+            log.trace("GOT "+filePath);
         }
         catch (ExecutionException e) {
             Throwable cause = e;

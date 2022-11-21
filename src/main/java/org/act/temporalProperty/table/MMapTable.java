@@ -97,6 +97,7 @@ public class MMapTable
         {
             ByteBufferSupport.unmap(data);
             Closeables.closeQuietly(closeable);
+            System.out.println("CLOSE MMTABLE "+name);
             return null;
         }
     }
