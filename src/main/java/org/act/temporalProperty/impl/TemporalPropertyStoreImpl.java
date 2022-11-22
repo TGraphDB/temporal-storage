@@ -115,10 +115,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
      */
     public void shutDown() throws IOException, InterruptedException
     {
-        if(BULK_MODE) {
-            System.gc();
-            this.mergeAllBuffers();
-        }
+        if(BULK_MODE) this.mergeAllBuffers();
         this.meta.lock.shutdown();
         if(!BULK_MODE) this.mergeProcess.shutdown();
         this.cache.close();

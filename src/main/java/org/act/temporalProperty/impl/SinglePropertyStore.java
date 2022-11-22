@@ -396,6 +396,12 @@ public class SinglePropertyStore
         stream.close();
         table.close();
         this.cache.evict(filePath);
+        System.gc();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
         File originFile = new File(filePath);
         Files.delete(originFile.toPath());
         buffer.close();
