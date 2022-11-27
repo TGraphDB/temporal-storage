@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.query.TimeIntervalKey;
 import org.act.temporalProperty.table.UnSortedTable;
 import org.act.temporalProperty.util.Slice;
@@ -22,10 +23,17 @@ public class FileBuffer implements Closeable
     private MemTable memTable; //内存中保存数据
     private UnSortedTable discTable;//对应磁盘中的备份文件
     private long number =-1;
+    private int version = 0;
     private String fName;
 
     public FileBuffer(long id){
         this.number = id;
+        this.version = 0;
+    }
+
+    public FileBuffer(long id, int version){
+        this.number = id;
+        this.version = version;
     }
 
     public FileBuffer(File unSortedTableFile, long id) throws IOException{
@@ -104,11 +112,17 @@ public class FileBuffer implements Closeable
 
     public void encode(SliceOutput out) {
         out.writeLong(number);
+        out.writeInt(version);
     }
 
-    public static FileBuffer decode(SliceInput in) {
+    public static FileBuffer decode(SliceInput in, int version) {
         long id = in.readLong();
-        return new FileBuffer(id);
+        int fVersion = in.readInt();
+        if(version == TemporalPropertyStore.Version){
+            return new FileBuffer(id, fVersion);
+        }else {
+            return new FileBuffer(id);
+        }
     }
 
     public MemTable getMemTable()

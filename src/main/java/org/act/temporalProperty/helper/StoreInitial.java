@@ -59,14 +59,14 @@ public class StoreInitial {
                 }
                 if(metaFile!=null && metaTmpFile!=null){
                     if(metaTmpFile.getTime()>metaFile.getTime()){
-                        return SystemMetaController.decode(metaTmpFile.getMeta());
+                        return SystemMetaController.decode(metaTmpFile.getMeta(), metaTmpFile.getVersion());
                     }else{
-                        return SystemMetaController.decode(metaFile.getMeta());
+                        return SystemMetaController.decode(metaFile.getMeta(), metaFile.getVersion());
                     }
                 }else if(metaFile!=null && metaTmpFile==null){
-                    return SystemMetaController.decode(metaFile.getMeta());
+                    return SystemMetaController.decode(metaFile.getMeta(), metaFile.getVersion());
                 }else if(metaFile==null && metaTmpFile!=null){
-                    return SystemMetaController.decode(metaTmpFile.getMeta());
+                    return SystemMetaController.decode(metaTmpFile.getMeta(), metaTmpFile.getVersion());
                 }else{//metaFile==null && metaTmpFile==null
                     //throw new TPSMetaLoadFailedException("has meta file but both read failed");
                     return null;

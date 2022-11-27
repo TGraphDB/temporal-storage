@@ -25,6 +25,8 @@ public class FileMetaData
      */
     private final long number;
 
+    private final int version;
+
     /**
      * 文件大小，以byte为单位
      */
@@ -55,6 +57,16 @@ public class FileMetaData
         this.fileSize = fileSize;
         this.smallest = smallest;
         this.largest = largest;
+        this.version = 0;
+    }
+
+    public FileMetaData(long number, long fileSize, TimePointL smallest, TimePointL largest, int version)
+    {
+        this.number = number;
+        this.fileSize = fileSize;
+        this.smallest = smallest;
+        this.largest = largest;
+        this.version = version;
     }
 
     public long getFileSize()
@@ -65,6 +77,11 @@ public class FileMetaData
     public long getNumber()
     {
         return number;
+    }
+
+    public int getVersion()
+    {
+        return version;
     }
 
     public TimePointL getSmallest()

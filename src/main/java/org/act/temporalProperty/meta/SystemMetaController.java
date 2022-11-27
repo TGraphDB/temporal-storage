@@ -1,5 +1,6 @@
 package org.act.temporalProperty.meta;
 
+import org.act.temporalProperty.TemporalPropertyStore;
 import org.act.temporalProperty.exception.TPSNHException;
 import org.act.temporalProperty.impl.LogReader;
 import org.act.temporalProperty.impl.LogWriter;
@@ -46,11 +47,11 @@ public class SystemMetaController {
         }
     }
 
-    public static SystemMeta decode(SliceInput in){
+    public static SystemMeta decode(SliceInput in, int version){
         int count = in.readInt();
         SystemMeta meta = new SystemMeta();
         for(int i=0; i<count; i++){
-            PropertyMetaData pMeta = PropertyMetaDataController.decode(in);
+            PropertyMetaData pMeta = PropertyMetaDataController.decode(in, version);
             meta.addProperty(pMeta);
         }
         meta.setIndexNextId(in.readLong());
@@ -62,8 +63,8 @@ public class SystemMetaController {
         return meta;
     }
 
-    public static SystemMeta decode(Slice in){
-        return decode(in.input());
+    public static SystemMeta decode(Slice in, int version){
+        return decode(in.input(), version);
     }
 
     /**

@@ -16,36 +16,32 @@ import java.util.SortedMap;
  */
 public class PropertyMetaDataController {
 
-    public static PropertyMetaData decode(Slice data) {
-        return decode(data.input());
-    }
-
-    public static PropertyMetaData decode(SliceInput in) {
+    public static PropertyMetaData decode(SliceInput in, int version) {
         int pid = in.readInt();
         ValueContentType type = ValueContentType.decode(in.readInt());
         PropertyMetaData p = new PropertyMetaData(pid, type);
         // pack table unstable
         int count = in.readInt();
         for(int i=0; i<count; i++){
-            FileMetaData file = FileMetaDataController.decode(in);
+            FileMetaData file = FileMetaDataController.decode(in, version);
             p.addUnstable(file);
         }
         // pack table stable
         count = in.readInt();
         for(int i=0; i<count; i++){
-            FileMetaData file = FileMetaDataController.decode(in);
+            FileMetaData file = FileMetaDataController.decode(in, version);
             p.addStable(file);
         }
         // pack buffer unstable
         count = in.readInt();
         for(int i=0; i<count; i++){
-            FileBuffer buffer = FileBuffer.decode(in);
+            FileBuffer buffer = FileBuffer.decode(in, version);
             p.addUnstableBuffer(buffer.getNumber(), buffer);
         }
         // pack buffer stable
         count = in.readInt();
         for(int i=0; i<count; i++){
-            FileBuffer buffer = FileBuffer.decode(in);
+            FileBuffer buffer = FileBuffer.decode(in, version);
             p.addStableBuffer(buffer.getNumber(), buffer);
         }
         return p;

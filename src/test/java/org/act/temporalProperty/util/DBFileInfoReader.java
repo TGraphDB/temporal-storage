@@ -65,7 +65,7 @@ public class DBFileInfoReader
         System.out.println("################## "+fileName+" #################");
         SystemMetaFile file = SystemMetaController.readFromDisk(new File(dbDir(), fileName));
         if(file!=null && file.isValid()){
-            SystemMeta meta = SystemMetaController.decode(file.getMeta());
+            SystemMeta meta = SystemMetaController.decode(file.getMeta(), file.getVersion());
             System.out.println(JSON.toJSONString(meta, SerializerFeature.PrettyFormat));
         }else{
             System.out.println("Format Error: not an valid meta file! Unexpected file end.");

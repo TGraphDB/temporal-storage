@@ -38,6 +38,6 @@ public class SystemMetaFile{
     }
 
     public boolean isValid(){
-        return this.magic.equals(MagicNumber) && this.version==Version;
+        return this.magic.equals(MagicNumber) && this.version<=Version;
     }
 }
