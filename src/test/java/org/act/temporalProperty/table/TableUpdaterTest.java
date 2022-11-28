@@ -29,7 +29,7 @@ public class TableUpdaterTest
     {
         try
         {
-            String fileName = Filename.stableFileName( 0 );
+            String fileName = Filename.stableFileName( 0, 0 );
             File file = new File( dbDir + fileName);
             if( file.exists() )
                 file.delete();

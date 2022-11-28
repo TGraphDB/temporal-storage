@@ -59,7 +59,7 @@ public class TableBuildAndIterateTest
     {
         try
         {
-            String fileName = Filename.stableFileName( 0 );
+            String fileName = Filename.stableFileName( 0, 0 );
             File file = new File( dbDir + fileName );
             file.delete();
             if( !file.exists() )
@@ -85,7 +85,7 @@ public class TableBuildAndIterateTest
     {
         try
         {
-            String fileName = Filename.stableFileName( 0 );
+            String fileName = Filename.stableFileName( 0, 0 );
             File file = new File( dbDir + fileName );
             FileChannel channel = new FileInputStream( file ).getChannel();
             Table table = new MMapTable( fileName, channel, TableComparator.instance(), false );
@@ -108,7 +108,7 @@ public class TableBuildAndIterateTest
     {
         try
         {
-            String fileName = Filename.stableFileName( 0 );
+            String fileName = Filename.stableFileName( 0, 0 );
             File file = new File( dbDir + fileName );
             FileChannel channel = new FileInputStream( file ).getChannel();
             Table table = new MMapTable( fileName, channel, TableComparator.instance(), false );
