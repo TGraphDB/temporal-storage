@@ -279,17 +279,10 @@ public class MergeProcess extends Thread
         public void cleanUp() throws IOException
         {
 //            close Unused
-            for ( Closeable c : channel2close )
-            {
+            for ( Closeable c : channel2close ) {
                 c.close();
             }
-//            evictUnused(cache);
-            for ( String filePath : table2evict )
-            {
-                cache.evict( filePath );
-            }
 //            delete unused.
-            cache.cleanUp();
             Iterator<String> it = pMeta.old2delete.iterator();
             while(it.hasNext()){
                 File f = new File(it.next());
@@ -469,6 +462,11 @@ public class MergeProcess extends Thread
             }
 
             indexUpdater.updateMeta();
+
+            // evictUnused(cache);
+            for ( String filePath : table2evict ) {
+                cache.evict( filePath );
+            }
         }
 
         // this should only be called when pMeta.hasStable() is true.
