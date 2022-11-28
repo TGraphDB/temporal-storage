@@ -9,6 +9,7 @@ import org.act.temporalProperty.util.Slice;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,6 +32,8 @@ public class PropertyMetaData {
     //所有UnStableFile对应的Buffer
     private final TreeMap<Long, FileBuffer> unStableFileBuffers = new TreeMap<>();
     //    private final TreeMap<Long, FileMetaData> memLogs = new TreeMap<>();
+
+    public transient final LinkedList<String> old2delete = new LinkedList<>(); //abs path
 
     public PropertyMetaData(int propertyId, ValueContentType type){
         this.propertyId = propertyId;

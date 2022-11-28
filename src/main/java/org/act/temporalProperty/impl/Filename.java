@@ -36,52 +36,47 @@ public final class Filename
         INFO_LOG  // Either the current one, or an old one
     }
 
-    public static String stbufferFileName( long number)
+    public static String stbufferFileName( long number, int version)
     {
-        return makeFileName( number, "st", "buffer" );
+        return makeFileName( number, version,"st", "buffer" );
     }
     
-    public static String unbufferFileName(long number)
+    public static String unbufferFileName(long number, int version)
     {
-        return makeFileName( number, "un", "buffer" );
+        return makeFileName( number, version,"un", "buffer" );
     }
 
     /**
      * 返回对应编号的StableFile文件的名称.
      */
-    public static String stableFileName(long number)
+    public static String stableFileName(long number, int version)
     {
-        return makeFileName(number, "st", "table");
+        return makeFileName(number, version, "st", "table");
     }
 
-    public static String stableFileName(int propertyId, long number)
-    {
-        return propertyId+"/"+makeFileName(number, "st", "table");
-    }
-
-    public static String stPath(File proDir, long fileNumber) {
+    public static String stPath(File proDir, long fileNumber, int version) {
         AggregationQuery.cnt[0]++;
-        return new File(proDir, stableFileName(fileNumber)).getAbsolutePath();
+        return new File(proDir, stableFileName(fileNumber, version)).getAbsolutePath();
     }
     
     /**
      * 返回对应编号的UnStableFile文件的名称
      */
-    public static String unStableFileName(long number)
+    public static String unStableFileName(long number, int version)
     {
-        return makeFileName( number, "un", "table" );
+        return makeFileName( number, version, "un", "table" );
     }
 
-    public static String unPath(File proDir, long fileNumber) {
-        return new File(proDir, unStableFileName(fileNumber)).getAbsolutePath();
+    public static String unPath(File proDir, long fileNumber, int version) {
+        return new File(proDir, unStableFileName(fileNumber, version)).getAbsolutePath();
     }
 
     public static String valIndexFileName(long fileId) {
-        return makeFileName(fileId, "value", "index");
+        return makeFileName(fileId, 0, "value", "index");
     }
 
     public static String aggrIndexFileName(long fileId) {
-        return makeFileName(fileId, "aggr", "index");
+        return makeFileName(fileId, 0, "aggr", "index");
     }
 
     /**
@@ -138,10 +133,14 @@ public final class Filename
         return String.format("%06d.%s", number, suffix);
     }
 
-    private static String makeFileName(long number, String prefix, String suffix)
+    private static String makeFileName(long number, int version, String prefix, String suffix)
     {
         Preconditions.checkArgument(number >= 0, "number is negative");
         Preconditions.checkNotNull(suffix, "suffix is null");
-        return String.format("%s.%06d.%s", prefix, number, suffix);
+        if(version>0){
+            return String.format("%s.%06d.%d.%s", prefix, number, version, suffix);
+        }else {
+            return String.format("%s.%06d.%s", prefix, number, suffix);
+        }
     }
 }

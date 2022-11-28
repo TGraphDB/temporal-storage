@@ -60,7 +60,7 @@ public class SinglePropertyStore
 
     private void loadBuffers() throws IOException {
         for(FileBuffer buffer : propertyMeta.getUnstableBuffers().values()){
-            File bufferFile = new File(this.proDir, Filename.unbufferFileName(buffer.getNumber()));
+            File bufferFile = new File(this.proDir, Filename.unbufferFileName(buffer.getNumber(), buffer.getVersion()));
             if (bufferFile.exists()) {
                 buffer.init(bufferFile);
             }else{
@@ -68,7 +68,7 @@ public class SinglePropertyStore
             }
         }
         for(FileBuffer buffer : propertyMeta.getStableBuffers().values()){
-            File bufferFile = new File(this.proDir, Filename.stbufferFileName(buffer.getNumber()));
+            File bufferFile = new File(this.proDir, Filename.stbufferFileName(buffer.getNumber(), buffer.getVersion()));
             if (bufferFile.exists()) {
                 buffer.init(bufferFile);
             }else{
@@ -140,7 +140,7 @@ public class SinglePropertyStore
         unList.sort(Comparator.comparing(FileMetaData::getSmallest));
 
         for(FileMetaData meta : stList){
-            SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
+            SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber(), meta.getVersion()));
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
             if( null != buffer ){
                 iterator.appendStables(fileIterator, buffer.iterator(), meta);
@@ -149,7 +149,7 @@ public class SinglePropertyStore
             }
         }
         for( FileMetaData meta : unList ){
-            SearchableIterator fileIterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber()));
+            SearchableIterator fileIterator = this.cache.newIterator(Filename.unPath(proDir, meta.getNumber(), meta.getVersion()));
             FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
             if( null != buffer ){
                 iterator.appendUnStables(fileIterator, buffer.iterator(), meta);
@@ -163,7 +163,8 @@ public class SinglePropertyStore
         List<FileMetaData> checkList = new ArrayList<>(propertyMeta.getUnStableFiles().values());
         checkList.sort(Comparator.comparing(FileMetaData::getNumber));
         for (FileMetaData meta : checkList) {
-            SearchableIterator iterator = new EPEntryIterator(searchKey.getId(), this.cache.newIterator(Filename.unPath(proDir, meta.getNumber())));
+            SearchableIterator iterator = new EPEntryIterator(searchKey.getId(),
+                    this.cache.newIterator(Filename.unPath(proDir, meta.getNumber(), meta.getVersion())));
             FileBuffer buffer = propertyMeta.getUnstableBuffers(meta.getNumber());
             if (null != buffer) {
                 iterator = TwoLevelMergeIterator.merge(new EPEntryIterator(searchKey.getId(), buffer.iterator()), iterator);
@@ -195,7 +196,8 @@ public class SinglePropertyStore
     }
 
     private Slice stPointValue(FileMetaData meta, InternalKey searchKey){
-        SearchableIterator iterator = new EPEntryIterator(searchKey.getId(), this.cache.newIterator(Filename.stPath(proDir, meta.getNumber())));
+        SearchableIterator iterator = new EPEntryIterator(searchKey.getId(),
+                this.cache.newIterator(Filename.stPath(proDir, meta.getNumber(), meta.getVersion())));
         FileBuffer buffer = propertyMeta.getStableBuffers(meta.getNumber());
         if (null != buffer) {
             iterator = TwoLevelMergeIterator.merge(new EPEntryIterator(searchKey.getId(), buffer.iterator()), iterator);
@@ -301,8 +303,8 @@ public class SinglePropertyStore
             FileMetaData meta = entry.getValue();
             FileBuffer buffer = propertyMeta.getUnstableBuffers( meta.getNumber() );
             if( null == buffer ) {
-                String fileName = Filename.unbufferFileName(meta.getNumber());
-                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                String fileName = Filename.unbufferFileName(meta.getNumber(), meta.getVersion());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber(), meta.getVersion());
                 propertyMeta.addUnstableBuffer(meta.getNumber(), buffer);
             }
             TimeIntervalKey validKey = key;
@@ -326,8 +328,8 @@ public class SinglePropertyStore
             FileMetaData meta = entry.getValue();
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
             if( null == buffer ) {
-                String fileName = Filename.stbufferFileName(meta.getNumber());
-                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber());
+                String fileName = Filename.stbufferFileName(meta.getNumber(), meta.getVersion());
+                buffer = new FileBuffer(new File(this.proDir, fileName), meta.getNumber(), meta.getVersion());
                 propertyMeta.addStableBuffer(meta.getNumber(), buffer);
             }
             TimeIntervalKey validKey = key;
@@ -346,68 +348,56 @@ public class SinglePropertyStore
     }
 
     public void unBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
-        IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), false, meta, buffer.getMemTable());
-        String filePath = Filename.unPath(proDir, meta.getNumber());
-        String bufferPath = Filename.unbufferFileName(meta.getNumber());
-        File tempFile = buffer2file( filePath, bufferPath, buffer, indexUpdater );
+        String filePath = Filename.unPath(proDir, meta.getNumber(), meta.getVersion());
+        int newVersion = meta.getVersion()+1;
+        String targetPath = Filename.unPath(proDir, meta.getNumber(), newVersion);
+        long fSize = buffer2file(filePath, targetPath, buffer, index.emptyUpdate()); //unstable file 没有索引文件
+        propertyMeta.addUnstable(new FileMetaData(meta.getNumber(), fSize, meta.getSmallest(), meta.getLargest(), newVersion));
         propertyMeta.delUnstableBuffer(meta.getNumber());
-        indexUpdater.finish(meta);
-        indexUpdater.updateMeta();
-        indexUpdater.cleanUp();
-        if(!tempFile.renameTo(new File(filePath))) throw new IOException("rename failed!");
+        propertyMeta.old2delete.add(filePath);
+        propertyMeta.old2delete.add(buffer.getFilePath());
     }
 
     public void stBufferToFile(FileMetaData meta, FileBuffer buffer) throws IOException {
+        String filePath = Filename.stPath(proDir, meta.getNumber(), meta.getVersion());
+        int newVersion = meta.getVersion()+1;
+        String targetPath = Filename.stPath(proDir, meta.getNumber(), newVersion);
         IndexUpdater indexUpdater = index.onBufferDelUpdate( propertyMeta.getPropertyId(), true, meta, buffer.getMemTable());
-        String filePath = Filename.stPath(proDir, meta.getNumber());
-        String bufferFileName = Filename.stbufferFileName(meta.getNumber());
-        File tempFile = buffer2file(filePath, bufferFileName, buffer, indexUpdater);
+        long fSize = buffer2file(filePath, targetPath, buffer, indexUpdater);
+        propertyMeta.addStable(new FileMetaData(meta.getNumber(), fSize, meta.getSmallest(), meta.getLargest(), newVersion));
         propertyMeta.delStableBuffer(meta.getNumber());
+        propertyMeta.old2delete.add(filePath);
+        propertyMeta.old2delete.add(buffer.getFilePath());
         indexUpdater.finish(meta);
         indexUpdater.updateMeta();
         indexUpdater.cleanUp();
-        if(!tempFile.renameTo(new File(filePath))) throw new IOException("rename failed!");
     }
 
-    private File buffer2file( String filePath, String bufferFileName, FileBuffer buffer, IndexUpdater indexUpdater ) throws IOException {
-        File tempFile = new File(this.proDir, Filename.tempFileName(6));
-        System.out.println("buffer merge: "+filePath);
-        Files.deleteIfExists(tempFile.toPath());
-        Files.createFile(tempFile.toPath());
+    /* 会被stable file和unstable file的合并过程同时调用 */
+    private long buffer2file( String sourcePath, String targetPath, FileBuffer buffer, IndexUpdater indexUpdater ) throws IOException {
+        File targetFile = new File(targetPath);
+        System.out.println("buffer merge: "+sourcePath);
+        Files.deleteIfExists(targetFile.toPath());
+        Files.createFile(targetFile.toPath());
 
-        FileOutputStream stream = new FileOutputStream(tempFile);
+        FileOutputStream stream = new FileOutputStream(targetFile);
         FileChannel channel = stream.getChannel();
         TableBuilder builder = new TableBuilder(new Options(), channel, TableComparator.instance());
-        Table table = this.cache.getTable(filePath);
 
-        /*
-          写存储过程
-          会被stable file和unstable file的合并过程同时调用，鉴于只需测试stable file的合并过程（unstable file 没有索引文件）
-          使用bufferFileName做判断，若"st"开头则是合并stable file
-         */
-        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), new PackInternalKeyIterator(table.iterator(), filePath));
+        SearchableIterator iterator = TwoLevelMergeIterator.merge(buffer.iterator(), this.cache.newIterator(sourcePath));
         while (iterator.hasNext()) {
             InternalEntry entry = iterator.next();
             builder.add(entry.getKey().encode(), entry.getValue());
             indexUpdater.update( entry );
         }
+        long fSize = builder.getFileSize();
         builder.finish();
         channel.close();
         stream.close();
-        table.close();
-        this.cache.evict(filePath);
-        System.gc();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
-        File originFile = new File(filePath);
-        Files.delete(originFile.toPath());
+        this.cache.evict(sourcePath);
         buffer.close();
-        Files.delete(new File(this.proDir, bufferFileName).toPath());
         System.out.println("buffer merge done.");
-        return tempFile;
+        return fSize;
     }
 
     // boolean stand for: isStable.
@@ -420,7 +410,7 @@ public class SinglePropertyStore
 
         List<Triple<Boolean, FileMetaData, SearchableIterator>> results = new ArrayList<>();
         for(FileMetaData meta : stList){
-            SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber()));
+            SearchableIterator fileIterator = this.cache.newIterator(Filename.stPath(proDir, meta.getNumber(), meta.getVersion()));
             FileBuffer buffer = propertyMeta.getStableBuffers( meta.getNumber() );
             //todo: maybe should not include buffer data at index create time, but merge buffer data when query.
             if( null != buffer ){
@@ -437,11 +427,11 @@ public class SinglePropertyStore
 
     public void destroy() throws IOException {
         for(FileMetaData f : propertyMeta.getUnStableFiles().values()) {
-            String path = Filename.unPath(proDir, f.getNumber());
+            String path = Filename.unPath(proDir, f.getNumber(), f.getVersion());
             cache.evict(path);
         }
         for(FileMetaData f : propertyMeta.getStableFiles().values()) {
-            String path = Filename.stPath(proDir, f.getNumber());
+            String path = Filename.stPath(proDir, f.getNumber(), f.getVersion());
             cache.evict(path);
         }
         for(FileBuffer buffer : propertyMeta.getUnstableBuffers().values()){

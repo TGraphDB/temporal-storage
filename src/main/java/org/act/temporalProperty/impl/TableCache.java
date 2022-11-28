@@ -31,7 +31,7 @@ public class TableCache
 {
     private static Logger log = LoggerFactory.getLogger(TableCache.class);
     private final LoadingCache<String, TableAndFile> cache;
-    private final Finalizer<Table> finalizer = new Finalizer<>(1);
+    private Finalizer<Table> finalizer = new Finalizer<>();
     private final Map<String, Long> loadFreq = new HashMap<>();
 
     public TableCache(int tableCacheSize, final UserComparator userComparator, final boolean verifyChecksums)
@@ -86,6 +86,12 @@ public class TableCache
         return table;
     }
 
+    public Finalizer<Table> cleanUp(){
+        Finalizer<Table> f = this.finalizer;
+        this.finalizer = new Finalizer<>();
+        return f;
+    }
+
     /**
      * 关闭缓存，将缓存在内存中的文件channel关闭
      */
@@ -100,7 +106,7 @@ public class TableCache
         loadFreq.forEach((fPath, freq)-> sb.append(new File(fPath).getName()).append("=").append(freq).append(','));
         System.out.println(sb);
         cache.invalidateAll();
-//        finalizer.destroy();
+        finalizer.destroy();
     }
 
     /**

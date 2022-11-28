@@ -36,8 +36,8 @@ public class FileBuffer implements Closeable
         this.version = version;
     }
 
-    public FileBuffer(File unSortedTableFile, long id) throws IOException{
-        this(id);
+    public FileBuffer(File unSortedTableFile, long id, int version) throws IOException{
+        this(id, version);
         this.fName = unSortedTableFile.getAbsolutePath();
         this.memTable = new MemTable();
         Files.deleteIfExists(unSortedTableFile.toPath());
@@ -99,6 +99,14 @@ public class FileBuffer implements Closeable
 
     public long getNumber() {
         return number;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public String getFilePath() {
+        return fName;
     }
 
     @Override

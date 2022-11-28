@@ -95,7 +95,7 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         IndexMetaManager indexMetaManager = new IndexMetaManager(meta.getIndexes(), meta.indexNextId(), meta.indexNextFileId());
         this.index = new IndexStore( new File( dbDir, "index" ), this, indexMetaManager);
         this.meta.initStore( dbDir, cache, indexMetaManager, index);
-        this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, index );
+        this.mergeProcess = new MergeProcess( dbDir.getAbsolutePath(), meta, cache, index );
         if(!BULK_MODE) this.mergeProcess.start();
     }
 
