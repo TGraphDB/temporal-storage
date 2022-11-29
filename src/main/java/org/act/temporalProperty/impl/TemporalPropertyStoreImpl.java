@@ -126,6 +126,20 @@ public class TemporalPropertyStoreImpl implements TemporalPropertyStore
         this.flushMetaInfo2Disk();
         this.lockFile.close();
         Files.delete( new File( dbDir, Filename.lockFileName() ).toPath() );
+        cleanUpMultiVersionFiles();
+    }
+
+    private void cleanUpMultiVersionFiles() {
+        for(PropertyMetaData pMeta : this.meta.getProperties().values()){
+            for(String path : pMeta.old2delete){
+                try {
+                    Files.deleteIfExists(new File(path).toPath());
+                    System.out.println("DELETE: "+path);
+                } catch (IOException e) {
+                    System.err.println("Fail to delete: "+path+" "+e.getMessage());
+                }
+            }
+        }
     }
 
     @Override
