@@ -13,7 +13,7 @@ public class Options
         if(System.getenv("CONF_TGRAPH_COMPRESS")!=null) {
             CTP = CompressionType.SNAPPY;
         }
-        System.out.println(Options.class.getSimpleName() + ": use "+CTP+" compress.");
+        System.out.println(Options.class.getName() + ": use "+CTP+" compress.");
     }
     private boolean createIfMissing = true;
     private boolean errorIfExists;

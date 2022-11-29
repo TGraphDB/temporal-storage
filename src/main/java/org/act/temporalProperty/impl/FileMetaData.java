@@ -114,12 +114,13 @@ public class FileMetaData
     {
         StringBuilder sb = new StringBuilder();
         sb.append("FileMetaData");
-        sb.append("{number=").append(number);
-        sb.append(", fileSize=").append(fileSize);
-        sb.append(", smallest=").append(smallest);
-        sb.append(", largest=").append(largest);
-        sb.append(", allowedSeeks=").append(allowedSeeks);
-        sb.append('}');
+        sb.append("{(").append(number);
+        sb.append(")v").append(version);
+        sb.append(",").append(smallest);
+        sb.append("~").append(largest);
+        long fSize = fileSize / 1024 / 1024;
+        sb.append(",").append(fSize==0 ? "<1" : fSize);
+        sb.append("MB}");
         return sb.toString();
     }
 }

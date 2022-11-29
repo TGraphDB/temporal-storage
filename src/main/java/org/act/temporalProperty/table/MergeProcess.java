@@ -480,11 +480,6 @@ public class MergeProcess extends Thread
             }
             return TableLatestValueIterator.setNewStart(fileIterator, mergeResultStartTime);
         }
-
-
-        {
-            //
-        }
     }
 
 }
