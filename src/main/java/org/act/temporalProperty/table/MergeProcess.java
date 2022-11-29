@@ -254,7 +254,7 @@ public class MergeProcess extends Thread
         {
             boolean success;
             File targetFile = new File( propStoreDir, targetFileName );
-            debugInfo = "[merge "+mergeParticipants+" to: "+targetFile.getAbsolutePath()+"]";
+            debugInfo = "Merge "+mergeParticipants+" TO "+targetFile.getAbsolutePath();
 //            Files.deleteIfExists(targetFile.toPath());
             if( targetFile.exists() ) {
                 success = targetFile.delete();
@@ -382,7 +382,7 @@ public class MergeProcess extends Thread
             }
 
             TableBuilder builder = this.mergeInit(targetFileName);
-            System.out.println("---------------"+debugInfo);
+            System.out.println("----"+debugInfo);
             SearchableIterator buildIterator = getDataIterator();
             while( buildIterator.hasNext() ){
                 InternalEntry entry = buildIterator.next();
