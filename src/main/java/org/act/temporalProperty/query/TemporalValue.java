@@ -6,9 +6,11 @@ import com.google.common.collect.PeekingIterator;
 import org.act.temporalProperty.exception.TPSRuntimeException;
 import org.apache.commons.lang3.tuple.Triple;
 
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
@@ -19,7 +21,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class TemporalValue<V>
 {
-    private final NavigableMap<TimePointL, ValWithFlag> map = new ConcurrentSkipListMap<>();
+//    private final NavigableMap<TimePointL, ValWithFlag> map = new ConcurrentSkipListMap<>();
+    private final NavigableMap<TimePointL, ValWithFlag> map = new TreeMap<>();
 
     public TemporalValue( V initialValue )
     {
@@ -37,17 +40,16 @@ public class TemporalValue<V>
             map.tailMap( interval.start(), true ).clear();
             map.put( interval.start(), val( value ) );
         }else{
-            ValWithFlag end = map.get( interval.end().next() );
+            ValWithFlag endNextVal;
+            Entry<TimePointL, ValWithFlag> curEndNext = map.floorEntry(interval.end().next());
+            if( curEndNext != null ){
+                endNextVal = curEndNext.getValue();
+            }else{
+                endNextVal = valUnknown();
+            }
             map.subMap( interval.start(), true, interval.end(), true ).clear();
             map.put( interval.start(), val( value ) );
-            if ( end == null )
-            {
-                map.put( interval.end().next(), valUnknown() );
-            }
-            else
-            {
-                map.put( interval.end().next(), end );
-            }
+            map.put( interval.end().next(), endNextVal );
         }
     }
 
